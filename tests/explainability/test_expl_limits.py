@@ -36,9 +36,9 @@ def test_unrecovered_drawdown_is_an_uncertainty(run):
 
 
 def test_unavailable_tool_is_not_covered(run):
-    r = run("Compare MID et HIGH")
+    r = run("Construis un scénario de portefeuille avec MID et HIGH")
     notes = [n.payload for n in r.ledger.entries("note") if n.payload.get("code") == "tool_unavailable"]
-    assert notes, "correlation_matrix devrait être consigné comme indisponible"
+    assert notes, "portfolio_metrics devrait être consigné comme indisponible"
     e = explain(r)
     assert {n["message"] for n in notes} <= {s.text for s in e.limits.not_covered}
 

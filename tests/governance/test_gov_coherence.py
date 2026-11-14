@@ -31,3 +31,24 @@ def test_ambiguous_query_is_never_conforme():
     a = v["assets"][0]
     assert v["status"] == "avertissement" and [r["code"] for r in a["reasons"]] == ["AMBIGUOUS_ASSET"]
     assert a["reasons"][0]["measures"]["candidates"] == ["SHOP", "SHOP.TO"]
+
+
+def test_highly_correlated_pair_is_reported_as_information(run):
+    # HIGH et HIGH2 alternent +r / -r les mêmes jours : rendements parfaitement corrélés.
+    r = run("Compare HIGH et HIGH2", risk_tolerance="eleve", horizon_years_min=15, horizon_years_max=30)
+    v = r.ledger.entries("verdict")[-1].payload
+    (g,) = [x for x in v["global_reasons"] if x["code"] == "HIGH_CORRELATION"]
+    assert g["check"] == "diversification" and g["severity"] == "info" and g["measures"]["corr"] > 0.99
+    corr = next(e for e in r.ledger.evidence() if e["tool"] == "correlation_matrix")
+    assert g["evidence_ids"] == [corr["evidence_id"]] and "," in g["message"].split("de ")[-1]
+
+
+def test_uncorrelated_pair_is_not_reported(gov, analyst, assets, profile_dict):
+    from alphaforge.governance import check_diversification, GovernanceConfig
+    from alphaforge.orchestrator import Orchestrator
+
+    r = Orchestrator(analyst, governance=gov).run("Compare LOW.TO et GOLD", profile_dict(), assets)
+    corr = [e for e in r.ledger.evidence() if e["tool"] == "correlation_matrix"]
+    assert corr
+    high = check_diversification(corr, ["LOW.TO", "GOLD"], GovernanceConfig(high_correlation=1.01))
+    assert high == []  # seuil hors d'atteinte : rien n'est signalé

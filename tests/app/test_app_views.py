@@ -169,3 +169,12 @@ def test_same_request_different_conclusions_for_contrasted_personas(forge):
     cmp = forge.compare("Évalue HIGH", "amira", "robert")
     assert cmp.left.verdict["status"] != cmp.right.verdict["status"]
     assert any("HIGH" in d.text for d in views.comparison_diffs(cmp, "fr"))
+
+
+def test_correlation_view_reads_reference_matrix(forge, prof):
+    a = forge.analyze("Compare HIGH et COIN-USD", prof(risk_tolerance="eleve", horizon_years_min=15, horizon_years_max=30))
+    cv = views.correlation_view(a, "fr")
+    assert cv.reference == "weekly" and cv.complement is not None  # crypto + marché coté : hebdomadaire de référence
+    assert {(c["a"], c["b"]) for c in cv.cells} == {(x, y) for x in cv.tickers for y in cv.tickers}
+    assert cv.alt.startswith("Carte de chaleur") and cv.evidence_id in views.evidence_index(a)
+    assert views.correlation_view(forge.analyze("Évalue HIGH", prof()), "fr") is None

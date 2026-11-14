@@ -9,11 +9,16 @@ def shown_value(value: float, unit: str) -> float:
     v = abs(float(value))
     if unit == "pct":
         return round(v * 100, 1)
+    if unit == "corr":
+        return round(v, 2)
     return v if v.is_integer() else round(v, 1)
 
 
 def format_number(value: float, unit: str, lang: str) -> str:
     x = shown_value(value, unit)
+    if unit == "corr":  # le signe d'une corrélation porte le sens : il est affiché
+        s = ("-" if value < 0 and x > 0 else "") + f"{x:.2f}"
+        return s.replace(".", ",") if lang == "fr" else s
     if unit == "pct":
         s = f"{x:.1f}"
         return s.replace(".", ",") + " %" if lang == "fr" else s + "%"

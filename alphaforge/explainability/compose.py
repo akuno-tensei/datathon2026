@@ -168,6 +168,37 @@ class _Composer:
             text += T["sensitivity_debutant"]
         self.add(section, text, b)
 
+    # -- corrélations (preuve correlation_matrix de l'analyste) ---------------
+    def correlation(self, section: str) -> None:
+        evs = [e for e in self.view.evidence if e.get("tool") == "correlation_matrix" and e.get("status") != "refused"]
+        if not evs:
+            return
+        ev, T = evs[-1], self.T
+        v, ref = ev["value"], ev["evidence_id"]
+        m = v["matrices"][v["reference"]]
+        pairs = m.get("pairs") or []
+        if not pairs:
+            return
+        b = self.b()
+        b.ref(ref)
+        method = T["corr_methods"][v["reference"]]
+        n = b.num(m["n_obs"], "ratio", ref)
+        if len(pairs) == 1:
+            p0 = pairs[0]
+            text = T["corr_one"].format(a=b.lit(p0["a"]), b=b.lit(p0["b"]), c=b.num(p0["corr"], "corr", ref), method=method, n=n)
+        else:
+            hi, lo = pairs[0], pairs[-1]
+            text = T["corr_many"].format(
+                tickers=", ".join(b.lit(t) for t in v["tickers"]), method=method, n=n,
+                a=b.lit(hi["a"]), b=b.lit(hi["b"]), cmax=b.num(hi["corr"], "corr", ref),
+                c=b.lit(lo["a"]), d=b.lit(lo["b"]), cmin=b.num(lo["corr"], "corr", ref),
+            )
+        if v.get("mixed_calendars"):
+            text += T["corr_mixed"]
+        if self.exp == "debutant":
+            text += T["corr_debutant"]
+        self.add(section, text, b)
+
     # -- raisons de gouvernance ---------------------------------------------
     def reason(self, section: str, ticker: Optional[str], r: Reason) -> None:
         if r.code == "TOOL_UNAVAILABLE":
@@ -202,6 +233,9 @@ class _Composer:
         elif code == "OUT_OF_UNIVERSE" and tpl:
             sugg = m.get("suggestions") or []
             k["suggestions"] = T["suggestions"].format(s=", ".join(b.lit(x) for x in sugg)) if sugg else ""
+        elif code == "HIGH_CORRELATION" and tpl:
+            cref = r.evidence_ids[0] if r.evidence_ids else self.vref
+            k.update(a=b.lit(m["a"]), b=b.lit(m["b"]), corr=b.num(m["corr"], "corr", cref), thr=b.num(m["threshold"], "corr", self.vref))
         elif code == "AMBIGUOUS_ASSET" and tpl:
             k["candidates"] = ", ".join(b.lit(x) for x in m.get("candidates") or [])
         elif tpl and code in ("METRICS_UNAVAILABLE", "NO_METRICS"):
@@ -237,6 +271,7 @@ class _Composer:
         for a in v.assets:
             self.data("data", a.ticker)
             self.sensitivity("data", a.ticker)
+        self.correlation("data")
         for a in v.assets:
             b = self.b()
             b.ref(self.vref)

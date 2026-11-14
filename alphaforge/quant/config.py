@@ -86,3 +86,9 @@ class QuantConfig(BaseModel):
     # stress_window : fenêtres rejouées par défaut et seuil de stabilité (variation relative max − min, rapportée au min).
     stress_default_windows: List[str] = ["complet", "2022", "hors_2022", "1_an", "3_ans"]
     stress_threshold: float = 0.25
+
+    # correlation_matrix : observations communes minimales (avertissement en dessous, refus sous corr_min_obs_refuse).
+    corr_min_obs_daily: int = 60
+    corr_min_obs_weekly: int = 26
+    corr_min_obs_refuse: int = 10
+    corr_weekly_anchor: str = "W-FRI"  # semaine close le vendredi : même ancrage pour la crypto et les marchés cotés

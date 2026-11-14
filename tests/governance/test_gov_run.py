@@ -105,10 +105,10 @@ def test_unknown_symbol_is_never_conforme(run):
 
 
 def test_missing_tool_is_a_global_gap(run):
-    v = last_verdict(run("Compare LOW.TO et BND.TO"))
+    v = last_verdict(run("Construis un scénario de portefeuille avec LOW.TO et BND.TO"))
     g = [r for r in v["global_reasons"] if r["code"] == "TOOL_UNAVAILABLE"]
-    assert g and "correlation_matrix" in g[0]["message"]
-    assert v["status"] == "avertissement"  # les deux actifs sont conformes, mais la diversification n'est pas vérifiée
+    assert g and "portfolio_metrics" in g[0]["message"]
+    assert v["status"] == "avertissement"  # les deux actifs sont conformes, mais le scénario de portefeuille n'est pas chiffré
 
 
 def test_internal_profile_conflict_surfaces_in_verdict(run):

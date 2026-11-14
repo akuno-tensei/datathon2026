@@ -128,7 +128,8 @@ def render_verdict(a: Analysis, key: str) -> None:
             for j, rl in enumerate(views.asset_reasons(asset, lang)):
                 st.markdown(f"{rl.icon} *{rl.kind}* — {rl.message}")
     for g in v.get("global_reasons", []):
-        st.markdown(f"{'⚠' if g['severity'] == 'warn' else 'ℹ'} {g['message']}")
+        kind = views.asset_reasons({"reasons": [g]}, lang)[0].kind
+        st.markdown(f"{'⚠' if g['severity'] == 'warn' else 'ℹ'} *{kind}* — {g['message']}")
     for sr in v.get("scope_refusals", []):
         st.error(f"⛔ {t('scope_title', lang)} : {sr['message']} → {sr['offered_instead']}")
 
@@ -180,6 +181,29 @@ def render_sensitivity(a: Analysis, key: str) -> None:
             with cols[i % len(cols)]:
                 st.caption(r["window"])
                 evidence_button(r["evidence_id"], f"{key}-sens-{tab.ticker}-{i}")
+
+
+def render_correlation(a: Analysis, key: str) -> None:
+    cv = views.correlation_view(a, lang)
+    if cv is None:
+        return
+    import altair as alt
+
+    st.markdown(f"### {t('corr_title', lang)}")
+    st.markdown(f"**{t('corr_reference', lang)}** : {t('corr_ref_' + cv.reference, lang)} · "
+                + t("corr_obs", lang, n=cv.n_obs, a=cv.first_date, b=cv.last_date))
+    df = pd.DataFrame(cv.cells)
+    base = alt.Chart(df).encode(x=alt.X("a:N", title=None, sort=cv.tickers), y=alt.Y("b:N", title=None, sort=cv.tickers))
+    heat = base.mark_rect().encode(color=alt.Color("corr:Q", scale=alt.Scale(domain=[-1, 1], scheme="redblue", reverse=True),
+                                                    title="corr"), tooltip=["a", "b", alt.Tooltip("corr:Q", format=".2f")])
+    text = base.mark_text().encode(text=alt.Text("corr:Q", format=".2f"))  # valeur écrite dans chaque case : jamais la couleur seule
+    st.altair_chart((heat + text).properties(height=60 * len(cv.tickers) + 40), use_container_width=True)
+    st.caption(cv.alt)
+    if cv.complement:
+        st.caption(t("corr_complement", lang, n=cv.complement["n_obs"]))
+    for x in cv.excluded:
+        st.caption("⚠ " + t("corr_excluded", lang, t=x["ticker"], r=x["reason"]))
+    evidence_button(cv.evidence_id, f"{key}-corr")
 
 
 def render_limits(a: Analysis, key: str) -> None:
@@ -277,6 +301,7 @@ with tab_an:
             render_verdict(a, "an")
             render_explanation(a, "an")
             render_sensitivity(a, "an")
+            render_correlation(a, "an")
             render_limits(a, "an")
     with right:
         if S.analysis is not None:

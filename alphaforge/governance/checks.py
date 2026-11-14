@@ -26,6 +26,10 @@ def _root(ticker: str) -> str:
     return re.split(r"[.\-]", ticker)[0].casefold()
 
 
+def _dec2(x: float) -> str:
+    return f"{x:.2f}".replace(".", ",")
+
+
 def _pct(x: float) -> str:
     return f"{x * 100:.1f} %".replace(".", ",")
 
@@ -268,6 +272,36 @@ def check_data_gaps(f: AssetFacts) -> List[Reason]:
                 evidence_ids=f.evidence_ids,
             )
         )
+    return out
+
+
+# ---- check_diversification -----------------------------------------------
+
+
+def check_diversification(evidence: List[dict], tickers: List[str], cfg: GovernanceConfig) -> List[Reason]:
+    """Paires d'actifs demandés dont les rendements ont été très corrélés (preuve correlation_matrix de l'analyste).
+
+    Informatif : une corrélation passée élevée signale une diversification faible, sans bloquer ni avertir.
+    """
+    out: List[Reason] = []
+    wanted = set(tickers)
+    for ev in evidence:
+        if ev.get("tool") != "correlation_matrix" or ev.get("status") == "refused":
+            continue
+        v = ev["value"]
+        ref = v["matrices"][v["reference"]]
+        for pair in ref.get("pairs", []):
+            if pair["a"] in wanted and pair["b"] in wanted and pair["corr"] >= cfg.high_correlation:
+                out.append(
+                    Reason(
+                        check="diversification", code="HIGH_CORRELATION", severity="info",
+                        message=(f"{pair['a']} et {pair['b']} : corrélation des rendements de {_dec2(pair['corr'])} "
+                                 f"(au-delà de {_dec2(cfg.high_correlation)}) ; les associer diversifie peu."),
+                        measures={"a": pair["a"], "b": pair["b"], "corr": pair["corr"], "threshold": cfg.high_correlation,
+                                  "reference": v["reference"], "n_obs": ref["n_obs"]},
+                        evidence_ids=[ev["evidence_id"]],
+                    )
+                )
     return out
 
 

@@ -65,3 +65,11 @@ def test_out_of_universe_shows_message_and_disabled_enrichment(app):
     assert any("hors de l'univers" in w.value for w in app.warning)
     btn = next(b for b in app.button if b.label == "Tenter d'ajouter via une source publique")
     assert btn.disabled
+
+
+def test_comparison_request_shows_correlation_heat_map(app):
+    app.text_area(key="req_box").set_value("Compare NVDA et BTC-USD")
+    next(b for b in app.button if b.label == "Envoyer").click().run()
+    assert not app.exception, app.exception
+    assert "Corrélations des rendements" in _texts(app)
+    assert any(c.value.startswith("Carte de chaleur") for c in app.caption)

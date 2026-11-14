@@ -141,7 +141,7 @@ class ReasonLine:
 
 
 _KIND = {"hard_constraints": "kind_hard", "soft_preferences": "kind_soft", "risk_limits": "kind_derived", "horizon_fit": "kind_derived",
-         "data_gaps": "kind_data", "scope_limits": "kind_scope", "profile": "kind_profile"}
+         "data_gaps": "kind_data", "scope_limits": "kind_scope", "profile": "kind_profile", "diversification": "kind_diversification"}
 _SEV_ICON = {"block": "⛔", "warn": "⚠", "info": "ℹ"}
 
 
@@ -182,6 +182,39 @@ def sensitivity_table(analysis: Analysis, ticker: str) -> Optional[SensitivityTa
              "volatility": e["value"]["base"]["annualized_volatility"], "max_drawdown": e["value"]["base"]["max_drawdown"]["depth"],
              "total_return": e["value"]["base"]["total_return"], "evidence_id": e["evidence_id"]} for e in evs]
     return SensitivityTable(ticker, rows, None)
+
+
+@dataclass
+class CorrelationView:
+    evidence_id: str
+    tickers: List[str]
+    reference: str  # weekly | daily_common
+    method: str
+    n_obs: int
+    first_date: Optional[str]
+    last_date: Optional[str]
+    cells: List[Dict[str, Any]]  # {"a", "b", "corr"} pour chaque couple (matrice complète, diagonale comprise)
+    complement: Optional[Dict[str, Any]]  # quotidien en dates communes quand l'hebdomadaire est la référence
+    excluded: List[Dict[str, Any]]
+    alt: str  # alternative textuelle du graphique
+
+
+def correlation_view(analysis: Analysis, lang: str) -> Optional[CorrelationView]:
+    """Matrice de référence de la dernière preuve correlation_matrix, telle quelle (aucun recalcul)."""
+    evs = [e for e in analysis.result.ledger.evidence() if e["tool"] == "correlation_matrix" and e["status"] != "refused"]
+    if not evs:
+        return None
+    ev = evs[-1]
+    v = ev["value"]
+    ref = v["matrices"][v["reference"]]
+    cells = [{"a": a, "b": b, "corr": c} for a, row in ref["matrix"].items() for b, c in row.items()]
+    other = {k: m for k, m in v["matrices"].items() if k != v["reference"] and m.get("computed")}
+    comp = next(iter(other.values())) if other else None
+    hi, lo = ref.get("max_pair"), ref.get("min_pair")
+    alt = t("corr_alt", lang, n=len(v["tickers"]), hi=f"{hi['a']}/{hi['b']} {hi['corr']:.2f}" if hi else "—",
+            lo=f"{lo['a']}/{lo['b']} {lo['corr']:.2f}" if lo else "—")
+    return CorrelationView(ev["evidence_id"], v["tickers"], v["reference"], ref["method"], ref["n_obs"], ref["first_date"],
+                           ref["last_date"], cells, comp, v.get("excluded_assets", []), alt)
 
 
 @dataclass

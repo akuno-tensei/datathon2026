@@ -154,7 +154,12 @@ class Orchestrator:
                 analyst_ids.append(add("analyste", "stress_window", {"ticker": t, **money, **extra}))
 
         if len(request.tickers) >= 2 and request.intent in ("compare_assets", "build_scenario"):
-            want("correlation_matrix")  # pas encore implémenté : consigné comme manque, pas simulé
+            # Diversification : corrélations des rendements sur la fenêtre complète, alignement choisi par l'analyste.
+            if want("correlation_matrix"):
+                analyst_ids.append(add("analyste", "correlation_matrix",
+                                       {"tickers": list(request.tickers), "window": {"alias": "complet"}, **money, **extra}))
+        if len(request.tickers) >= 2 and request.intent == "build_scenario":
+            want("portfolio_metrics")  # pas encore implémenté : consigné comme manque, pas simulé
 
         gov = add("gouvernance", "review", {"scope_flags": list(request.scope_flags)}, analyst_ids)
         add("explicabilite", "explain", {}, [gov])

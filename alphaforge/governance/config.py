@@ -47,3 +47,5 @@ class GovernanceConfig(BaseModel):
     # Thèmes pour lesquels le jeu de départ n'a pas de donnée, avec les actifs qui servent de substitut déclaré.
     theme_proxies: Dict[str, List[str]] = Field(default_factory=lambda: {"esg": ["ESGV"]})
     max_alternatives: int = 4
+    # Diversification : au-delà de cette corrélation des rendements (matrice de référence), la paire est signalée (info).
+    high_correlation: float = 0.8

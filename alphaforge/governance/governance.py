@@ -11,7 +11,7 @@ from ..orchestrator.profile import InvestorProfile
 from ..orchestrator.request import ParsedRequest
 from ..orchestrator.tools import validate_profile
 from .checks import (
-    ALTERNATIVE_TRIGGER_CODES, check_data_gaps, check_hard_constraints, check_horizon_fit, check_risk_limits,
+    ALTERNATIVE_TRIGGER_CODES, check_data_gaps, check_diversification, check_hard_constraints, check_horizon_fit, check_risk_limits,
     check_scope_limits, check_soft_preferences, derive_constraints, status_of, worst_status,
 )
 from .config import GovernanceConfig
@@ -109,6 +109,7 @@ class Governance:
             )
         for note in ledger_notes(ledger.entries(), "tool_unavailable"):
             global_reasons.append(Reason(check="data_gaps", code="TOOL_UNAVAILABLE", severity="warn", message=note["message"]))
+        global_reasons += check_diversification(ledger.evidence(), list(primary), self._cfg)
         refusals = check_scope_limits(list(request.scope_flags))
 
         follow_up = self._follow_up(profile, constraints, primary, facts)

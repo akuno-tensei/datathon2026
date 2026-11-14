@@ -82,12 +82,19 @@ def test_plan_is_deterministic(analyst, assets, profile_dict):
     assert [e.evidence_id for e in a.ledger.entries("evidence")] == [e.evidence_id for e in b.ledger.entries("evidence")]
 
 
+def test_comparison_plans_a_correlation_matrix(orch, assets, profile_dict):
+    r = orch.run("Compare AAPL et NVDA", profile_dict(base_currency="USD"), assets)
+    (step,) = [s for s in r.plan.steps if s.action == "correlation_matrix"]
+    assert step.arguments == {"tickers": ["AAPL", "NVDA"], "window": {"alias": "complet"}, "base_currency": "USD"}
+    assert "correlation_matrix" in _tools_run(r) and r.plan.unavailable_tools == []
+
+
 def test_missing_tool_is_recorded_not_faked(orch, assets, profile_dict):
-    r = orch.run("Compare AAPL et NVDA", profile_dict(), assets)
-    assert "correlation_matrix" in r.plan.unavailable_tools
+    r = orch.run("Construis un scénario de portefeuille avec AAPL et NVDA", profile_dict(), assets)
+    assert "portfolio_metrics" in r.plan.unavailable_tools
     notes = [e.payload["code"] for e in r.ledger.entries("note")]
     assert "tool_unavailable" in notes
-    assert "correlation_matrix" not in _tools_run(r)
+    assert "portfolio_metrics" not in _tools_run(r)
 
 
 def test_single_asset_does_not_ask_for_correlation(orch, assets, profile_dict):
