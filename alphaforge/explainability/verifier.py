@@ -5,9 +5,12 @@ Contrôles par énoncé :
 2. un énoncé « fait » cite au moins une référence valide ;
 3. chaque `Figure` se retrouve (en valeur absolue) parmi les nombres de l'entrée citée, et son texte affiché est l'arrondi de cette valeur ;
 4. le texte ne contient aucun autre nombre : après retrait des chiffres déclarés, des chaînes autorisées et des dates, il ne reste aucun chiffre ;
-5. les chaînes autorisées et les dates du texte figurent dans le registre.
+5. les chaînes autorisées et les dates du texte figurent dans le registre ;
+6. le texte ne contient aucune tournure de conseil, de prédiction ou de promesse (« achetez », « vous devriez », « garanti »,
+   « va monter »...). Un mot cité entre guillemets (« achète ») est une mention, pas un conseil : il est toléré.
 
 Issue : un énoncé fautif est retiré. Un énoncé « fait » sans preuve est rétrogradé en hypothèse s'il ne contient aucun chiffre, sinon retiré.
+Le contrôle 6 repère les formulations explicites ; il ne détecte pas une recommandation déguisée sans mot interdit.
 """
 import re
 from typing import List, Tuple
@@ -18,6 +21,29 @@ from .models import Issue, Statement, VerificationReport
 
 _ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 _REL_TOL = 1e-9
+
+# Tournures interdites (Agents.md : « Qui conclut ? »). Mots entiers, insensible à la casse.
+ADVICE_PATTERNS = [
+    # français : conseil, ordre, prédiction, promesse
+    r"achetez", r"vendez", r"ach[eè]te", r"vends", r"investissez", r"privil[ée]giez", r"[ée]vitez",
+    r"vous devriez", r"tu devrais", r"vous devez (?:acheter|vendre|investir)",
+    r"je (?:vous |te )?(?:recommande|conseille)", r"nous (?:vous )?(?:recommandons|conseillons)",
+    r"il (?:faut|vaut mieux) (?:acheter|vendre|investir)", r"[àa] privil[ée]gier",
+    r"garanti(?:e|s|es)?", r"sans (?:aucun )?risque", r"[àa] coup s[ûu]r",
+    r"va (?:monter|baisser|doubler|grimper|chuter|rebondir)", r"vont (?:monter|baisser|doubler|grimper|chuter|rebondir)",
+    r"meilleur(?:e)? (?:choix|placement|investissement|option)",
+    # anglais
+    r"buy", r"sell", r"you should", r"i (?:would )?recommend", r"we (?:would )?recommend", r"guaranteed?",
+    r"risk[- ]free", r"will (?:rise|fall|double|go up|go down|increase|decrease|rebound)",
+    r"best (?:choice|investment|pick|option)",
+]
+_ADVICE = re.compile(r"(?<![\w-])(?:" + "|".join(ADVICE_PATTERNS) + r")(?![\w-])", re.I)
+_QUOTED = re.compile(r"«[^»]*»|“[^”]*”|\"[^\"]*\"")
+
+
+def advice_wording(text: str) -> List[str]:
+    """Tournures de conseil hors citation. Le texte entre guillemets est une mention et n'est pas contrôlé."""
+    return [m.group(0) for m in _ADVICE.finditer(_QUOTED.sub(" ", text))]
 
 
 def _leaf_match(payload, value: float) -> bool:
@@ -72,6 +98,9 @@ def check_statement(view: LedgerView, s: Statement) -> List[Issue]:
             bad("unknown_literal", f"Date absente du registre : {d}.")
     if re.search(r"\d", _residual(s)):
         bad("unsupported_number", "Le texte contient un nombre qui n'est rattaché à aucune preuve.")
+    found = advice_wording(s.text)
+    if found:
+        bad("advice_wording", f"Tournure de conseil ou de prédiction hors périmètre : {', '.join(repr(x) for x in found)}.")
     return issues
 
 
