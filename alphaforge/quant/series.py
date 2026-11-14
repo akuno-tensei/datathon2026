@@ -26,6 +26,7 @@ class PriceSeries:
     converted_from: Optional[str] = None
     fx_filled_days: int = 0
     fx_dropped_days: int = 0
+    fx_rates: Optional[pd.Series] = None  # taux USD/CAD effectivement appliqués (après report)
 
 
 def calendar_kind(asset: dict) -> str:
@@ -88,4 +89,4 @@ def convert_series(store: DataStore, ps: PriceSeries, target: str, as_of: date) 
     else:
         raise ToolInputError("unsupported_pair", f"Paire non prise en charge: {ps.currency}->{target}")
     conv.name = ps.ticker
-    return PriceSeries(ps.ticker, target, conv, ps.field, ps.currency, filled, dropped)
+    return PriceSeries(ps.ticker, target, conv, ps.field, ps.currency, filled, dropped, fx_rates=r.rename("usdcad"))

@@ -27,11 +27,13 @@ def test_constant_series_has_zero_volatility_and_return(make_store):
 
 
 def test_series_doubling_in_one_year_gives_100_percent(make_store):
-    prices = 100 * 2 ** (np.arange(253) / 252)  # 252 rendements : exactement un an de bourse
-    store = make_store({"X": ("equity", "CAD", series(prices))})
+    # Crypto cotée 7 jours sur 7 : 366 prix = exactement 365 jours civils, donc un an pour l'annualisation.
+    idx = pd.date_range("2022-01-01", periods=366, freq="D")
+    prices = pd.Series(100 * 2 ** (np.arange(366) / 365), index=idx)
+    store = make_store({"X": ("crypto", "CAD", prices)})
     b = metrics(store).value["base"]
     assert b["total_return"] == pytest.approx(1.0)
-    assert b["annualized_return"] == pytest.approx(1.0)
+    assert b["annualized_return"] == pytest.approx(2 ** (365.25 / 365) - 1)
 
 
 def test_drawdown_with_recovery(make_store):

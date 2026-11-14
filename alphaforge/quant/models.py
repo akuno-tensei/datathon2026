@@ -2,7 +2,7 @@
 from datetime import date
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, computed_field, model_validator
 
 
 class StrictModel(BaseModel):
@@ -43,6 +43,14 @@ class Notice(StrictModel):
     severity: Literal["info", "warning"] = "warning"
 
 
+class InputRef(StrictModel):
+    """Donnée lue par l'outil : fichier, symbole, empreinte SHA-256 des lignes lues (jusqu'à as_of)."""
+
+    file: str
+    symbol: str
+    sha256: str
+
+
 class Evidence(StrictModel):
     """Entrée du registre de preuves : {valeur, source, fenêtre, paramètres} + traçabilité."""
 
@@ -54,7 +62,10 @@ class Evidence(StrictModel):
     params: Dict[str, Any]
     window: Optional[ResolvedWindow] = None
     status: Literal["ok", "warning", "refused"]
-    refusal_reason: Optional[str] = None
+    refusal_reason: Optional[str] = None  # historique, en minuscules : lu par la gouvernance
+    error_code: Optional[str] = None  # erreur typée du contrat : NOT_IN_UNIVERSE, INSUFFICIENT_DATA, ...
+    n_obs: Optional[int] = None
+    inputs: List[InputRef] = []
     value: Optional[Dict[str, Any]] = None
     sources: List[str] = []
     notices: List[Notice] = []
@@ -63,9 +74,11 @@ class Evidence(StrictModel):
     depends_on: List[str] = []
     label: Literal["fait"] = "fait"
 
+    @computed_field  # type: ignore[misc]
     @property
-    def warnings(self) -> List[Notice]:
-        return [n for n in self.notices if n.severity == "warning"]
+    def warnings(self) -> List[str]:
+        """Messages des avis de gravité `warning` (forme du contrat). Le détail codé reste dans `notices`."""
+        return [n.message for n in self.notices if n.severity == "warning"]
 
 
 class ToolInputError(Exception):

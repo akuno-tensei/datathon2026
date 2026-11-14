@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, List, Optional, Type
 from pydantic import BaseModel, ValidationError
 
 from .datastore import DataStore
-from .models import Evidence, Notice, ResolvedWindow, ToolInputError
+from .models import Evidence, InputRef, Notice, ResolvedWindow, ToolInputError
 
 
 @dataclass
@@ -21,6 +21,16 @@ class ToolSpec:
 
 
 TOOLS: Dict[str, ToolSpec] = {}
+
+# Erreurs typées du contrat. `refusal_reason` (minuscules) reste exposé tel quel pour les lecteurs existants.
+ERROR_CODES = {
+    "asset_not_found": "NOT_IN_UNIVERSE",
+    "insufficient_data": "INSUFFICIENT_DATA",
+}
+
+
+def error_code_for(reason: str) -> str:
+    return ERROR_CODES.get(reason, reason.upper())
 
 
 def tool(name: str, version: str, description: str, params_model: Type[BaseModel]):
@@ -64,6 +74,8 @@ def build_evidence(
     limits: Optional[List[str]] = None,
     depends_on: Optional[List[str]] = None,
     refusal_reason: Optional[str] = None,
+    inputs: Optional[List[InputRef]] = None,
+    n_obs: Optional[int] = None,
 ) -> Evidence:
     spec = TOOLS[tool_name]
     notices = notices or []
@@ -83,6 +95,9 @@ def build_evidence(
         window=window,
         status=status,
         refusal_reason=refusal_reason,
+        error_code=error_code_for(refusal_reason) if refusal_reason else None,
+        n_obs=n_obs,
+        inputs=inputs or [],
         value=value,
         sources=sources or [],
         notices=notices,

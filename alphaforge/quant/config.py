@@ -51,14 +51,19 @@ class QuantConfig(BaseModel):
     ffill_limit_days: int = 5
 
     # Seuils de qualité des données.
-    min_obs_insufficient: int = 20
-    min_obs_warning: int = 60
-    coverage_insufficient: float = 0.5
+    min_obs_insufficient: int = 60  # compute_metrics refuse en dessous (INSUFFICIENT_DATA)
+    min_obs_warning: int = 120
+    coverage_insufficient: float = 0.90  # couverture sous ce seuil : données insuffisantes
     coverage_warning: float = 0.98
     edge_gap_days: int = 5
     internal_gap_days_exchange: int = 5
     internal_gap_days_crypto: int = 1
     large_move_exchange: float = 0.25
     large_move_crypto: float = 0.40
+    large_move_sigma: float = 3.0  # saut suspect aussi au-delà de k écarts-types des rendements de la fenêtre
+    adj_close_over_close_tolerance: float = 0.01  # adj_close > close de plus de 1 % : incohérent
+
+    # Rendement annualisé : seulement si la période observée couvre au moins ce nombre de jours civils.
+    annualization_min_days: int = 350
 
     window_aliases: Dict[str, WindowAlias] = Field(default_factory=_default_aliases)
