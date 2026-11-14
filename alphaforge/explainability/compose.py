@@ -199,6 +199,44 @@ class _Composer:
             text += T["corr_debutant"]
         self.add(section, text, b)
 
+    # -- scénario de portefeuille (preuve portfolio_metrics : rejeu historique, jamais une prévision) --
+    def portfolio(self, section: str) -> None:
+        evs = [e for e in self.view.evidence if e.get("tool") == "portfolio_metrics" and e.get("status") != "refused"]
+        if not evs:
+            return
+        ev, T = evs[-1], self.T
+        v, ref = ev["value"], ev["evidence_id"]
+        mt, cc, rk = v["metrics"], v["concentration"], v["risk"]
+        b = self.b()
+        b.ref(ref)
+        w = (ev.get("window") or {})
+        wname = self.quote(b, w["alias"]) if w.get("alias") else _WINDOW_NONE[self.lang]
+        rebal = T["pf_rebal"][v["rebalancing"]].format(step=T["pf_steps"].get(v["period_label"], v["period_label"]))
+        weights = ", ".join(f"{b.lit(x['ticker'])} {b.num(x['weight'], 'pct', ref)}" for x in v["positions"])
+        common = dict(rebal=rebal, basis=b.lit(v["annualization_basis"]), n=b.num(cc["n_positions"], "ratio", ref), weights=weights,
+                      w=wname, vol=b.num(mt["annualized_volatility"], "pct", ref), dd=b.num(mt["max_drawdown"]["depth"], "pct", ref))
+        if mt["annualized_return"] is not None:
+            text = T["pf_main_ann"].format(ann=b.num(mt["annualized_return"], "pct", ref), **common)
+        else:
+            text = T["pf_main"].format(total=b.num(mt["total_return"], "pct", ref), **common)
+        self.add(section, text, b, basis="scenario")
+        b = self.b()
+        b.ref(ref)
+        self.add(section, T["pf_conc"].format(maxw=b.num(cc["max_weight"], "pct", ref), t=b.lit(cc["max_weight_ticker"]),
+                                             neff=b.num(cc["effective_positions"], "ratio", ref)), b, basis="scenario")
+        if rk.get("contributions") and rk.get("diversification_ratio") is not None:
+            top = max(rk["contributions"], key=lambda c: c["risk_share"])
+            b = self.b()
+            b.ref(ref)
+            text = T["pf_risk"].format(t=b.lit(top["ticker"]), share=b.num(top["risk_share"], "pct", ref),
+                                      dr=b.num(rk["diversification_ratio"], "ratio", ref))
+            if self.exp == "debutant":
+                text += T["pf_risk_debutant"]
+            self.add(section, text, b, basis="scenario")
+        ws = [x["weight"] for x in v["positions"]]
+        if len(ws) > 1 and max(ws) - min(ws) < 1e-9:
+            self.add(section, T["pf_equal"], self.b(), basis="assumption")
+
     # -- raisons de gouvernance ---------------------------------------------
     def reason(self, section: str, ticker: Optional[str], r: Reason) -> None:
         if r.code == "TOOL_UNAVAILABLE":
@@ -236,6 +274,15 @@ class _Composer:
         elif code == "HIGH_CORRELATION" and tpl:
             cref = r.evidence_ids[0] if r.evidence_ids else self.vref
             k.update(a=b.lit(m["a"]), b=b.lit(m["b"]), corr=b.num(m["corr"], "corr", cref), thr=b.num(m["threshold"], "corr", self.vref))
+        elif code in ("PORTFOLIO_WEIGHT_ABOVE_CAP", "PORTFOLIO_CLASS_CAP", "PORTFOLIO_VOLATILITY_ABOVE_LIMIT",
+                      "PORTFOLIO_DRAWDOWN_ABOVE_LIMIT") and tpl:
+            k["value"] = b.num(m["value"], "pct", match_ref(self.view, r.evidence_ids, m["value"], self.vref))
+            k["limit"] = b.num(m["limit"], "pct", self.vref)
+            k["level"] = b.lit(m.get("risk_level_applied", ""))
+            if code == "PORTFOLIO_WEIGHT_ABOVE_CAP":
+                k["t"] = b.lit(m["ticker"])
+            if code == "PORTFOLIO_CLASS_CAP":
+                k["cls"] = b.lit(m["asset_class"])
         elif code == "AMBIGUOUS_ASSET" and tpl:
             k["candidates"] = ", ".join(b.lit(x) for x in m.get("candidates") or [])
         elif tpl and code in ("METRICS_UNAVAILABLE", "NO_METRICS"):
@@ -272,6 +319,7 @@ class _Composer:
             self.data("data", a.ticker)
             self.sensitivity("data", a.ticker)
         self.correlation("data")
+        self.portfolio("data")
         for a in v.assets:
             b = self.b()
             b.ref(self.vref)

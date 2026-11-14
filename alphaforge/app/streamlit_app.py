@@ -210,6 +210,55 @@ def render_correlation(a: Analysis, key: str) -> None:
     evidence_button(cv.evidence_id, f"{key}-corr")
 
 
+def render_portfolio(a: Analysis, key: str) -> None:
+    pv = views.portfolio_view(a, lang)
+    if pv is None:
+        return
+    import altair as alt
+
+    st.markdown(f"### 🧪 {t('pf_title', lang)}")
+    st.warning(pv.label)  # le scénario est toujours étiqueté, jamais présenté comme une prévision
+    st.caption(f"{pv.rebalancing_description} · {pv.annualization_basis} · {pv.first_date} → {pv.last_date} ({pv.n_returns})")
+    m = pv.metrics
+    c = st.columns(4)
+    c[0].metric(t("pf_ann", lang) if m["annualized_return"] is not None else t("pf_total", lang),
+                pct(m["annualized_return"] if m["annualized_return"] is not None else m["total_return"], lang))
+    c[1].metric(t("pf_vol", lang), pct(m["annualized_volatility"], lang))
+    c[2].metric(t("pf_dd", lang), pct(m["max_drawdown"]["depth"], lang))
+    c[3].metric(t("pf_dr", lang), "—" if pv.diversification_ratio is None else f"{pv.diversification_ratio:.2f}")
+    st.markdown(f"**{t('pf_allocation', lang)}**")
+    cols = st.columns(3)
+    for col, (k, label) in zip(cols, (("asset_class", "pf_by_class"), ("sector", "pf_by_sector"), ("currency", "pf_by_currency"))):
+        with col:
+            st.caption(t(label, lang))
+            for row in pv.breakdown[k]:
+                st.progress(min(row["weight"], 1.0), text=f"{row['name']} · {pct(row['weight'], lang)}")  # valeur écrite : jamais la couleur seule
+    cc = pv.concentration
+    st.markdown(f"**{t('pf_concentration', lang)}** — {t('pf_max_weight', lang)} : {pct(cc['max_weight'], lang)} ({cc['max_weight_ticker']}) · "
+                f"{t('pf_hhi', lang)} : {cc['hhi']:.2f} · {t('pf_neff', lang)} : {cc['effective_positions']:.1f}")
+    if cc.get("final_weights"):
+        st.caption(t("pf_final_weights", lang) + " : " + ", ".join(f"{k} {pct(x, lang)}" for k, x in cc["final_weights"].items()))
+    if pv.contributions:
+        st.markdown(f"**{t('pf_contrib', lang)}**")
+        df = pd.DataFrame([{"": x["ticker"], t("pf_weight", lang): pct(x["weight"], lang), t("pf_standalone", lang): pct(x["standalone_volatility"], lang),
+                            t("pf_share", lang): pct(x["risk_share"], lang)} for x in pv.contributions])
+        st.dataframe(df, hide_index=True, width="stretch")
+    else:
+        st.caption(t("pf_zero_vol", lang))
+    if pv.series_id in F.store.series:
+        s = F.store.series.get(pv.series_id).series.prices
+        st.markdown(f"**{t('pf_curve', lang)}**")
+        d = pd.DataFrame({"date": s.index, "value": s.values})
+        line = alt.Chart(d).mark_line().encode(x=alt.X("date:T", title=None), y=alt.Y("value:Q", title=None, scale=alt.Scale(zero=False)))
+        band = alt.Chart(pd.DataFrame({"a": [pd.Timestamp("2022-01-01")], "b": [pd.Timestamp("2022-12-31")]})).mark_rect(opacity=0.15, color="orange").encode(x="a:T", x2="b:T")
+        st.altair_chart(band + line, use_container_width=True)
+        st.caption(t("pf_curve_alt", lang, a=pv.first_date, b=pv.last_date, end=f"{s.iloc[-1]:.0f}"))
+    with st.expander(t("pf_assumptions", lang)):
+        for x in pv.assumptions:
+            st.markdown(f"- {x}")
+    evidence_button(pv.evidence_id, f"{key}-pf")
+
+
 def render_limits(a: Analysis, key: str) -> None:
     st.markdown(f"### {t('limits_title', lang)}")  # toujours présente, jamais repliée
     for sec, lines in views.limit_sections(a, lang).items():
@@ -306,6 +355,7 @@ with tab_an:
             render_explanation(a, "an")
             render_sensitivity(a, "an")
             render_correlation(a, "an")
+            render_portfolio(a, "an")
             render_limits(a, "an")
     with right:
         if S.analysis is not None:

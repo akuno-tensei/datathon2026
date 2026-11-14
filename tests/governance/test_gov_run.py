@@ -104,7 +104,8 @@ def test_unknown_symbol_is_never_conforme(run):
     assert v["status"] == "avertissement" and "OUT_OF_UNIVERSE" in codes(asset(v, "ZZZZ.TO"))
 
 
-def test_missing_tool_is_a_global_gap(run):
+def test_missing_tool_is_a_global_gap(run, analyst):
+    analyst.tools = analyst.tools - {"portfolio_metrics"}
     v = last_verdict(run("Construis un scénario de portefeuille avec LOW.TO et BND.TO"))
     g = [r for r in v["global_reasons"] if r["code"] == "TOOL_UNAVAILABLE"]
     assert g and "portfolio_metrics" in g[0]["message"]

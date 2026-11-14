@@ -35,7 +35,8 @@ def test_unrecovered_drawdown_is_an_uncertainty(run):
     assert any("pas récupéré" in s.text for s in e.limits.uncertainties)
 
 
-def test_unavailable_tool_is_not_covered(run):
+def test_unavailable_tool_is_not_covered(run, analyst):
+    analyst.tools = analyst.tools - {"portfolio_metrics"}
     r = run("Construis un scénario de portefeuille avec MID et HIGH")
     notes = [n.payload for n in r.ledger.entries("note") if n.payload.get("code") == "tool_unavailable"]
     assert notes, "portfolio_metrics devrait être consigné comme indisponible"

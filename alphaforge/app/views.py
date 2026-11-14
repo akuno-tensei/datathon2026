@@ -141,7 +141,7 @@ class ReasonLine:
 
 
 _KIND = {"hard_constraints": "kind_hard", "soft_preferences": "kind_soft", "risk_limits": "kind_derived", "horizon_fit": "kind_derived",
-         "data_gaps": "kind_data", "scope_limits": "kind_scope", "profile": "kind_profile", "diversification": "kind_diversification"}
+         "data_gaps": "kind_data", "scope_limits": "kind_scope", "profile": "kind_profile", "diversification": "kind_diversification", "portfolio": "kind_portfolio"}
 _SEV_ICON = {"block": "⛔", "warn": "⚠", "info": "ℹ"}
 
 
@@ -215,6 +215,43 @@ def correlation_view(analysis: Analysis, lang: str) -> Optional[CorrelationView]
             lo=f"{lo['a']}/{lo['b']} {lo['corr']:.2f}" if lo else "—")
     return CorrelationView(ev["evidence_id"], v["tickers"], v["reference"], ref["method"], ref["n_obs"], ref["first_date"],
                            ref["last_date"], cells, comp, v.get("excluded_assets", []), alt)
+
+
+@dataclass
+class PortfolioView:
+    evidence_id: str
+    label: str
+    rebalancing: str
+    rebalancing_description: str
+    calendar_basis: str
+    annualization_basis: str
+    n_returns: int
+    first_date: str
+    last_date: str
+    positions: List[Dict[str, Any]]
+    metrics: Dict[str, Any]
+    concentration: Dict[str, Any]
+    breakdown: Dict[str, List[Dict[str, Any]]]
+    contributions: Optional[List[Dict[str, Any]]]
+    diversification_ratio: Optional[float]
+    series_id: str
+    assumptions: List[str]
+    warnings: List[str]
+
+
+def portfolio_view(analysis: Analysis, lang: str) -> Optional[PortfolioView]:
+    """Dernier scénario de portefeuille du registre, tel quel : valeurs de la preuve portfolio_metrics, aucun recalcul."""
+    evs = [e for e in analysis.result.ledger.evidence() if e["tool"] == "portfolio_metrics" and e["status"] != "refused"]
+    if not evs:
+        return None
+    ev = evs[-1]
+    v = ev["value"]
+    return PortfolioView(
+        ev["evidence_id"], t("pf_label", lang), v["rebalancing"], v["rebalancing_description"], v["calendar_basis"],
+        v["annualization_basis"], v["n_returns"], v["first_date"], v["last_date"], v["positions"], v["metrics"], v["concentration"],
+        v["breakdown"], v["risk"]["contributions"], v["risk"]["diversification_ratio"], v["series_id_portfolio"],
+        ev.get("assumptions", []), ev.get("warnings", []),
+    )
 
 
 @dataclass

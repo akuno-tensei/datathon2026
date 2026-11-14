@@ -88,7 +88,7 @@ class Evidence(StrictModel):
     assumptions: List[str] = []
     limits: List[str] = []
     depends_on: List[str] = []
-    label: Literal["fait"] = "fait"
+    label: Literal["fait", "scenario"] = "fait"  # « scenario » : rejeu ou allocation fictive, jamais une prévision
 
     @computed_field  # type: ignore[misc]
     @property

@@ -178,3 +178,24 @@ def test_correlation_view_reads_reference_matrix(forge, prof):
     assert {(c["a"], c["b"]) for c in cv.cells} == {(x, y) for x in cv.tickers for y in cv.tickers}
     assert cv.alt.startswith("Carte de chaleur") and cv.evidence_id in views.evidence_index(a)
     assert views.correlation_view(forge.analyze("Évalue HIGH", prof()), "fr") is None
+
+
+def test_portfolio_view_reads_the_scenario_evidence(forge, prof):
+    a = forge.analyze("Construis un scénario de portefeuille avec HIGH, CALM et LOW.TO", prof())
+    pv = views.portfolio_view(a, "fr")
+    assert "aucune prévision" in pv.label and pv.rebalancing == "rebalanced" and pv.evidence_id in views.evidence_index(a)
+    assert [p["ticker"] for p in pv.positions] == ["HIGH", "CALM", "LOW.TO"] and abs(sum(p["weight"] for p in pv.positions) - 1) < 1e-9
+    assert {b["name"] for b in pv.breakdown["currency"]} == {"USD", "CAD"}
+    assert pv.series_id in forge.store.series and forge.store.series.get(pv.series_id).series.prices.iloc[0] == 100.0
+    assert any("Aucun frais" in x for x in pv.assumptions)
+    assert views.portfolio_view(forge.analyze("Compare HIGH et CALM", prof()), "fr") is None
+    kinds = {r.kind for r in views.asset_reasons({"reasons": a.verdict["global_reasons"]}, "fr")}
+    assert t("kind_portfolio", "fr") in kinds
+
+
+def test_scenario_evidence_reproduces_to_the_same_id(forge, prof):
+    a = forge.analyze("Construis un scénario de portefeuille avec HIGH et CALM", prof(), base_currency="USD")
+    pf = next(e for e in a.result.ledger.evidence() if e["tool"] == "portfolio_metrics")
+    args = views.reproduce_arguments(pf["evidence_id"], a)
+    assert args["rebalancing"] == "rebalanced" and args["base_currency"] == "USD"
+    assert run_tool(forge.store, "portfolio_metrics", args).evidence_id == pf["evidence_id"]

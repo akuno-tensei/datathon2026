@@ -91,4 +91,5 @@ class QuantConfig(BaseModel):
     corr_min_obs_daily: int = 60
     corr_min_obs_weekly: int = 26
     corr_min_obs_refuse: int = 10
-    corr_weekly_anchor: str = "W-FRI"  # semaine close le vendredi : même ancrage pour la crypto et les marchés cotés
+    corr_weekly_anchor: str = "W-FRI"
+    portfolio_weight_tolerance: float = 1e-6  # somme des poids : 1 ± tolérance  # semaine close le vendredi : même ancrage pour la crypto et les marchés cotés

@@ -73,3 +73,12 @@ def test_comparison_request_shows_correlation_heat_map(app):
     assert not app.exception, app.exception
     assert "Corrélations des rendements" in _texts(app)
     assert any(c.value.startswith("Carte de chaleur") for c in app.caption)
+
+
+def test_scenario_request_shows_labelled_portfolio_view(app):
+    app.text_area(key="req_box").set_value("Construis un scénario de portefeuille avec NVDA et XBB.TO")
+    next(b for b in app.button if b.label == "Envoyer").click().run()
+    assert not app.exception, app.exception
+    assert "Scénario de portefeuille" in _texts(app)
+    assert any("Scénario rétrospectif fictif" in w.value and "aucune prévision" in w.value for w in app.warning)
+    assert any(m.label == "Volatilité annualisée" for m in app.metric)

@@ -159,7 +159,13 @@ class Orchestrator:
                 analyst_ids.append(add("analyste", "correlation_matrix",
                                        {"tickers": list(request.tickers), "window": {"alias": "complet"}, **money, **extra}))
         if len(request.tickers) >= 2 and request.intent == "build_scenario":
-            want("portfolio_metrics")  # pas encore implémenté : consigné comme manque, pas simulé
+            # Rejeu historique d'une allocation fictive. Aucun poids n'est demandé par l'utilisateur : pondération égale,
+            # posée comme hypothèse de scénario (rééquilibrée à chaque période, sans frais). Jamais une recommandation.
+            if want("portfolio_metrics"):
+                n = len(request.tickers)
+                analyst_ids.append(add("analyste", "portfolio_metrics", {
+                    "positions": [{"ticker": t, "weight": 1.0 / n} for t in request.tickers],
+                    "window": {"alias": "complet"}, "rebalancing": "rebalanced", **money, **extra}))
 
         gov = add("gouvernance", "review", {"scope_flags": list(request.scope_flags)}, analyst_ids)
         add("explicabilite", "explain", {}, [gov])

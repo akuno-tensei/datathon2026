@@ -11,7 +11,7 @@ class StrictModel(BaseModel):
 Status = Literal["conforme", "avertissement", "bloqué"]
 Severity = Literal["block", "warn", "info"]
 CheckName = Literal[
-    "hard_constraints", "soft_preferences", "horizon_fit", "risk_limits", "data_gaps", "scope_limits", "profile", "diversification"
+    "hard_constraints", "soft_preferences", "horizon_fit", "risk_limits", "data_gaps", "scope_limits", "profile", "diversification", "portfolio"
 ]
 
 

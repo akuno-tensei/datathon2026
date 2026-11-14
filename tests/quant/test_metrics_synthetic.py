@@ -162,7 +162,7 @@ def test_unknown_asset_and_unknown_alias_are_refused(make_store):
 
 def test_json_schemas_are_generated_and_arguments_validated(make_store):
     names = {t["name"] for t in tool_schemas()}
-    assert names == {"asset_lookup", "get_prices", "data_quality_check", "convert_currency", "compute_metrics", "stress_window", "correlation_matrix"}
+    assert names == {"asset_lookup", "get_prices", "data_quality_check", "convert_currency", "compute_metrics", "stress_window", "correlation_matrix", "portfolio_metrics"}
     assert all("properties" in t["input_schema"] for t in tool_schemas())
     store = make_store({"X": ("equity", "CAD", series([100.0] * 80))})
     with pytest.raises(ValueError):

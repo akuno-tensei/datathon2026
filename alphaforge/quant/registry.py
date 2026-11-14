@@ -76,6 +76,7 @@ def build_evidence(
     refusal_reason: Optional[str] = None,
     inputs: Optional[List[InputRef]] = None,
     n_obs: Optional[int] = None,
+    label: str = "fait",
 ) -> Evidence:
     spec = TOOLS[tool_name]
     notices = notices or []
@@ -104,6 +105,7 @@ def build_evidence(
         assumptions=assumptions or [],
         limits=limits or [],
         depends_on=depends_on or [],
+        label=label,  # type: ignore[arg-type]
     )
 
 

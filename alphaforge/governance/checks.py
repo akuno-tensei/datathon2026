@@ -305,6 +305,56 @@ def check_diversification(evidence: List[dict], tickers: List[str], cfg: Governa
     return out
 
 
+# ---- check_portfolio_limits ----------------------------------------------
+
+
+def check_portfolio_limits(evidence: List[dict], constraints: Constraints) -> List[Reason]:
+    """Compare un scénario de portefeuille (preuve portfolio_metrics) aux limites dérivées du profil.
+
+    Plafond de poids par actif et par classe, volatilité et perte maximale du portefeuille. Avertissements seulement :
+    le scénario est fictif, rien n'est bloqué. Une classe au plafond nul est déjà bloquée actif par actif.
+    """
+    out: List[Reason] = []
+    lvl = constraints.risk_level_applied
+    for ev in evidence:
+        if ev.get("tool") != "portfolio_metrics" or ev.get("status") == "refused":
+            continue
+        v, eid = ev["value"], ev["evidence_id"]
+        c = v["concentration"]
+        if c["max_weight"] > constraints.max_single_asset_weight + 1e-9:
+            out.append(Reason(
+                check="portfolio", code="PORTFOLIO_WEIGHT_ABOVE_CAP", severity="warn",
+                message=(f"Dans le scénario, {c['max_weight_ticker']} pèse {_pct(c['max_weight'])} du portefeuille, "
+                         f"pour un plafond de {_pct(constraints.max_single_asset_weight)} par actif au niveau « {lvl} »."),
+                measures={"ticker": c["max_weight_ticker"], "value": c["max_weight"], "limit": constraints.max_single_asset_weight,
+                          "risk_level_applied": lvl},
+                evidence_ids=[eid]))
+        for row in v["breakdown"]["asset_class"]:
+            cap = constraints.class_caps.get(row["name"])
+            if cap is not None and cap > 0 and row["weight"] > cap + 1e-9:
+                out.append(Reason(
+                    check="portfolio", code="PORTFOLIO_CLASS_CAP", severity="warn",
+                    message=(f"Dans le scénario, la classe « {row['name']} » pèse {_pct(row['weight'])}, "
+                             f"pour un plafond de {_pct(cap)} au niveau « {lvl} »."),
+                    measures={"asset_class": row["name"], "value": row["weight"], "limit": cap, "risk_level_applied": lvl},
+                    evidence_ids=[eid]))
+        m = v["metrics"]
+        vol, dd = m["annualized_volatility"], -m["max_drawdown"]["depth"]
+        if vol > constraints.max_volatility:
+            out.append(Reason(
+                check="portfolio", code="PORTFOLIO_VOLATILITY_ABOVE_LIMIT", severity="warn",
+                message=(f"Volatilité annualisée du scénario : {_pct(vol)}, pour une limite de {_pct(constraints.max_volatility)} "
+                         f"au niveau « {lvl} »."),
+                measures={"value": vol, "limit": constraints.max_volatility, "risk_level_applied": lvl}, evidence_ids=[eid]))
+        if dd > constraints.max_drawdown:
+            out.append(Reason(
+                check="portfolio", code="PORTFOLIO_DRAWDOWN_ABOVE_LIMIT", severity="warn",
+                message=(f"Perte maximale du scénario depuis un sommet : {_pct(dd)}, pour une limite de {_pct(constraints.max_drawdown)} "
+                         f"au niveau « {lvl} »."),
+                measures={"value": dd, "limit": constraints.max_drawdown, "risk_level_applied": lvl}, evidence_ids=[eid]))
+    return out
+
+
 # ---- check_scope_limits --------------------------------------------------
 
 _SCOPE = {

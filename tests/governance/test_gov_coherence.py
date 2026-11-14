@@ -52,3 +52,39 @@ def test_uncorrelated_pair_is_not_reported(gov, analyst, assets, profile_dict):
     assert corr
     high = check_diversification(corr, ["LOW.TO", "GOLD"], GovernanceConfig(high_correlation=1.01))
     assert high == []  # seuil hors d'atteinte : rien n'est signalé
+
+
+def _scenario(run, text, **profile):
+    r = run(text, **profile)
+    v = r.ledger.entries("verdict")[-1].payload
+    return r, v, {x["code"]: x for x in v["global_reasons"]}
+
+
+def test_equal_weight_scenario_above_the_single_asset_cap_warns(run):
+    r, v, g = _scenario(run, "Construis un scénario de portefeuille avec LOW.TO et CALM")  # 50 % chacun, plafond de 20 % au niveau modéré
+    w = g["PORTFOLIO_WEIGHT_ABOVE_CAP"]
+    pf = next(e for e in r.ledger.evidence() if e["tool"] == "portfolio_metrics")
+    assert w["severity"] == "warn" and w["check"] == "portfolio" and w["measures"]["value"] == .5 and w["measures"]["limit"] == .2
+    assert w["evidence_ids"] == [pf["evidence_id"]] and v["status"] == "avertissement"
+
+
+def test_high_risk_does_not_mean_anything_goes_class_cap_applies_to_the_portfolio(run):
+    # Risque élevé : plafond crypto de 35 %. Un scénario 50 % crypto / 50 % actions le dépasse, même pour un profil offensif.
+    kw = dict(risk_tolerance="eleve", horizon_years_min=15, horizon_years_max=30)
+    _, v, g = _scenario(run, "Construis un scénario de portefeuille avec COIN-USD et CALM", **kw)
+    c = g["PORTFOLIO_CLASS_CAP"]
+    assert c["measures"]["asset_class"] == "crypto" and c["measures"]["value"] == .5 and c["measures"]["limit"] == .35
+    # Trois actifs à parts égales (33 %) respectent ce plafond.
+    _, _, g3 = _scenario(run, "Construis un scénario de portefeuille avec COIN-USD, CALM et LOW.TO", **kw)
+    assert "PORTFOLIO_CLASS_CAP" not in g3
+
+
+def test_portfolio_volatility_and_drawdown_are_compared_to_derived_limits(run):
+    _, _, g = _scenario(run, "Construis un scénario de portefeuille avec HIGH et HIGH2", risk_tolerance="faible_modere")
+    assert g["PORTFOLIO_VOLATILITY_ABOVE_LIMIT"]["measures"]["limit"] == .15
+    assert g["PORTFOLIO_VOLATILITY_ABOVE_LIMIT"]["measures"]["value"] > .4
+
+
+def test_a_comparison_has_no_portfolio_reasons(run):
+    _, _, g = _scenario(run, "Compare LOW.TO et CALM")
+    assert not [c for c in g if c.startswith("PORTFOLIO_")]

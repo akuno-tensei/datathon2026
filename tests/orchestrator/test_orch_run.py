@@ -89,8 +89,20 @@ def test_comparison_plans_a_correlation_matrix(orch, assets, profile_dict):
     assert "correlation_matrix" in _tools_run(r) and r.plan.unavailable_tools == []
 
 
-def test_missing_tool_is_recorded_not_faked(orch, assets, profile_dict):
-    r = orch.run("Construis un scénario de portefeuille avec AAPL et NVDA", profile_dict(), assets)
+def test_scenario_plans_an_equal_weight_portfolio_replay(orch, assets, profile_dict):
+    r = orch.run("Construis un scénario de portefeuille avec AAPL, NVDA et RY.TO", profile_dict(base_currency="USD"), assets)
+    (step,) = [s for s in r.plan.steps if s.action == "portfolio_metrics"]
+    assert [x["ticker"] for x in step.arguments["positions"]] == ["AAPL", "NVDA", "RY.TO"]
+    assert sum(x["weight"] for x in step.arguments["positions"]) == pytest.approx(1.0)
+    assert step.arguments["rebalancing"] == "rebalanced" and step.arguments["base_currency"] == "USD"
+    assert "portfolio_metrics" in _tools_run(r) and r.plan.unavailable_tools == []
+    c = orch.run("Compare AAPL et NVDA", profile_dict(), assets)
+    assert "portfolio_metrics" not in _tools_run(c)  # une comparaison ne construit pas d'allocation
+
+
+def test_missing_tool_is_recorded_not_faked(analyst, assets, profile_dict):
+    analyst.tools = analyst.tools - {"portfolio_metrics"}  # l'analyste ne l'offre pas
+    r = Orchestrator(analyst).run("Construis un scénario de portefeuille avec AAPL et NVDA", profile_dict(), assets)
     assert "portfolio_metrics" in r.plan.unavailable_tools
     notes = [e.payload["code"] for e in r.ledger.entries("note")]
     assert "tool_unavailable" in notes
