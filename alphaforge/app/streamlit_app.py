@@ -2,11 +2,15 @@
 
 Lancement : streamlit run alphaforge/app/streamlit_app.py
 """
-from datetime import date
+import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
-import streamlit as st
+# Le script se lance par chemin (`streamlit run ...`) : on ajoute la racine du projet pour que `import alphaforge` marche de partout.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+import pandas as pd  # noqa: E402
+import streamlit as st  # noqa: E402
 
 from alphaforge.app import views
 from alphaforge.app.i18n import t
