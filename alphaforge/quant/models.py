@@ -29,12 +29,28 @@ class WindowSpec(StrictModel):
         return self
 
 
+class Period(StrictModel):
+    start: date
+    end: date
+
+
 class ResolvedWindow(StrictModel):
-    """Fenêtre telle qu'appliquée. L'alias est conservé pour la traçabilité."""
+    """Fenêtre telle qu'appliquée. L'alias est conservé pour la traçabilité.
+
+    `excluded` (fenêtre segmentée) : périodes dont les rendements sont retirés. Absent du dump quand il est vide,
+    pour que les fenêtres ordinaires gardent exactement la même forme qu'avant (et les mêmes evidence_id).
+    """
 
     alias: Optional[str] = None
     start: date
     end: date
+    excluded: List[Period] = []
+
+    def model_dump(self, **kw):  # type: ignore[override]
+        d = super().model_dump(**kw)
+        if not self.excluded:
+            d.pop("excluded", None)
+        return d
 
 
 class Notice(StrictModel):

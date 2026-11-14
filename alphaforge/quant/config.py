@@ -1,11 +1,18 @@
 """Configuration de l'analyste quantitatif : alias de fenêtres, bases d'annualisation, seuils."""
 from datetime import date
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parents[2] / "alphaforge_starter"
+
+
+class ExcludedPeriod(BaseModel):
+    """Période retirée d'une fenêtre : les rendements datés dans [start, end] sont exclus (pas les prix)."""
+
+    start: date
+    end: date
 
 
 class WindowAlias(BaseModel):
@@ -14,6 +21,8 @@ class WindowAlias(BaseModel):
     - `start` et `end` fixes (`end` absent = as_of) ;
     - `lookback_days` : fenêtre glissante qui se termine à as_of ;
     - `full` : toute la période disponible jusqu'à as_of.
+
+    `exclude` retire des périodes de la fenêtre (fenêtre segmentée, ex. « hors 2022 »).
     """
 
     description: str
@@ -21,6 +30,7 @@ class WindowAlias(BaseModel):
     end: Optional[date] = None
     lookback_days: Optional[int] = None
     full: bool = False
+    exclude: List[ExcludedPeriod] = []
 
 
 def _default_aliases() -> Dict[str, WindowAlias]:
@@ -30,6 +40,11 @@ def _default_aliases() -> Dict[str, WindowAlias]:
             description="Année 2022 : actions et obligations ont reculé en même temps",
             start=date(2022, 1, 1),
             end=date(2022, 12, 31),
+        ),
+        "hors_2022": WindowAlias(
+            description="Toute la période disponible sauf 2022 (rendements datés en 2022 retirés)",
+            full=True,
+            exclude=[ExcludedPeriod(start=date(2022, 1, 1), end=date(2022, 12, 31))],
         ),
         "depuis_2023": WindowAlias(description="Du 1er janvier 2023 jusqu'à as_of", start=date(2023, 1, 1)),
         "1_an": WindowAlias(description="365 derniers jours avant as_of", lookback_days=365),
@@ -67,3 +82,7 @@ class QuantConfig(BaseModel):
     annualization_min_days: int = 350
 
     window_aliases: Dict[str, WindowAlias] = Field(default_factory=_default_aliases)
+
+    # stress_window : fenêtres rejouées par défaut et seuil de stabilité (variation relative max − min, rapportée au min).
+    stress_default_windows: List[str] = ["complet", "2022", "hors_2022", "1_an", "3_ans"]
+    stress_threshold: float = 0.25

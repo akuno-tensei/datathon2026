@@ -3,7 +3,7 @@ from datetime import date
 from typing import Optional
 
 from ..datastore import DataStore
-from ..metrics import metric_block, sharpe_ratio, simple_returns
+from ..metrics import excluded_mask, metric_block, metric_block_segmented, sharpe_ratio, simple_returns
 from ..models import Evidence, Notice, StrictModel, ToolInputError, WindowSpec
 from ..registry import build_evidence, refused, tool
 from ..series import annualization_basis, calendar_kind, convert_series, load_prices, periods_per_year
@@ -79,9 +79,25 @@ def compute_metrics(store: DataStore, p: ComputeMetricsParams) -> Evidence:
 
     if converted:
         inputs.append(store.input_ref("fx_usdcad_daily.csv", "USDCAD", as_of))
-    nat_block = metric_block(native.prices, ppy, cfg.annualization_min_days)
-    base_block = metric_block(conv.prices, ppy, cfg.annualization_min_days)
-    n_ret = len(native.prices) - 1
+    segmented = bool(window.excluded)
+    if segmented:
+        n_ret = int((~excluded_mask(simple_returns(native.prices).index, window.excluded)).sum())
+        if n_ret < cfg.min_obs_insufficient:
+            return refused(
+                store, "compute_metrics", params, as_of,
+                ToolInputError("insufficient_data", f"Seulement {n_ret} rendements hors des périodes exclues (minimum {cfg.min_obs_insufficient})."),
+                window=window, notices=notices, depends_on=depends, inputs=inputs, n_obs=n_ret,
+            )
+        nat_block = metric_block_segmented(native.prices, window.excluded, ppy, cfg.annualization_min_days)
+        base_block = metric_block_segmented(conv.prices, window.excluded, ppy, cfg.annualization_min_days)
+        notices.append(Notice(
+            code="SEGMENTED_WINDOW", severity="info",
+            message="Fenêtre segmentée : rendements datés dans " + ", ".join(f"{x.start} – {x.end}" for x in window.excluded)
+                    + " retirés (filtrage des rendements, pas des prix : aucun rendement n'enjambe la période exclue)."))
+    else:
+        nat_block = metric_block(native.prices, ppy, cfg.annualization_min_days)
+        base_block = metric_block(conv.prices, ppy, cfg.annualization_min_days)
+        n_ret = len(native.prices) - 1
     if base_block.annualized_return is None:
         notices.append(
             Notice(code="ANNUALIZATION_SKIPPED", severity="info",
@@ -96,7 +112,9 @@ def compute_metrics(store: DataStore, p: ComputeMetricsParams) -> Evidence:
         elif base_block.annualized_return is None:
             notices.append(Notice(code="SHARPE_SKIPPED", message=f"Sharpe non calculé : période observée de moins de {cfg.annualization_min_days} jours."))
         else:
-            sharpe = {"optional": True, **sharpe_ratio(simple_returns(conv.prices), rf, ppy)}
+            r_all = simple_returns(conv.prices)
+            r_kept = r_all[~excluded_mask(r_all.index, window.excluded)] if segmented else r_all
+            sharpe = {"optional": True, **sharpe_ratio(r_kept, rf, ppy)}
             inputs.append(store.input_ref("macro_rates.csv", rf.name, as_of))
             sharpe_limits = [
                 "Sharpe (optionnel) : excédent de rendement sur le taux directeur au jour le jour (V39079 pour CAD, DFF pour USD), "
@@ -122,6 +140,7 @@ def compute_metrics(store: DataStore, p: ComputeMetricsParams) -> Evidence:
         "annualization_basis": annualization_basis(ppy, cfg),
         "n_prices": int(len(native.prices)),
         "n_returns": int(n_ret),
+        "segmented": segmented,
         "first_date": native.prices.index[0].date().isoformat(),
         "last_date": native.prices.index[-1].date().isoformat(),
         "sharpe": sharpe,

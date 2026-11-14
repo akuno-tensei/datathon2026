@@ -1,0 +1,16 @@
+{
+  "profile_id": "mateo",
+  "display_name": "Mateo (exemple)",
+  "language": "fr",
+  "experience": "intermediaire",
+  "horizon_years_min": 8,
+  "horizon_years_max": 12,
+  "risk_tolerance": "modere",
+  "objectives": ["croissance_moderee"],
+  "base_currency": "CAD",
+  "hard_exclusions": [],
+  "soft_preferences": [
+    {"kind": "theme", "value": "esg", "weight": 0.9, "reason": "Les critères ESG sont importants pour lui."},
+    {"kind": "theme", "value": "eviter_controverses", "weight": 0.9}
+  ]
+}

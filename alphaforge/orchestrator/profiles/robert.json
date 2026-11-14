@@ -1,0 +1,13 @@
+{
+  "profile_id": "robert",
+  "display_name": "Robert (exemple)",
+  "language": "fr",
+  "experience": "avance",
+  "horizon_years_min": 3,
+  "horizon_years_max": 5,
+  "risk_tolerance": "faible_modere",
+  "objectives": ["preservation_capital", "croissance_moderee"],
+  "base_currency": "CAD",
+  "hard_exclusions": [],
+  "soft_preferences": []
+}

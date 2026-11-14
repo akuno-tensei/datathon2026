@@ -1,0 +1,16 @@
+{
+  "profile_id": "amira",
+  "display_name": "Amira (exemple)",
+  "language": "fr",
+  "experience": "intermediaire",
+  "horizon_years_min": 15,
+  "horizon_years_max": 30,
+  "risk_tolerance": "eleve",
+  "objectives": ["croissance_elevee"],
+  "base_currency": "CAD",
+  "hard_exclusions": [],
+  "soft_preferences": [
+    {"kind": "sector", "value": "Information Technology", "weight": 0.9, "reason": "Très intéressée par l'IA et les technologies émergentes (le secteur est le substitut vérifiable dans les données ; aucune donnée thématique « IA » n'est disponible)."},
+    {"kind": "asset_class", "value": "crypto", "weight": 0.6, "reason": "Intéressée par les cryptoactifs, avec une diversification à maintenir."}
+  ]
+}

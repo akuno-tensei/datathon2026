@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from typing import List, Tuple
 
 from .datastore import DataStore
-from .models import Notice, ResolvedWindow, ToolInputError, WindowSpec
+from .models import Notice, Period, ResolvedWindow, ToolInputError, WindowSpec
 
 
 def resolve_as_of(store: DataStore, as_of) -> date:
@@ -13,6 +13,7 @@ def resolve_as_of(store: DataStore, as_of) -> date:
 def resolve_window(store: DataStore, spec: WindowSpec, as_of: date) -> Tuple[ResolvedWindow, List[Notice]]:
     notices: List[Notice] = []
     alias = None
+    exclude = []
     if spec.alias:
         alias = spec.alias
         a = store.config.window_aliases.get(alias)
@@ -26,6 +27,7 @@ def resolve_window(store: DataStore, spec: WindowSpec, as_of: date) -> Tuple[Res
             start, end = as_of - timedelta(days=a.lookback_days), as_of
         else:
             start, end = a.start, a.end or as_of
+        exclude = list(a.exclude)
     else:
         start, end = spec.start, spec.end
 
@@ -39,4 +41,8 @@ def resolve_window(store: DataStore, spec: WindowSpec, as_of: date) -> Tuple[Res
             )
         )
         end = as_of
-    return ResolvedWindow(alias=alias, start=start, end=end), notices
+    # Périodes exclues, ramenées à l'intérieur de la fenêtre ; celles qui ne la recoupent pas disparaissent.
+    excluded = [Period(start=max(x.start, start), end=min(x.end, end)) for x in exclude if x.start <= end and x.end >= start]
+    if excluded and excluded[0].start <= start and excluded[-1].end >= end and len(excluded) == 1:
+        raise ToolInputError("window_fully_excluded", f"La fenêtre {start} à {end} est entièrement exclue : aucune période à mesurer.")
+    return ResolvedWindow(alias=alias, start=start, end=end, excluded=excluded), notices

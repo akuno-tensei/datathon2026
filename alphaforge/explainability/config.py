@@ -1,0 +1,151 @@
+"""Paramètres et gabarits de rédaction (fr et en). Aucun chiffre ici : les nombres viennent toujours du registre."""
+from typing import Dict, Optional
+
+from pydantic import BaseModel, Field
+
+
+class ExplainConfig(BaseModel):
+    max_attempts: int = 2  # rédaction -> vérification -> rédaction ; le vérificateur peut rejeter une fois
+    # Nombre maximal d'hypothèses techniques affichées selon l'expérience (None = toutes). Les limites ne sont jamais tronquées.
+    assumptions_cap: Dict[str, Optional[int]] = Field(
+        default_factory=lambda: {"debutant": 2, "intermediaire": 5, "avance": None}
+    )
+
+
+SECTIONS = ("summary", "data", "fit", "alternatives", "scope")
+
+LABELS = {
+    "fr": {"fait": "Fait", "hypothese": "Hypothèse", "scenario_fictif": "Scénario fictif"},
+    "en": {"fait": "Fact", "hypothese": "Assumption", "scenario_fictif": "Fictional scenario"},
+}
+
+TEMPLATES: Dict[str, Dict] = {
+    "fr": {
+        "heading": "Explication AlphaForge (simulation, aucune transaction réelle)",
+        "intro_debutant": "Voici ce que les données montrent, où cela cadre avec votre profil, et ce qui reste incertain.",
+        "titles": {
+            "summary": "Résumé", "data": "Ce que montrent les données", "fit": "Cohérence avec votre profil",
+            "alternatives": "Alternatives évaluées", "scope": "Périmètre",
+            "assumptions": "Hypothèses", "limits": "Limites", "uncertainties": "Incertitudes", "not_covered": "Non couvert",
+            "limits_group": "Hypothèses, limites et incertitudes",
+        },
+        "statuses": {"conforme": "conforme", "avertissement": "avertissement", "bloqué": "bloqué"},
+        "intents": {
+            "evaluate_asset": "évaluer un actif", "compare_assets": "comparer des actifs", "build_scenario": "construire un scénario",
+            "explain_risk": "expliquer un risque", "unknown": "demande non classée",
+        },
+        "verdict": "Verdict de la gouvernance : {status}.",
+        "request": "Demande examinée : {intent}, actifs : {tickers}.",
+        "profile": "Profil appliqué : horizon de {hmin} à {hmax} ans, tolérance au risque « {risk} ».",
+        "constraints": "Limites dérivées du profil (niveau « {level} ») : volatilité annualisée maximale {maxvol}, perte maximale depuis un sommet {maxdd}.",
+        "constraints_adjusted": "Ces limites ont été resserrées d'un niveau parce que l'horizon du profil est court.",
+        "data_debutant": "Sur la période {w} (du {start} au {end}), {t} a varié de {vol} par an (c'est sa volatilité : l'ampleur des variations de prix) et a perdu jusqu'à {dd} depuis son plus haut (la perte maximale).",
+        "data_intermediaire": "{t}, fenêtre {w} (du {start} au {end}) : volatilité annualisée {vol}, perte maximale depuis un sommet {dd}.",
+        "data_avance": "{t}, fenêtre {w} (du {start} au {end}) : volatilité annualisée {vol} (base {basis}), perte maximale depuis un sommet {dd}.",
+        "unrecovered": " Ce repli n'était pas récupéré à la fin de la fenêtre.",
+        "sensitivity": "Sensibilité à la période ({n} fenêtres testées) : la {metric} de {t} va de {lo} (fenêtre {wlo}) à {hi} (fenêtre {whi}), soit un écart relatif de {spread} pour un seuil de {thr} : mesure {verdict}.",
+        "sensitivity_undetermined": "Sensibilité à la période de {t} : indéterminée, moins de deux fenêtres ont pu être chiffrées.",
+        "sensitivity_debutant": " Une mesure sensible dépend beaucoup de la période retenue : un seul chiffre ne la résume pas.",
+        "sens_metrics": {"annualized_volatility": "volatilité annualisée", "max_drawdown": "perte maximale depuis un sommet"},
+        "sens_verdicts": {"stable": "stable", "sensible": "sensible"},
+        "asset_status": "{t} : statut {status}.",
+        "alt_status": "{t} a été évalué comme alternative à {owners} : statut {status}.",
+        "alt_status_no_owner": "{t} a été évalué comme alternative : statut {status}.",
+        "no_verdict": "Aucun verdict de gouvernance n'est consigné au registre : l'explication se limite aux données brutes.",
+        "scope": "Hors périmètre : {message} À la place : {offered}",
+        "scenario": "Tout résultat présenté ici est un scénario simulé et fictif, pas une prévision.",
+        "where": " (fenêtre « {w} »)",
+        "ratio": ", soit {r} fois la limite",
+        "recovered": "récupéré", "not_recovered": "non récupéré à la fin de la fenêtre",
+        "reasons": {
+            "VOLATILITY_ABOVE_LIMIT": "{t} dépasse la limite de volatilité du profil : {value} mesurés{where}, pour une limite de {limit}{ratio}.",
+            "DRAWDOWN_ABOVE_LIMIT": "{t} dépasse la perte maximale tolérée par le profil : {value} depuis un sommet{where}, pour une limite de {limit}{ratio}.",
+            "RECOVERY_LONGER_THAN_HORIZON": "Le pire repli de {t} a duré {years} an(s), du {peak} au {end} ({state}), soit plus que l'horizon minimal du profil ({h} an(s)).",
+            "EXCLUDED_ASSET_CLASS": "{t} est exclu par le profil (classe d'actifs : {value}).",
+            "EXCLUDED_SECTOR": "{t} est exclu par le profil (secteur : {value}).",
+            "EXCLUDED_TICKER": "{t} est exclu par le profil (actif : {value}).",
+            "CLASS_NOT_PERMITTED": "La classe « {cls} » de {t} n'est pas permise au niveau de risque « {level} » appliqué à ce profil.",
+            "THEME_EXCLUSION_UNVERIFIED": "Exclusion thématique « {theme} » : le jeu de données ne permet pas de la vérifier pour {t}.",
+            "THEME_PROXY": "Aucune donnée « {theme} » dans le jeu de départ : {t} sert de substitut déclaré (fonds filtré par son émetteur), ce n'est pas une cote.",
+            "THEME_DATA_MISSING": "Préférence « {theme} » : aucune donnée disponible pour {t}, l'alignement n'est pas vérifié.",
+            "PREFERENCE_MATCH": "{t} correspond à une préférence du profil ({kind} : {value}).",
+            "OUT_OF_UNIVERSE": "{t} est hors de l'univers de données : aucune donnée disponible, aucune évaluation possible.{suggestions}",
+            "METRICS_UNAVAILABLE": "Les métriques de {t} n'ont pas pu être calculées.",
+            "AMBIGUOUS_ASSET": "« {t} » désigne plusieurs actifs ({candidates}) : aucune évaluation tant que l'actif n'est pas précisé.",
+            "NO_METRICS": "Aucune métrique n'a été produite pour {t} : les limites de risque n'ont pas pu être vérifiées.",
+            "NO_ALTERNATIVE": "Aucune alternative comparable de l'univers ne respecte les exclusions et les classes permises du profil.",
+            "_generic": "Point d'attention consigné au registre (code {code}).",
+        },
+        "suggestions": " Suggestions : {s}.",
+        "past": "Le passé ne prédit pas l'avenir : ces mesures décrivent des périodes observées et ne prolongent aucune tendance.",
+        "sim": "AlphaForge est une simulation d'aide à la décision : aucune transaction réelle, aucun conseil personnalisé, aucune prédiction de rendement.",
+        "range": "{t} : la volatilité annualisée va de {lo} à {hi} selon la fenêtre ({names}) ; le résultat dépend de la période choisie.",
+        "nc_oou": "Aucune donnée pour {t} : cet actif n'a pas pu être évalué.",
+        "nc_theme": "Donnée « {theme} » non disponible dans le jeu de départ : alignement non vérifié pour {t}.",
+        "footer": "Vérification : {n} énoncé(s) contrôlé(s) contre le registre de preuves, {r} retiré(s), {d} rétrogradé(s) en hypothèse.",
+    },
+    "en": {
+        "heading": "AlphaForge explanation (simulation, no real transaction)",
+        "intro_debutant": "Here is what the data show, where it fits your profile, and what remains uncertain.",
+        "titles": {
+            "summary": "Summary", "data": "What the data show", "fit": "Fit with your profile",
+            "alternatives": "Alternatives assessed", "scope": "Scope",
+            "assumptions": "Assumptions", "limits": "Limits", "uncertainties": "Uncertainties", "not_covered": "Not covered",
+            "limits_group": "Assumptions, limits and uncertainties",
+        },
+        "statuses": {"conforme": "compliant", "avertissement": "warning", "bloqué": "blocked"},
+        "intents": {
+            "evaluate_asset": "assess an asset", "compare_assets": "compare assets", "build_scenario": "build a scenario",
+            "explain_risk": "explain a risk", "unknown": "unclassified request",
+        },
+        "verdict": "Governance verdict: {status}.",
+        "request": "Request examined: {intent}, assets: {tickers}.",
+        "profile": "Profile applied: horizon of {hmin} to {hmax} years, risk tolerance \"{risk}\".",
+        "constraints": "Limits derived from the profile (level \"{level}\"): maximum annualised volatility {maxvol}, maximum loss from a peak {maxdd}.",
+        "constraints_adjusted": "These limits were tightened by one level because the profile's horizon is short.",
+        "data_debutant": "Over the period {w} ({start} to {end}), {t} moved by {vol} per year (this is its volatility: how much its price swings) and lost up to {dd} from its previous high (the maximum drawdown).",
+        "data_intermediaire": "{t}, window {w} ({start} to {end}): annualised volatility {vol}, maximum drawdown {dd}.",
+        "data_avance": "{t}, window {w} ({start} to {end}): annualised volatility {vol} (basis {basis}), maximum drawdown {dd}.",
+        "unrecovered": " This drawdown had not recovered by the end of the window.",
+        "sensitivity": "Sensitivity to the period ({n} windows tested): {t}'s {metric} ranges from {lo} (window {wlo}) to {hi} (window {whi}), a relative spread of {spread} for a threshold of {thr}: the measure is {verdict}.",
+        "sensitivity_undetermined": "Sensitivity to the period for {t}: undetermined, fewer than two windows could be measured.",
+        "sensitivity_debutant": " A sensitive measure depends heavily on the period chosen: a single number does not summarise it.",
+        "sens_metrics": {"annualized_volatility": "annualised volatility", "max_drawdown": "maximum drawdown"},
+        "sens_verdicts": {"stable": "stable", "sensible": "sensitive"},
+        "asset_status": "{t}: status {status}.",
+        "alt_status": "{t} was assessed as an alternative to {owners}: status {status}.",
+        "alt_status_no_owner": "{t} was assessed as an alternative: status {status}.",
+        "no_verdict": "No governance verdict is recorded in the ledger: the explanation is limited to raw data.",
+        "scope": "Out of scope: {message} Instead: {offered}",
+        "scenario": "Any result shown here is a simulated, fictional scenario, not a forecast.",
+        "where": " (window \"{w}\")",
+        "ratio": ", i.e. {r} times the limit",
+        "recovered": "recovered", "not_recovered": "not recovered by the end of the window",
+        "reasons": {
+            "VOLATILITY_ABOVE_LIMIT": "{t} exceeds the profile's volatility limit: {value} measured{where}, against a limit of {limit}{ratio}.",
+            "DRAWDOWN_ABOVE_LIMIT": "{t} exceeds the maximum loss the profile tolerates: {value} from a peak{where}, against a limit of {limit}{ratio}.",
+            "RECOVERY_LONGER_THAN_HORIZON": "{t}'s worst decline lasted {years} year(s), from {peak} to {end} ({state}), longer than the profile's minimum horizon ({h} year(s)).",
+            "EXCLUDED_ASSET_CLASS": "{t} is excluded by the profile (asset class: {value}).",
+            "EXCLUDED_SECTOR": "{t} is excluded by the profile (sector: {value}).",
+            "EXCLUDED_TICKER": "{t} is excluded by the profile (asset: {value}).",
+            "CLASS_NOT_PERMITTED": "The \"{cls}\" class of {t} is not permitted at the risk level \"{level}\" applied to this profile.",
+            "THEME_EXCLUSION_UNVERIFIED": "Thematic exclusion \"{theme}\": the dataset cannot verify it for {t}.",
+            "THEME_PROXY": "No \"{theme}\" data in the starter dataset: {t} is a declared substitute (fund filtered by its issuer), not a rating.",
+            "THEME_DATA_MISSING": "Preference \"{theme}\": no data available for {t}, alignment is not verified.",
+            "PREFERENCE_MATCH": "{t} matches a profile preference ({kind}: {value}).",
+            "OUT_OF_UNIVERSE": "{t} is outside the data universe: no data available, no assessment possible.{suggestions}",
+            "METRICS_UNAVAILABLE": "Metrics for {t} could not be computed.",
+            "AMBIGUOUS_ASSET": "\"{t}\" matches several assets ({candidates}): no assessment until the asset is specified.",
+            "NO_METRICS": "No metric was produced for {t}: risk limits could not be checked.",
+            "NO_ALTERNATIVE": "No comparable asset in the universe respects the profile's exclusions and permitted classes.",
+            "_generic": "Point of attention recorded in the ledger (code {code}).",
+        },
+        "suggestions": " Suggestions: {s}.",
+        "past": "Past performance does not predict the future: these measures describe observed periods and extend no trend.",
+        "sim": "AlphaForge is a decision-support simulation: no real transaction, no personalised advice, no return forecast.",
+        "range": "{t}: annualised volatility ranges from {lo} to {hi} depending on the window ({names}); the result depends on the period chosen.",
+        "nc_oou": "No data for {t}: this asset could not be assessed.",
+        "nc_theme": "\"{theme}\" data not available in the starter dataset: alignment not verified for {t}.",
+        "footer": "Verification: {n} statement(s) checked against the evidence ledger, {r} removed, {d} downgraded to assumption.",
+    },
+}
