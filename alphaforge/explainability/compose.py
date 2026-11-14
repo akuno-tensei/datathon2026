@@ -164,6 +164,8 @@ class _Composer:
             whi=self.quote(b, hi["window"]), spread=b.num(v["relative_spread"], "pct", ref), thr=b.num(v["threshold"], "pct", ref),
             verdict=T["sens_verdicts"][v["verdict"]],
         )
+        if v.get("floor_applied"):
+            text += T["sensitivity_floor"].format(abs=b.num(v["absolute_spread"], "pct", ref), floor=b.num(v["min_abs_spread"], "pct", ref))
         if self.exp == "debutant" and v["verdict"] == "sensible":
             text += T["sensitivity_debutant"]
         self.add(section, text, b)
@@ -234,8 +236,13 @@ class _Composer:
                 text += T["pf_risk_debutant"]
             self.add(section, text, b, basis="scenario")
         ws = [x["weight"] for x in v["positions"]]
-        if len(ws) > 1 and max(ws) - min(ws) < 1e-9:
+        basis = v.get("weights_basis") or ("assumed_equal" if len(ws) > 1 and max(ws) - min(ws) < 1e-9 else "user")
+        if basis == "assumed_equal":
             self.add(section, T["pf_equal"], self.b(), basis="assumption")
+        else:
+            b = self.b()
+            b.ref(ref)
+            self.add(section, T["pf_user"], b)  # fait : l'origine des poids est consignée dans les paramètres de la preuve
 
     # -- raisons de gouvernance ---------------------------------------------
     def reason(self, section: str, ticker: Optional[str], r: Reason) -> None:

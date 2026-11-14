@@ -40,6 +40,9 @@ class PortfolioMetricsParams(StrictModel):
     window: WindowSpec
     rebalancing: Rebalancing  # obligatoire : poids constants rééquilibrés à chaque période, ou achat-et-conservation
     mode: Literal["rejeu_historique"] = "rejeu_historique"
+    # Origine des poids : « user » (demandés par l'utilisateur) ou « assumed_equal » (pondération égale posée par le plan,
+    # hypothèse de scénario). Consignée pour que l'explication ne présente jamais une hypothèse comme un choix de l'utilisateur.
+    weights_basis: Literal["user", "assumed_equal"] = "user"
     base_currency: Optional[str] = None
     as_of: Optional[date] = None
 
@@ -69,7 +72,8 @@ def portfolio_metrics(store: DataStore, p: PortfolioMetricsParams) -> Evidence:
     as_of = resolve_as_of(store, p.as_of)
     base = (p.base_currency or cfg.default_base_currency).upper()
     params = {"positions": [x.model_dump() for x in p.positions], "window": p.window.model_dump(mode="json", exclude_none=True),
-              "rebalancing": p.rebalancing, "mode": p.mode, "base_currency": base, "as_of": as_of.isoformat()}
+              "rebalancing": p.rebalancing, "mode": p.mode, "weights_basis": p.weights_basis, "base_currency": base,
+              "as_of": as_of.isoformat()}
     try:
         meta, weights, unknown = [], [], []
         for pos in p.positions:
@@ -210,7 +214,7 @@ def portfolio_metrics(store: DataStore, p: PortfolioMetricsParams) -> Evidence:
                            "|".join(i.sha256 for i in inputs))
     n_ret = int(keep.sum())
     value_out = {
-        "label": SCENARIO_LABEL, "mode": p.mode, "rebalancing": p.rebalancing,
+        "label": SCENARIO_LABEL, "mode": p.mode, "rebalancing": p.rebalancing, "weights_basis": p.weights_basis,
         "rebalancing_description": ("poids constants, rééquilibrés à chaque " + step_label) if p.rebalancing == "rebalanced"
                                    else "achat-et-conservation : poids initiaux, laissés dériver",
         "base_currency": base, "calendar_basis": step, "period_label": step_label, "periods_per_year": ppy,
@@ -233,7 +237,9 @@ def portfolio_metrics(store: DataStore, p: PortfolioMetricsParams) -> Evidence:
         sources=[store.source_label("prices_daily.csv")] + ([store.source_label("fx_usdcad_daily.csv")] if converted else []),
         notices=notices, label="scenario",
         assumptions=[
-            "Scénario fictif : les poids sont une hypothèse de simulation, pas une recommandation. Aucune transaction réelle.",
+            ("Scénario fictif : les poids sont une pondération égale posée par hypothèse de simulation, pas une recommandation. Aucune transaction réelle."
+             if p.weights_basis == "assumed_equal" else
+             "Scénario fictif : les poids sont ceux fournis par l'utilisateur, pour simulation ; ce n'est pas une recommandation. Aucune transaction réelle."),
             ("Poids constants, rééquilibrés à chaque " + step_label + " : rendement du portefeuille = somme pondérée des rendements des actifs."
              if p.rebalancing == "rebalanced" else
              "Achat-et-conservation : les quantités restent fixes, les poids dérivent avec les prix (poids finaux fournis)."),

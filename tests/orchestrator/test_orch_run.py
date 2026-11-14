@@ -300,3 +300,26 @@ def test_custom_parser_is_used(analyst, assets, profile_dict):
 
     r = Orchestrator(analyst, parser=Fixed()).run("n'importe quoi", profile_dict(), assets)
     assert r.request.parser == "fixe" and r.request.tickers == ["NVDA"]
+
+
+def test_weights_from_the_request_reach_the_portfolio_tool_unchanged(orch, assets, profile_dict):
+    r = orch.run("Construis un portefeuille avec 60 % AAPL et 40 % NVDA sans rééquilibrage", profile_dict(), assets)
+    (step,) = [s for s in r.plan.steps if s.action == "portfolio_metrics"]
+    assert step.arguments["positions"] == [{"ticker": "AAPL", "weight": 0.6}, {"ticker": "NVDA", "weight": 0.4}]
+    assert step.arguments["weights_basis"] == "user" and step.arguments["rebalancing"] == "buy_and_hold"
+    ev = next(e.payload for e in r.ledger.entries("evidence") if e.payload["tool"] == "portfolio_metrics")
+    assert ev["status"] != "refused" and ev["params"]["weights_basis"] == "user" and ev["value"]["rebalancing"] == "buy_and_hold"
+
+
+def test_without_weights_equal_weights_are_declared_as_an_assumption(orch, assets, profile_dict):
+    r = orch.run("Construis un scénario de portefeuille avec AAPL et NVDA", profile_dict(), assets)
+    (step,) = [s for s in r.plan.steps if s.action == "portfolio_metrics"]
+    assert step.arguments["weights_basis"] == "assumed_equal" and step.arguments["rebalancing"] == "rebalanced"
+
+
+def test_incomplete_or_wrong_weights_are_refused_by_the_analyst_not_corrected(orch, assets, profile_dict):
+    for text in ("60 % AAPL et NVDA", "60 % AAPL et 30 % NVDA"):
+        r = orch.run(text, profile_dict(), assets)
+        ev = next(e.payload for e in r.ledger.entries("evidence") if e.payload["tool"] == "portfolio_metrics")
+        assert ev["status"] == "refused" and ev["error_code"] == "INVALID_WEIGHTS", text
+        assert "somme" in ev["notices"][-1]["message"]

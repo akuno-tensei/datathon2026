@@ -3,6 +3,7 @@
 Lancement : streamlit run alphaforge/app/streamlit_app.py
 """
 import sys
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -12,9 +13,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 
-from alphaforge.app import views
+from alphaforge.app import forms, views
 from alphaforge.app.i18n import t
 from alphaforge.app.pipeline import AlphaForge, Analysis
+from alphaforge.governance import GovernanceConfig
 from alphaforge.orchestrator import ProfileError, load_profile, validate_profile
 
 st.set_page_config(page_title="AlphaForge AI", page_icon="⚖", layout="wide")
@@ -31,6 +33,13 @@ S.setdefault("analysis", None)
 S.setdefault("comparison", None)
 S.setdefault("evidence_open", None)
 S.setdefault("request", "")
+S.setdefault("req_box", "")  # contenu du champ « Votre demande » : seul un rappel (on_click) peut le changer après sa création
+
+
+def set_request(text: str) -> None:
+    """Rappel de bouton : préremplit le champ de demande. Les rappels s'exécutent avant le rendu, donc avant la création du champ."""
+    S.req_box = text
+    S.request = text
 
 
 def pct(x: Optional[float], lang: str) -> str:
@@ -48,8 +57,12 @@ with top[0]:
     st.markdown("### ⚖ AlphaForge AI")
 with top[5]:
     lang = st.radio("FR | EN", ["fr", "en"], horizontal=True, label_visibility="collapsed", key="lang")
+if S.get("pending_profile") in ids:  # profil qu'on vient de créer : il devient le profil actif
+    S.profile_sel = S.pop("pending_profile")
+if S.get("profile_sel") not in ids:
+    S.profile_sel = "robert" if "robert" in ids else ids[0]
 with top[1]:
-    pid = st.selectbox(t("profile", lang), ids, index=ids.index("robert") if "robert" in ids else 0,
+    pid = st.selectbox(t("profile", lang), ids, key="profile_sel",
                        format_func=lambda i: next(p.display_name for p in profiles if p.profile_id == i))
 profile = F.get_profile(pid)
 with top[2]:
@@ -105,8 +118,8 @@ def render_verdict(a: Analysis, key: str) -> None:
         return
     for opt in views.clarify_options(a):  # requête ambiguë : choix cliquables, jamais une supposition
         st.info("❓ " + t("clarify_title", lang))
-        if st.button(f"{opt.ticker} — {opt.name}", key=f"{key}-clar-{opt.ticker}"):
-            S.request = t("tpl_evaluate", lang, a=opt.ticker)
+        st.button(f"{opt.ticker} — {opt.name}", key=f"{key}-clar-{opt.ticker}", on_click=set_request,
+                  args=(t("tpl_evaluate", lang, a=opt.ticker),))
     for tk in views.out_of_universe(a):
         st.warning("⚠ " + t("out_of_universe", lang, t=tk))
         st.button(t("enrich_btn", lang), key=f"{key}-enr-{tk}", disabled=True, help=t("enrich_off", lang))
@@ -323,6 +336,24 @@ def render_series_chart(a: Analysis, eid: str, chart: Dict[str, Any]) -> None:
     st.caption(chart["alt"])  # alternative textuelle du graphique
 
 
+def run_analysis(text: str, **kw: Any) -> None:
+    """Lance l'analyse et affiche chaque entrée du registre au moment où elle est écrite (durées mesurées ici, jamais stockées)."""
+    S.evidence_open = None
+    with st.status(t("live_running", lang), expanded=True) as status:
+        last = [time.perf_counter()]
+
+        def on_entry(entry: Any) -> None:
+            step = views.entry_to_step(entry, lang)
+            if step is None:
+                return
+            now = time.perf_counter()
+            status.write(f"{step.icon} **{step.agent_label}** · {step.text} _(+{now - last[0]:.2f} s)_")
+            last[0] = now
+
+        S.analysis = F.analyze(text, pid, as_of=as_of, base_currency=base, language=lang, on_entry=on_entry, **kw)
+        status.update(label=t("live_done", lang, n=len(S.analysis.result.ledger)), state="complete", expanded=False)
+
+
 # ---- onglets ------------------------------------------------------------
 tab_an, tab_cmp, tab_prof, tab_src = st.tabs([t("tab_analysis", lang), t("tab_compare", lang), t("tab_profile", lang), t("tab_sources", lang)])
 
@@ -338,19 +369,45 @@ with tab_an:
         st.caption(t("shortcuts", lang))
         sc = st.columns(4)
         for col, name, tpl in zip(sc, ["sc_evaluate", "sc_compare", "sc_scenario", "sc_risk"], ["tpl_evaluate", "tpl_compare", "tpl_scenario", "tpl_risk"]):
-            if col.button(t(name, lang), key=f"sc-{name}", width="stretch"):
-                S.request = t(tpl, lang, a=a_tk, b=b_tk)
-        req = st.text_area(t("request", lang), value=S.request, key="req_box", height=70)
+            col.button(t(name, lang), key=f"sc-{name}", width="stretch", on_click=set_request, args=(t(tpl, lang, a=a_tk, b=b_tk),))
+        st.caption("ℹ " + t("shortcuts_hint", lang))
+        req = st.text_area(t("request", lang), key="req_box", height=70)
         if st.button(t("send", lang), type="primary"):
-            S.request = req
-            S.evidence_open = None
-            with st.status("…", expanded=False) as status:
-                S.analysis = F.analyze(req, pid, as_of=as_of, base_currency=base, language=lang)
-                status.update(label=f"{len(S.analysis.result.ledger)} entrées au registre", state="complete")
+            run_analysis(req)
+
+        with st.expander("🧮 " + t("sc_builder", lang)):
+            chosen = st.multiselect(t("sc_assets", lang), tickers, default=[], key="sc_assets")
+            eq = forms.equal_weights(chosen)
+            if S.get("sc_last") != chosen:  # la liste d'actifs a changé : les poids repartent de poids égaux (jamais de reliquat)
+                for tk in chosen:
+                    S[f"w_{tk}"] = eq[tk]
+                S.sc_last = list(chosen)
+            b1, b2 = st.columns(2)
+            b1.button(t("sc_equal", lang), key="sc_eq_btn", on_click=lambda: S.update({f"w_{k}": v for k, v in forms.equal_weights(S.sc_assets).items()}))
+            b2.button(t("sc_normalize", lang), key="sc_norm_btn",
+                      on_click=lambda: S.update({f"w_{k}": v for k, v in forms.normalize({k: S.get(f"w_{k}", 0.0) for k in S.sc_assets}).items()}))
+            wpct: Dict[str, float] = {}
+            for tk in chosen:
+                wpct[tk] = st.number_input(t("sc_weight", lang, t=tk), min_value=0.0, max_value=100.0, step=0.1, format="%.1f", key=f"w_{tk}")
+            total = forms.weights_sum(wpct)
+            valid = len(chosen) >= 2 and forms.weights_ok(wpct)
+            if chosen:
+                st.markdown(f"**{t('sc_sum', lang, s=f'{total:.1f}')}** — " + (t("sc_sum_ok", lang) if forms.weights_ok(wpct)
+                                                                          else t("sc_sum_bad", lang, d=f"{abs(total - 100):.1f}")))
+            reb = st.radio(t("sc_rebalancing", lang), ["rebalanced", "buy_and_hold"], key="sc_reb",
+                           format_func=lambda x: t("sc_rebalanced" if x == "rebalanced" else "sc_buy_hold", lang))
+            st.caption("ℹ " + t("sc_hint", lang))
+            if st.button(t("sc_run", lang), type="primary", key="sc_run_btn", disabled=not valid):
+                label = ", ".join(f"{k} {v:.1f} %" for k, v in wpct.items())
+                text = t("sc_request", lang, w=label, r=t("sc_rebalanced" if reb == "rebalanced" else "sc_buy_hold", lang))
+                S.request = text
+                run_analysis(text, weights=forms.to_fractions(wpct), rebalancing=reb)
         a = S.analysis
         if a is None:
             st.info(t("no_analysis", lang))
         else:
+            st.download_button(t("export_report", lang), data=views.report_markdown(a, lang, F.store),
+                               file_name=f"alphaforge_{a.profile.profile_id}_{a.as_of}.md", mime="text/markdown", key="export_md")
             render_verdict(a, "an")
             render_explanation(a, "an")
             render_sensitivity(a, "an")
@@ -368,7 +425,8 @@ with tab_cmp:
     c1, c2, c3 = st.columns([2, 2, 4])
     lp = c1.selectbox(t("profile_left", lang), ids, index=ids.index("amira") if "amira" in ids else 0, key="cmp_l")
     rp = c2.selectbox(t("profile_right", lang), ids, index=ids.index("robert") if "robert" in ids else 0, key="cmp_r")
-    creq = c3.text_input(t("request", lang), value=S.request or t("tpl_evaluate", lang, a="NVDA"), key="cmp_req")
+    S.setdefault("cmp_req", S.request or t("tpl_evaluate", lang, a="NVDA"))
+    creq = c3.text_input(t("request", lang), key="cmp_req")
     if st.button(t("compare_run", lang), type="primary", key="cmp_go"):
         S.comparison = F.compare(creq, lp, rp, as_of=as_of, base_currency=base, language=lang)
     cmp = S.comparison
@@ -386,40 +444,145 @@ with tab_cmp:
                 render_verdict(an, k)
                 render_explanation(an, k)
 
+def _fill_form(state: Dict[str, Any]) -> None:
+    """Rappel : remplit tous les champs du formulaire de profil (avant le rendu, donc avant la création des champs)."""
+    S.pf_name, S.pf_id, S.pf_lang = state["display_name"], state["profile_id"], state["language"]
+    S.pf_exp, S.pf_risk, S.pf_cur = state["experience"], state["risk_tolerance"], state["base_currency"]
+    S.pf_hz = (state["horizon_years_min"], state["horizon_years_max"])
+    S.pf_obj = list(state["objectives"])
+    S.pf_prefs, S.pf_excl, S.pf_error, S.pf_overwrite = list(state["soft_preferences"]), list(state["hard_exclusions"]), None, False
+
+
+def _add_row(prefix: str) -> None:
+    kind = S[f"pf_kind_{prefix}"]
+    key = f"pf_val_{prefix}_{kind}"
+    rows_key = "pf_prefs" if prefix == "p" else "pf_excl"
+    try:
+        S[rows_key] = forms.add_criterion(S[rows_key], kind, S.get(key), S.get("pf_w_p") if prefix == "p" else None)
+        S.pf_error = None
+        if kind == "theme":
+            S[key] = ""
+    except ValueError as e:
+        S.pf_error = str(e)
+
+
+def _remove_row(rows_key: str, index: int) -> None:
+    S[rows_key] = forms.remove_criterion(S[rows_key], index)
+    S.pf_error = None  # l'ancien message (doublon, valeur vide) ne concerne plus la liste
+
+
+def _delete_profile(profile_id: str) -> None:
+    """Rappel du bouton de suppression : supprime, puis remet la confirmation à zéro. Le profil actif retombe sur un exemple si besoin."""
+    try:
+        F.delete_profile(profile_id)
+        S.pf_flash = t("np_deleted", lang, id=profile_id)
+    except ProfileError as e:
+        S.pf_flash_error = e.message
+    S.pf_del_ok = False
+
+
+if "pf_name" not in S:
+    _fill_form(dict(forms.BLANK_PROFILE, language=lang))  # départ : formulaire vierge, pas une copie du profil actif
+
 with tab_prof:
     st.markdown(f"### {t('profile_editor', lang)}")
-    src = profile.model_dump(mode="json")
-    with st.form("profile_form"):
-        c1, c2, c3 = st.columns(3)
-        new_id = c1.text_input("profile_id", value=f"{src['profile_id']}_copie")
-        name = c2.text_input("display_name", value=(src.get("display_name") or "") + " (nouveau)")
-        plang = c3.selectbox(t("language", lang), ["fr", "en"], index=["fr", "en"].index(src["language"]))
-        c4, c5, c6 = st.columns(3)
-        exp = c4.selectbox(t("experience", lang), ["debutant", "intermediaire", "avance"], index=["debutant", "intermediaire", "avance"].index(src["experience"]))
-        risk = c5.select_slider(t("risk", lang), ["faible", "faible_modere", "modere", "modere_eleve", "eleve"], value=src["risk_tolerance"])
-        cur = c6.selectbox(t("base_currency", lang), ["CAD", "USD"], index=["CAD", "USD"].index(src["base_currency"]))
-        hmin, hmax = st.slider(t("horizon", lang), 0, 40, (src["horizon_years_min"], src["horizon_years_max"]))
-        objs = st.multiselect(t("objectives", lang), ["preservation_capital", "revenu", "croissance_moderee", "croissance_elevee"], default=src["objectives"])
-        st.caption(t("criteria_help", lang))
-        prefs_txt = st.text_area(t("preferences", lang), "\n".join(f"{p['kind']}:{p['value']}:{p['weight']}" for p in src["soft_preferences"]))
-        excl_txt = st.text_area(t("exclusions", lang), "\n".join(f"{p['kind']}:{p['value']}" for p in src["hard_exclusions"]))
-        submitted = st.form_submit_button(t("save", lang))
-    if submitted:
-        from alphaforge.app.forms import parse_criteria
+    if S.get("pf_flash"):
+        st.success("✓ " + S.pop("pf_flash"))
+    st.caption(t("np_intro", lang))
+    b1, b2 = st.columns(2)
+    b1.button(t("np_blank", lang), key="pf_blank_btn", on_click=_fill_form, args=(dict(forms.BLANK_PROFILE, language=lang),))
+    b2.button(t("np_copy", lang), key="pf_copy_btn", on_click=_fill_form,
+              args=(forms.form_state_from_profile(profile.model_dump(mode="json")),))
+    c1, c2 = st.columns(2)
+    c1.text_input(t("np_name", lang), key="pf_name")
+    c2.text_input(t("np_id", lang), key="pf_id", help=t("np_id_help", lang))
+    c3, c4, c5 = st.columns(3)
+    c3.selectbox(t("language", lang), ["fr", "en"], key="pf_lang")
+    c4.selectbox(t("experience", lang), ["debutant", "intermediaire", "avance"], key="pf_exp")
+    c5.selectbox(t("base_currency", lang), ["CAD", "USD"], key="pf_cur")
+    st.select_slider(t("risk", lang), forms.RISK_LEVELS, key="pf_risk")
+    st.slider(t("horizon", lang), 0, 40, key="pf_hz")
+    st.multiselect(t("objectives", lang), list(forms.OBJECTIVES), key="pf_obj")
 
-        try:
-            data = {
-                "profile_id": new_id, "display_name": name, "language": plang, "experience": exp, "risk_tolerance": risk,
-                "base_currency": cur, "horizon_years_min": hmin, "horizon_years_max": hmax, "objectives": objs,
-                "soft_preferences": parse_criteria(prefs_txt, with_weight=True), "hard_exclusions": parse_criteria(excl_txt, with_weight=False),
-            }
-            p_new = load_profile(data)
-            for i in validate_profile(p_new).issues:  # incohérences signalées avant l'analyse
-                (st.error if i.severity == "error" else st.warning)(("⛔ " if i.severity == "error" else "⚠ ") + i.message)
-            F.save_profile(data)
-            st.success("✓ " + t("saved", lang, id=p_new.profile_id))
-        except (ProfileError, ValueError) as e:
-            st.error(f"⛔ {t('invalid', lang)} : {getattr(e, 'message', str(e))}")
+    opts = forms.criterion_options(F.assets, list(GovernanceConfig().theme_proxies))
+
+    def criteria_editor(prefix: str, rows_key: str, title: str, weighted: bool) -> None:
+        st.markdown(f"**{title}**")
+        for i, row in enumerate(S[rows_key]):
+            rc1, rc2 = st.columns([8, 1])
+            extra = f" · {t('pf_weight', lang)} {row['weight']:g}" if weighted else ""
+            rc1.markdown(f"- `{row['kind']}` : {row['value']}{extra}")
+            rc2.button("✕", key=f"pf_rm_{prefix}_{i}", on_click=_remove_row, args=(rows_key, i), help=t("np_remove", lang))
+        if not S[rows_key]:
+            st.caption(t("none", lang))
+        k1, k2, k3, k4 = st.columns([2, 3, 2, 1.4])
+        kind = k1.selectbox(t("np_kind", lang), list(forms.KINDS), key=f"pf_kind_{prefix}", format_func=lambda x: t("ck_" + x, lang))
+        vkey = f"pf_val_{prefix}_{kind}"
+        if kind == "theme":
+            k2.text_input(t("np_value", lang), key=vkey, help=t("np_theme_hint", lang, themes=", ".join(opts["theme"])))
+        else:
+            k2.selectbox(t("np_value", lang), opts[kind], key=vkey)
+        if weighted:
+            k3.slider(t("pf_weight", lang), 0.0, 1.0, 0.5, 0.05, key="pf_w_p")
+        k4.button(t("np_add", lang), key=f"pf_add_{prefix}", on_click=_add_row, args=(prefix,))
+
+    criteria_editor("p", "pf_prefs", t("preferences", lang), True)
+    criteria_editor("x", "pf_excl", t("exclusions", lang), False)
+    if S.get("pf_error"):
+        st.warning("⚠ " + S.pf_error)
+
+    data = forms.build_profile_dict(
+        profile_id=S.pf_id, display_name=S.pf_name, language=S.pf_lang, experience=S.pf_exp, risk_tolerance=S.pf_risk,
+        base_currency=S.pf_cur, horizon_years_min=S.pf_hz[0], horizon_years_max=S.pf_hz[1], objectives=S.pf_obj,
+        preferences=S.pf_prefs, exclusions=S.pf_excl)
+    st.divider()
+    new_id = data["profile_id"]
+    can_save, problem = True, None
+    try:
+        p_new = load_profile(data)
+    except ProfileError as e:
+        p_new, can_save, problem = None, False, e.message
+    if p_new is not None:
+        if any(i.severity == "error" for i in validate_profile(p_new).issues):
+            can_save = False  # l'incohérence est affichée dans l'aperçu ci-dessous
+        if not new_id or not forms.slugify(new_id) == new_id:
+            can_save, problem = False, t("np_id_invalid", lang)
+        origin = F.profile_origin(new_id) if new_id else None
+        if origin == "exemple":
+            can_save, problem = False, t("np_exists_example", lang, id=new_id)
+        elif origin == "créé":
+            S.setdefault("pf_overwrite", False)
+            st.checkbox(t("np_overwrite", lang, id=new_id), key="pf_overwrite")
+            if not S.pf_overwrite:
+                can_save, problem = False, t("np_exists", lang, id=new_id)
+    if not new_id and p_new is not None:
+        problem = t("np_id_none", lang)
+    elif new_id:
+        st.caption(t("np_id_used", lang, id=new_id))
+    if problem:
+        st.warning("⚠ " + problem)
+    if st.button(t("save", lang), type="primary", key="pf_save_btn", disabled=not can_save):
+        saved = F.save_profile(data, overwrite=bool(S.get("pf_overwrite")))
+        S.pending_profile = saved.profile_id  # il devient le profil actif
+        S.pf_flash = t("saved", lang, id=saved.profile_id)
+        st.rerun()
+    if p_new is not None:
+        st.markdown(f"#### {t('np_preview', lang)}")  # aperçu en direct : fiche, incohérences et limites dérivées
+        render_profile_panel(p_new)
+
+    st.divider()
+    st.markdown(f"#### {t('np_delete_title', lang)}")
+    created = [p for p in profiles if F.profile_origin(p.profile_id) == "créé"]
+    if S.get("pf_flash_error"):
+        st.error("⛔ " + S.pop("pf_flash_error"))
+    if not created:
+        st.caption(t("np_delete_none", lang))  # les profils d'exemple ne figurent jamais dans cette liste
+    else:
+        st.caption(t("np_delete_note", lang))
+        victim = st.selectbox(t("np_delete_pick", lang), [p.profile_id for p in created], key="pf_del_pick",
+                              format_func=lambda i: next(p.display_name for p in created if p.profile_id == i))
+        st.checkbox(t("np_delete_confirm", lang, id=victim), key="pf_del_ok")
+        st.button(t("np_delete_btn", lang), key="pf_del_btn", disabled=not S.get("pf_del_ok"), on_click=_delete_profile, args=(victim,))
 
 with tab_src:
     a = S.analysis

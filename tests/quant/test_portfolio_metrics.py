@@ -166,3 +166,14 @@ def test_evidence_is_labelled_scenario_and_series_is_stored(make_store):
     assert any("FNB" in l for l in e.limits)  # un FNB est traité comme une position unique
     assert any("Aucun frais" in a for a in e.assumptions)
     assert e.evidence_id == _pf(store, [("A", .5), ("B", .5)]).evidence_id
+
+
+def test_weights_origin_is_recorded_and_changes_the_evidence(make_store):
+    store = make_store({"A": ("equity", "CAD", _walk(30, BD)), "B": ("equity", "CAD", _walk(31, BD))})
+    user = _pf(store, [("A", .5), ("B", .5)])
+    assumed = _pf(store, [("A", .5), ("B", .5)], weights_basis="assumed_equal")
+    assert user.params["weights_basis"] == "user" and user.value["weights_basis"] == "user"
+    assert assumed.params["weights_basis"] == "assumed_equal" and assumed.evidence_id != user.evidence_id
+    assert any("fournis par l'utilisateur" in a for a in user.assumptions)
+    assert any("pondération égale posée par hypothèse" in a for a in assumed.assumptions)
+    assert user.value["metrics"] == assumed.value["metrics"]  # seule l'origine diffère, pas le calcul

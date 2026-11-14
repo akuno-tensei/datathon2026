@@ -165,3 +165,48 @@ def test_llm_unknown_flag_is_ignored(assets):
 def test_llm_invalid_reply_falls_back_to_rules(assets, client):
     r = LLMParser(client).parse("Évalue TSLA ou AAPL", assets)
     assert r.parser == "rules(fallback)" and r.tickers == ["AAPL"]
+
+
+# ---- allocation décrite dans la demande -------------------------------------
+@pytest.mark.parametrize("text,expected", [
+    ("Construis un portefeuille avec 60 % AAPL et 40 % NVDA", {"AAPL": 0.6, "NVDA": 0.4}),
+    ("Portefeuille : AAPL 60 %, NVDA 40 %", {"AAPL": 0.6, "NVDA": 0.4}),
+    ("Simule 50% en AAPL, 30,5 % de BTC-USD et 19,5 % dans RY.TO", {"AAPL": 0.5, "BTC-USD": 0.305, "RY.TO": 0.195}),
+    ("scénario AAPL à 70 % et NVDA à 30 %", {"AAPL": 0.7, "NVDA": 0.3}),
+    ("60 percent of AAPL and 40 percent of NVDA", {"AAPL": 0.6, "NVDA": 0.4}),
+])
+def test_weights_are_extracted_in_both_orders(assets, text, expected):
+    r = RuleBasedParser().parse(text, assets)
+    assert r.weights == pytest.approx(expected) and r.intent == "build_scenario"
+    assert set(expected) <= set(r.tickers)
+
+
+def test_no_weights_when_none_are_given_and_nothing_is_invented(assets):
+    for text in ("Construis un scénario avec AAPL et NVDA", "Compare AAPL et NVDA", "Évalue AAPL en 2022"):
+        assert RuleBasedParser().parse(text, assets).weights == {}
+
+
+def test_incomplete_allocation_still_builds_a_scenario_so_the_analyst_can_refuse_it(assets):
+    r = RuleBasedParser().parse("60 % AAPL et NVDA", assets)
+    assert r.weights == {"AAPL": 0.6} and r.intent == "build_scenario" and r.tickers == ["AAPL", "NVDA"]
+
+
+def test_rebalancing_hypothesis_is_read_from_the_request(assets):
+    p = RuleBasedParser()
+    assert p.parse("scénario 50 % AAPL et 50 % NVDA en achat-et-conservation", assets).rebalancing == "buy_and_hold"
+    assert p.parse("scénario 50 % AAPL et 50 % NVDA, buy and hold", assets).rebalancing == "buy_and_hold"
+    assert p.parse("scénario 50 % AAPL et 50 % NVDA rééquilibré chaque mois", assets).rebalancing == "rebalanced"
+    assert p.parse("scénario 50 % AAPL et 50 % NVDA", assets).rebalancing is None
+
+
+def test_llm_parser_cannot_invent_or_remove_weights(assets):
+    from alphaforge.orchestrator import LLMParser
+
+    class Client:
+        def complete(self, system, user):
+            return '{"intent": "compare_assets", "mentioned_symbols": ["AAPL", "NVDA"], "scope_flags": [], "weights": {"AAPL": 0.9}}'
+
+    p = LLMParser(Client())
+    assert p.parse("Compare AAPL et NVDA", assets).weights == {}  # le modèle propose des poids : ignorés
+    r = p.parse("60 % AAPL et 40 % NVDA", assets)
+    assert r.weights == pytest.approx({"AAPL": 0.6, "NVDA": 0.4}) and r.intent == "build_scenario"

@@ -199,3 +199,190 @@ def test_scenario_evidence_reproduces_to_the_same_id(forge, prof):
     args = views.reproduce_arguments(pf["evidence_id"], a)
     assert args["rebalancing"] == "rebalanced" and args["base_currency"] == "USD"
     assert run_tool(forge.store, "portfolio_metrics", args).evidence_id == pf["evidence_id"]
+
+
+# ---- saisie des poids, trace en direct, export ------------------------------
+def test_weights_entered_in_the_form_reach_the_analyst_as_given(forge, prof):
+    a = forge.analyze("Scénario saisi", prof(), weights={"HIGH": 0.7, "CALM": 0.3}, rebalancing="buy_and_hold")
+    pf = next(e for e in a.result.ledger.evidence() if e["tool"] == "portfolio_metrics")
+    assert [(p["ticker"], p["weight"]) for p in pf["value"]["positions"]] == [("HIGH", 0.7), ("CALM", 0.3)]
+    assert pf["params"]["weights_basis"] == "user" and pf["value"]["rebalancing"] == "buy_and_hold"
+    assert a.request_text == "Scénario saisi" and a.result.request.intent == "build_scenario"
+    assert views.portfolio_view(a, "fr").rebalancing == "buy_and_hold"
+    assert any("fournis dans la demande" in s.text for s in a.explanation.statements)
+
+
+def test_form_weights_win_over_the_text_and_wrong_sums_are_refused_not_fixed(forge, prof):
+    a = forge.analyze("60 % HIGH et 40 % CALM", prof(), weights={"HIGH": 0.5, "CALM": 0.5})
+    pf = next(e for e in a.result.ledger.evidence() if e["tool"] == "portfolio_metrics")
+    assert [p["weight"] for p in pf["value"]["positions"]] == [0.5, 0.5]
+    bad = forge.analyze("Scénario saisi", prof(), weights={"HIGH": 0.7, "CALM": 0.2})  # somme 0,9 : jamais normalisée en silence
+    pf = next(e for e in bad.result.ledger.evidence() if e["tool"] == "portfolio_metrics")
+    assert pf["status"] == "refused" and pf["error_code"] == "INVALID_WEIGHTS" and views.portfolio_view(bad, "fr") is None
+
+
+def test_weights_for_unknown_assets_are_dropped_not_invented(forge, prof):
+    a = forge.analyze("Scénario saisi", prof(), weights={"HIGH": 0.5, "CALM": 0.5, "NOPE": 0.0})
+    pf = next(e for e in a.result.ledger.evidence() if e["tool"] == "portfolio_metrics")
+    assert {p["ticker"] for p in pf["value"]["positions"]} == {"HIGH", "CALM"}
+
+
+def test_live_trace_receives_every_ledger_entry_in_order(forge, prof):
+    seen = []
+    a = forge.analyze("Évalue HIGH", prof(), on_entry=lambda e: seen.append((e.seq, e.kind)))
+    ledger = a.result.ledger.entries()
+    assert seen == [(e.seq, e.kind) for e in ledger] and [s for s, _ in seen] == list(range(1, len(ledger) + 1))
+    steps = [views.entry_to_step(e, "fr") for e in ledger]
+    assert {s.agent for s in steps if s} == {"orchestrateur", "analyste", "gouvernance", "explicabilite"}
+    final = [s.text for s in views.agent_trace(a, "fr")]
+    assert len([x for x in final if "Explication rédigée" in x]) == 1  # une seule ligne d'explicabilité dans la trace finale
+
+
+def test_observer_is_optional_and_does_not_change_results(forge, prof):
+    plain = forge.analyze("Évalue HIGH", prof())
+    watched = forge.analyze("Évalue HIGH", prof(), on_entry=lambda e: None)
+    assert [e["evidence_id"] for e in plain.result.ledger.evidence()] == [e["evidence_id"] for e in watched.result.ledger.evidence()]
+
+
+def test_report_export_contains_banner_evidence_and_no_new_number(forge, prof):
+    a = forge.analyze("Compare HIGH et CALM", prof(risk_tolerance="faible_modere"))
+    md = views.report_markdown(a, "fr", forge.store)
+    assert md.startswith("# AlphaForge AI — Rapport d'analyse") and "SIMULATION" in md
+    for eid in views.evidence_index(a):
+        assert eid in md
+    assert "run_tool(store, 'compute_metrics'" in md
+    assert "limites et incertitudes" in md.lower()  # les limites sont dans le rapport, pas seulement à l'écran
+    assert not re.search(r"\bachetez\b|\bvendez\b|\bmeilleur choix\b|\bgaranti(?:e|s|es)?\b", md, re.I)
+    assert "Analysis report" in views.report_markdown(a, "en", forge.store) and views.report_markdown(a, "fr").count("\n# ") <= 1
+    refused = forge.analyze("Bonjour", prof())
+    assert "SIMULATION" in views.report_markdown(refused, "fr") and "précisez" in views.report_markdown(refused, "fr")
+
+
+def test_weight_form_helpers():
+    from alphaforge.app import forms
+
+    assert forms.equal_weights(["A", "B", "C"]) == {"A": 33.4, "B": 33.3, "C": 33.3} and forms.weights_ok(forms.equal_weights(["A", "B", "C"]))
+    assert forms.weights_ok({"A": 70.0, "B": 30.0}) and not forms.weights_ok({"A": 70.0, "B": 29.9})
+    assert not forms.weights_ok({"A": 100.0, "B": 0.0}) and not forms.weights_ok({})  # un poids nul n'est pas une position
+    assert forms.weights_ok({"A": 33.3, "B": 33.3, "C": 33.4}) and not forms.weights_ok({"A": 33.3, "B": 33.3, "C": 33.3})
+    assert forms.normalize({"A": 50.0, "B": 30.0}) == {"A": 62.5, "B": 37.5} and forms.weights_ok(forms.normalize({"A": 1.0, "B": 1.0, "C": 1.0}))
+    assert forms.to_fractions({"A": 60.0, "B": 40.0}) == {"A": 0.6, "B": 0.4}
+
+
+# ---- création d'un profil quelconque : logique pure -------------------------
+def test_slugify_makes_safe_identifiers():
+    from alphaforge.app.forms import slugify
+
+    assert slugify("Retraité 70 ans, crypto !") == "retraite_70_ans_crypto" and slugify("  ") == "" and slugify("../etc") == "etc"
+    assert slugify("É" * 60) == "e" * 40 and slugify("Amira") == "amira"
+
+
+def test_add_and_remove_criteria_validate_every_input():
+    from alphaforge.app.forms import add_criterion, remove_criterion
+
+    rows = add_criterion([], "asset_class", "crypto", 0.9)
+    assert rows == [{"kind": "asset_class", "value": "crypto", "weight": 0.9}]
+    assert add_criterion(rows, "sector", " Energy ") == rows + [{"kind": "sector", "value": "Energy"}]  # sans poids pour une exclusion
+    for args in (("asset_class", "CRYPTO", 0.5), ("theme", "  ", 0.5), ("couleur", "x", 0.5), ("theme", "esg", 1.5), ("theme", "esg", -0.1)):
+        with pytest.raises(ValueError):
+            add_criterion(rows, *args)
+    assert add_criterion(rows, "theme", "x", 0.5) is not rows and len(rows) == 1  # la liste d'origine n'est pas modifiée
+    assert remove_criterion(rows, 0) == [] and remove_criterion(rows, 5) == rows
+
+
+def test_built_profile_loads_and_derives_its_limits_without_code(forge, prof):
+    from alphaforge.app.forms import add_criterion, build_profile_dict
+    from alphaforge.governance import GovernanceConfig, derive_constraints
+    from alphaforge.orchestrator import load_profile
+
+    d = build_profile_dict(profile_id="", display_name="Étudiante 22 ans", language="fr", experience="debutant", risk_tolerance="modere_eleve",
+                           base_currency="USD", horizon_years_min=20, horizon_years_max=40, objectives=["croissance_elevee"],
+                           preferences=add_criterion([], "sector", "Information Technology", 0.7), exclusions=add_criterion([], "ticker", "TSLA"))
+    p = load_profile(d)
+    assert p.profile_id == "etudiante_22_ans" and p.base_currency == "USD" and p.soft_preferences[0].weight == 0.7
+    assert p.hard_exclusions[0].value == "TSLA" and derive_constraints(p, GovernanceConfig()).max_volatility == 0.32
+    saved = forge.save_profile(d)
+    a = forge.analyze("Évalue HIGH", saved.profile_id)
+    assert a.profile.base_currency == "USD" and a.verdict is not None
+
+
+def test_form_state_from_a_profile_clears_name_and_id_for_a_new_one(forge):
+    from alphaforge.app.forms import form_state_from_profile
+
+    st = form_state_from_profile(forge.get_profile("amira").model_dump(mode="json"))
+    assert st["display_name"] == "" and st["profile_id"] == "" and st["risk_tolerance"] == "eleve"
+    assert st["soft_preferences"] and all("weight" in x for x in st["soft_preferences"])
+
+
+def test_criterion_options_come_from_the_universe(forge):
+    from alphaforge.app.forms import criterion_options
+
+    o = criterion_options(forge.assets, ["esg"])
+    assert "equity" in o["asset_class"] and "Tech" in o["sector"] and "HIGH" in o["ticker"] and o["theme"] == ["esg"]
+
+
+def test_example_profiles_cannot_be_shadowed_and_created_ones_need_confirmation(forge, prof):
+    from alphaforge.orchestrator import ProfileError
+
+    with pytest.raises(ProfileError) as e:
+        forge.save_profile(prof(profile_id="robert", risk_tolerance="eleve"))
+    assert e.value.reason == "profile_exists_example"
+    assert forge.get_profile("robert").risk_tolerance == "faible_modere"  # l'exemple est intact
+    assert forge.profile_origin("robert") == "exemple" and forge.profile_origin("inconnu") is None
+    forge.save_profile(prof(profile_id="mien"))
+    assert forge.profile_origin("mien") == "créé"
+    with pytest.raises(ProfileError) as e:
+        forge.save_profile(prof(profile_id="mien", risk_tolerance="eleve"))
+    assert e.value.reason == "profile_exists" and forge.get_profile("mien").risk_tolerance == "modere"
+    forge.save_profile(prof(profile_id="mien", risk_tolerance="eleve"), overwrite=True)
+    assert forge.get_profile("mien").risk_tolerance == "eleve"
+
+
+# ---- suppression d'un profil créé ---------------------------------------------
+def test_a_created_profile_can_be_deleted_and_disappears_everywhere(forge, prof):
+    forge.save_profile(prof(profile_id="jetable", display_name="Jetable"))
+    assert "jetable" in [i.profile_id for i in forge.list_profiles()] and forge.profile_origin("jetable") == "créé"
+    forge.delete_profile("jetable")
+    assert forge.profile_origin("jetable") is None and "jetable" not in [i.profile_id for i in forge.list_profiles()]
+    assert not (forge.user_dir / "jetable.json").exists()
+    from alphaforge.orchestrator import ProfileError
+
+    with pytest.raises(ProfileError) as e:
+        forge.get_profile("jetable")
+    assert e.value.reason == "profile_not_found"
+    forge.save_profile(prof(profile_id="jetable"))  # l'identifiant est de nouveau libre : pas besoin de confirmer un remplacement
+
+
+def test_example_profiles_cannot_be_deleted(forge):
+    from alphaforge.orchestrator import ProfileError
+    from alphaforge.orchestrator.tools import PROFILES_DIR
+
+    for pid in ("amira", "mateo", "robert"):
+        with pytest.raises(ProfileError) as e:
+            forge.delete_profile(pid)
+        assert e.value.reason == "profile_not_deletable" and (PROFILES_DIR / f"{pid}.json").is_file()
+
+
+def test_delete_refuses_unknown_and_dangerous_identifiers_and_never_leaves_the_user_folder(forge, prof, tmp_path):
+    from alphaforge.orchestrator import ProfileError
+
+    outside = tmp_path.parent / "secret.json"
+    outside.write_text("{}")
+    try:
+        for bad in ("../secret", "..", "a/b", "robert.json", "", "x y", "/etc/passwd"):
+            with pytest.raises(ProfileError) as e:
+                forge.delete_profile(bad)
+            assert e.value.reason == "invalid_profile_id", bad
+        with pytest.raises(ProfileError) as e:
+            forge.delete_profile("inconnu")
+        assert e.value.reason == "profile_not_found"
+        assert outside.exists()  # rien n'a été supprimé hors du dossier des profils créés
+    finally:
+        outside.unlink()
+
+
+def test_deleting_one_profile_leaves_the_others_untouched(forge, prof):
+    forge.save_profile(prof(profile_id="un"))
+    forge.save_profile(prof(profile_id="deux"))
+    forge.delete_profile("un")
+    assert forge.profile_origin("deux") == "créé" and {"amira", "mateo", "robert", "deux"} <= {i.profile_id for i in forge.list_profiles()}

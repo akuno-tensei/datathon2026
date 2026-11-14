@@ -38,32 +38,45 @@ class TraceStep:
 _ICON = {"ok": "✓", "complete": "✓", "warning": "⚠", "refused": "⛔", "error": "✗", "bloqué": "⛔", "avertissement": "⚠", "conforme": "✓"}
 
 
+def entry_to_step(e: Any, lang: str) -> Optional[TraceStep]:
+    """Une entrée du registre en étape de trace. Sert à la trace finale et à l'affichage en direct (même rendu)."""
+    p, kind = e.payload, e.kind
+    if kind == "profile":
+        return TraceStep("orchestrateur", t("agent_orchestrateur", lang), "✓", "ok", t("step_profile", lang))
+    if kind == "request":
+        return TraceStep("orchestrateur", t("agent_orchestrateur", lang), "✓", "ok",
+                         t("step_request", lang, intent=p.get("intent"), tickers=", ".join(p.get("tickers", [])) or "—"))
+    if kind == "plan":
+        return TraceStep("orchestrateur", t("agent_orchestrateur", lang), "✓", "ok", t("step_plan", lang, n=len(p.get("steps", []))))
+    if kind == "step" and p.get("tool"):
+        st = p.get("status", "ok")
+        fb = str(p.get("step_id", "")).startswith("fb")
+        args = p.get("arguments", {})
+        target = args.get("ticker") or args.get("query") or ", ".join(x["ticker"] for x in args.get("positions", [])) or ", ".join(args.get("tickers", []))
+        return TraceStep("analyste", t("agent_analyste", lang), _ICON.get(st, "•"), st,
+                         t("step_tool", lang, tool=p["tool"]) + (f"  ({target})" if target else ""),
+                         detail={"arguments": args, "feedback": fb}, evidence_id=p.get("evidence_id"))
+    if kind == "verdict":
+        return TraceStep("gouvernance", t("agent_gouvernance", lang), _ICON.get(p["status"], "•"), p["status"],
+                         t("step_verdict", lang, status=t("status_" + p["status"], lang)))
+    if kind == "note" and e.agent == "explicabilite":
+        ok = p.get("code") == "explanation_verified"
+        return TraceStep("explicabilite", t("agent_explicabilite", lang), "✓" if ok else "⚠", "ok" if ok else "warning",
+                         t("step_explain", lang), detail={"removed": p.get("removed", []), "downgraded": p.get("downgraded", [])})
+    if kind == "note":
+        return TraceStep("orchestrateur", t("agent_orchestrateur", lang), "⚠", "warning", t("step_note", lang, message=p.get("message", "")))
+    return None
+
+
 def agent_trace(analysis: Analysis, lang: str) -> List[TraceStep]:
     """Chronologie observable des agents à partir des entrées du registre. Jamais le raisonnement interne du modèle."""
     steps: List[TraceStep] = []
     for e in analysis.result.ledger.entries():
-        p, kind = e.payload, e.kind
-        if kind == "profile":
-            steps.append(TraceStep("orchestrateur", t("agent_orchestrateur", lang), "✓", "ok", t("step_profile", lang)))
-        elif kind == "request":
-            steps.append(TraceStep("orchestrateur", t("agent_orchestrateur", lang), "✓", "ok",
-                                   t("step_request", lang, intent=p.get("intent"), tickers=", ".join(p.get("tickers", [])) or "—")))
-        elif kind == "plan":
-            steps.append(TraceStep("orchestrateur", t("agent_orchestrateur", lang), "✓", "ok", t("step_plan", lang, n=len(p.get("steps", [])))))
-        elif kind == "step" and p.get("tool"):
-            st = p.get("status", "ok")
-            agent = "analyste"
-            fb = str(p.get("step_id", "")).startswith("fb")
-            text = t("step_tool", lang, tool=p["tool"]) + (f"  ({p['arguments'].get('ticker') or p['arguments'].get('query') or ''})").rstrip()
-            steps.append(TraceStep(agent, t("agent_analyste", lang), _ICON.get(st, "•"), st, text,
-                                   detail={"arguments": p.get("arguments", {}), "feedback": fb}, evidence_id=p.get("evidence_id")))
-        elif kind == "verdict":
-            steps.append(TraceStep("gouvernance", t("agent_gouvernance", lang), _ICON.get(p["status"], "•"), p["status"],
-                                   t("step_verdict", lang, status=t("status_" + p["status"], lang))))
-        elif kind == "note" and e.agent == "explicabilite":
-            continue  # rendu par l'étape Explicabilité ci-dessous
-        elif kind == "note":
-            steps.append(TraceStep("orchestrateur", t("agent_orchestrateur", lang), "⚠", "warning", t("step_note", lang, message=p.get("message", ""))))
+        if e.kind == "note" and e.agent == "explicabilite":
+            continue  # rendu par l'étape Explicabilité ci-dessous, avec le rapport complet
+        step = entry_to_step(e, lang)
+        if step is not None:
+            steps.append(step)
     if analysis.explanation is not None:
         rep = analysis.explanation.report
         icon = "✓" if rep.approved else "⚠"
@@ -452,3 +465,64 @@ def comparison_diffs(cmp: Comparison, lang: str) -> List[DiffRow]:
         if tk in rb and la[tk] != rb[tk]:
             rows.append(DiffRow(t("diff_status", lang, t=tk, sa=t("status_" + la[tk], lang), sb=t("status_" + rb[tk], lang), pa=pa, pb=pb)))
     return rows
+
+
+def _pc(x: Optional[float], lang: str) -> str:
+    if x is None:
+        return "—"
+    s = f"{x * 100:.1f} %"
+    return s.replace(".", ",") if lang == "fr" else s.replace(" %", "%")
+
+
+def report_markdown(analysis: Analysis, lang: str, store: Any = None) -> str:
+    """Rapport d'analyse exportable (Markdown). Reprend uniquement ce qui est au registre : aucun chiffre nouveau.
+
+    Contenu : bandeau de simulation, demande et profil, verdict, explication vérifiée, sensibilité, limites, preuves
+    (identifiant, outil, fenêtre, empreinte, commande pour reproduire) et sources.
+    """
+    fr = lang == "fr"
+    p, v = analysis.profile, analysis.verdict
+    title = "Rapport d'analyse" if fr else "Analysis report"
+    out: List[str] = [f"# {t('app_title', lang)} — {title}", "", f"> **{t('simulation_banner', lang)}**", ""]
+    out += [f"- **{t('profile', lang)}** : {p.display_name or p.profile_id}",
+            f"- **{t('as_of', lang)}** : {analysis.as_of}",
+            f"- **{t('base_currency', lang)}** : {analysis.base_currency}",
+            f"- **{'Demande' if fr else 'Request'}** : {analysis.request_text}", ""]
+    if v is None:
+        out += [f"_{analysis.result.message or t('no_analysis', lang)}_", ""]
+        return "\n".join(out)
+    b = status_badge(v["status"], lang)
+    out += [f"## {t('verdict_title', lang)} : {b.icon} {b.label}", ""]
+    bars = verdict_measures(analysis, lang)
+    for asset in v["assets"] + v.get("alternatives", []):
+        ab = status_badge(asset["status"], lang)
+        out.append(f"### {asset['ticker']} — {ab.icon} {ab.label}")
+        for m in bars.get(asset["ticker"], []):
+            out.append(f"- {m.icon} {m.label} : {_pc(m.value, lang)} ({t('limit', lang)} {_pc(m.limit, lang)}) — {t('window', lang)} « {m.window} » [{m.evidence_id}]")
+        for r in asset_reasons(asset, lang):
+            out.append(f"- {r.icon} *{r.kind}* — {r.message}")
+        out.append("")
+    for g in v.get("global_reasons", []):
+        out.append(f"- {'⚠' if g['severity'] == 'warn' else 'ℹ'} {g['message']}")
+    if analysis.result.answer:
+        body = [("##" + ln if ln.startswith("#") else ln) for ln in analysis.result.answer.splitlines()]  # titres rabaissés d'un niveau
+        out += ["", f"## {t('explanation_title', lang)}", ""] + body
+    for asset in v["assets"]:
+        tab = sensitivity_table(analysis, asset["ticker"])
+        if tab and tab.indicator:
+            out += ["", f"## {t('sensitivity_title', lang)} — {tab.ticker} : {t('sens_' + tab.indicator, lang)}", "",
+                    f"| {t('window', lang)} | vol. | drawdown | ev |", "|---|---|---|---|"]
+            for r in tab.rows:
+                out.append(f"| {r['window']} | {_pc(r['volatility'], lang)} | {_pc(r['max_drawdown'], lang)} | {r['evidence_id']} |")
+    pv = portfolio_view(analysis, lang)
+    if pv is not None:
+        out += ["", f"## {t('pf_title', lang)}", "", f"_{pv.label}_", "", f"- {pv.rebalancing_description} ({pv.annualization_basis})"]
+        out += [f"- {x['ticker']} : {_pc(x['weight'], lang)}" for x in pv.positions]
+    out += ["", f"## {'Preuves' if fr else 'Evidence'}", ""]
+    for eid, ev in evidence_index(analysis).items():
+        args = reproduce_arguments(eid, analysis)
+        call = f" — `run_tool(store, {ev['tool']!r}, {args!r})`" if args is not None else ""
+        out.append(f"- `{eid}` · {ev['tool']} v{ev['tool_version']} · {t('fingerprint', lang)} {ev['data_fingerprint'][:12]}{call}")
+    sources = sorted({s for ev in evidence_index(analysis).values() for s in ev.get("sources", [])})
+    out += ["", f"## {t('sources_title', lang)}", ""] + [f"- {s}" for s in sources]
+    return "\n".join(out) + "\n"

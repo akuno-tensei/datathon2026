@@ -8,16 +8,38 @@ import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from ..explainability import Explainer, Explanation
 from ..governance import Governance
-from ..orchestrator import InvestorProfile, Orchestrator, ProfileError, QuantAnalyst, RunResult, load_profile
+from ..orchestrator import InvestorProfile, Orchestrator, ProfileError, QuantAnalyst, RuleBasedParser, RunResult, load_profile
 from ..orchestrator.tools import PROFILES_DIR
 from ..quant import DataStore
 
 USER_PROFILES_DIR = Path(__file__).resolve().parent / "profiles" / "user"  # profils créés depuis l'interface (données locales)
 _ID = re.compile(r"^[a-z0-9_-]{1,40}$")
+
+
+class _ScenarioParser:
+    """Ajoute à la demande les poids saisis dans l'interface (formulaire de scénario), sans rien déduire.
+
+    Les actifs et poids du formulaire s'ajoutent à ce que le texte contient ; en cas de conflit, la saisie explicite gagne.
+    L'intention devient « scénario » : l'utilisateur a décrit une allocation.
+    """
+
+    def __init__(self, inner: Any, weights: Dict[str, float], rebalancing: Optional[str]):
+        self._inner, self._weights, self._rebalancing = inner, dict(weights), rebalancing
+        self.name = getattr(inner, "name", "rules")
+
+    def parse(self, text: str, assets: List[Dict[str, Any]]):
+        req = self._inner.parse(text, assets)
+        known = {a["ticker"] for a in assets}
+        weights = {t: w for t, w in {**req.weights, **self._weights}.items() if t in known}
+        tickers = list(dict.fromkeys(list(weights) + [t for t in req.tickers if t not in weights]))
+        return req.model_copy(update={
+            "weights": weights, "tickers": tickers, "intent": "build_scenario" if len(tickers) >= 2 else req.intent,
+            "rebalancing": self._rebalancing or req.rebalancing,
+        })
 
 
 class _CapturingExplainer:
@@ -87,15 +109,46 @@ class AlphaForge:
                     return load_profile(source, profiles_dir=Path(d))
         return load_profile(source)
 
-    def save_profile(self, data: Dict[str, Any]) -> InvestorProfile:
-        """Valide puis enregistre un profil créé dans l'interface. Aucune modification de code n'est nécessaire."""
+    def profile_origin(self, profile_id: str) -> Optional[str]:
+        """« exemple » (livré avec le projet), « créé » (enregistré depuis l'interface), ou None s'il n'existe pas."""
+        if (PROFILES_DIR / f"{profile_id}.json").is_file():
+            return "exemple"
+        return "créé" if (self.user_dir / f"{profile_id}.json").is_file() else None
+
+    def save_profile(self, data: Dict[str, Any], overwrite: bool = False) -> InvestorProfile:
+        """Valide puis enregistre un profil créé dans l'interface. Aucune modification de code n'est nécessaire.
+
+        Un profil d'exemple n'est jamais remplacé (il serait masqué en silence) ; un profil créé n'est remplacé que sur demande.
+        """
         profile = load_profile(data)
         if not _ID.match(profile.profile_id):
             raise ProfileError("invalid_profile_id", "Identifiant de profil : lettres minuscules, chiffres, tirets, 1 à 40 caractères.")
+        origin = self.profile_origin(profile.profile_id)
+        if origin == "exemple":
+            raise ProfileError("profile_exists_example", f"« {profile.profile_id} » est un profil d'exemple livré avec le projet : choisir un autre identifiant.")
+        if origin == "créé" and not overwrite:
+            raise ProfileError("profile_exists", f"Un profil « {profile.profile_id} » existe déjà : confirmer le remplacement ou choisir un autre identifiant.")
         (self.user_dir / f"{profile.profile_id}.json").write_text(
             json.dumps(profile.model_dump(mode="json"), ensure_ascii=False, indent=2), encoding="utf-8"
         )
         return profile
+
+    def delete_profile(self, profile_id: str) -> None:
+        """Supprime un profil créé depuis l'interface. Un profil d'exemple n'est jamais supprimé ; rien hors du dossier des profils créés.
+
+        Lève ProfileError : `invalid_profile_id` (identifiant douteux, comme `../x`), `profile_not_found`, `profile_not_deletable` (exemple).
+        """
+        if not _ID.match(str(profile_id)):
+            raise ProfileError("invalid_profile_id", f"Identifiant de profil invalide : {profile_id!r}.")
+        origin = self.profile_origin(profile_id)
+        if origin is None:
+            raise ProfileError("profile_not_found", f"Profil introuvable : {profile_id!r}.")
+        if origin == "exemple":
+            raise ProfileError("profile_not_deletable", f"« {profile_id} » est un profil d'exemple livré avec le projet : il ne peut pas être supprimé.")
+        path = (self.user_dir / f"{profile_id}.json").resolve()
+        if path.parent != self.user_dir.resolve():  # ceinture et bretelles : jamais de suppression hors du dossier des profils créés
+            raise ProfileError("invalid_profile_id", f"Identifiant de profil invalide : {profile_id!r}.")
+        path.unlink()
 
     # ---- analyse -----------------------------------------------------
     def analyze(
@@ -105,6 +158,9 @@ class AlphaForge:
         as_of: Optional[date] = None,
         base_currency: Optional[str] = None,
         language: Optional[str] = None,
+        weights: Optional[Dict[str, float]] = None,
+        rebalancing: Optional[str] = None,
+        on_entry: Optional[Callable[[Any], None]] = None,
     ) -> Analysis:
         """`base_currency` et `language` choisis dans l'interface s'appliquent à une copie du profil pour cette analyse :
         l'orchestrateur transmet la devise aux outils, l'explicabilité rédige dans la langue du profil."""
@@ -114,7 +170,12 @@ class AlphaForge:
         as_of_r = as_of or self.store.last_date
         analyst = QuantAnalyst(self.store)
         explainer = _CapturingExplainer(Explainer())
-        orch = Orchestrator(analyst, governance=Governance(self.assets), explainer=explainer, as_of=as_of_r)
+        extra: Dict[str, Any] = {}
+        if weights or rebalancing:  # scénario saisi dans l'interface : poids en fractions, jamais normalisés ici
+            extra["parser"] = _ScenarioParser(RuleBasedParser(), weights or {}, rebalancing)
+        if on_entry is not None:
+            extra["on_entry"] = on_entry  # trace en direct : chaque entrée du registre est transmise à l'écriture
+        orch = Orchestrator(analyst, governance=Governance(self.assets), explainer=explainer, as_of=as_of_r, **extra)
         result = orch.run(request_text, p, self.assets)
         verdicts = result.ledger.entries("verdict")
         verdict = verdicts[-1].payload if verdicts else None

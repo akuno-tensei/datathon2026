@@ -70,3 +70,28 @@ def test_portfolio_scenario_in_english_and_beginner_note(run):
 
 def test_no_portfolio_statements_without_a_portfolio_tool_result(run):
     assert _scenario_statements(explain(run("Compare LOW.TO et CALM"))) == []
+
+
+def test_floor_sentence_explains_a_stable_verdict_despite_a_large_relative_spread(run):
+    r = run("Évalue CALM")  # volatilité de ~3 % : écarts relatifs faibles ou plancher
+    stress = next(x for x in r.ledger.evidence() if x["tool"] == "stress_window")
+    e = explain(r, experience="avance")
+    (s,) = _sens(e)
+    assert ("plancher" in s.text) == stress["value"]["floor_applied"] and e.report.approved
+
+
+def test_user_weights_are_never_described_as_an_assumption(run):
+    e_user = explain(run("Construis un portefeuille avec 50 % LOW.TO et 50 % CALM"), experience="avance")
+    assert not any("égaux par hypothèse" in s.text for s in e_user.statements)
+    (u,) = [s for s in e_user.statements if "fournis dans la demande" in s.text]
+    assert u.label == "fait" and len(u.refs) == 1 and e_user.report.approved  # fait : l'origine est dans les paramètres de la preuve
+    e_eq = explain(run("Construis un scénario de portefeuille avec LOW.TO et CALM"), experience="avance")
+    (h,) = [s for s in e_eq.statements if "égaux par hypothèse" in s.text]
+    assert h.label == "hypothese" and not any("fournis dans la demande" in s.text for s in e_eq.statements)
+
+
+def test_user_weights_that_happen_to_be_equal_stay_user_weights(run):
+    # 50/50 saisi par l'utilisateur ressemble à l'hypothèse par défaut, mais n'en est pas une.
+    e = explain(run("Portefeuille : LOW.TO 50 %, CALM 50 %"), experience="avance")
+    assert any("fournis dans la demande" in s.text for s in e.statements)
+    assert not any("égaux par hypothèse" in s.text for s in e.statements)

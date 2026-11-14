@@ -18,6 +18,7 @@ class StressWindowParams(StrictModel):
     windows: Optional[List[WindowSpec]] = None  # None : fenêtres par défaut de la configuration
     metric: Metric = "annualized_volatility"
     threshold: Optional[float] = None  # None : seuil de la configuration
+    min_abs_spread: Optional[float] = None  # None : plancher de la configuration ; 0 le désactive
     base_currency: Optional[str] = None
     as_of: Optional[date] = None
 
@@ -42,14 +43,17 @@ def stress_window(store: DataStore, p: StressWindowParams) -> Evidence:
     as_of = resolve_as_of(store, p.as_of)
     base = (p.base_currency or cfg.default_base_currency).upper()
     threshold = cfg.stress_threshold if p.threshold is None else p.threshold
+    floor = cfg.stress_min_abs_spread if p.min_abs_spread is None else p.min_abs_spread
     specs = p.windows if p.windows is not None else [WindowSpec(alias=a) for a in cfg.stress_default_windows]
     params = {
         "ticker": p.ticker, "tool": p.tool, "windows": [w.model_dump(mode="json", exclude_none=True) for w in specs],
-        "metric": p.metric, "threshold": threshold, "base_currency": base, "as_of": as_of.isoformat(),
+        "metric": p.metric, "threshold": threshold, "min_abs_spread": floor, "base_currency": base, "as_of": as_of.isoformat(),
     }
     try:
         if threshold <= 0:
             raise ToolInputError("invalid_threshold", f"Seuil invalide : {threshold} (doit être > 0).")
+        if floor < 0:
+            raise ToolInputError("invalid_threshold", f"Plancher absolu invalide : {floor} (doit être >= 0).")
         if not specs:
             raise ToolInputError("no_windows", "Aucune fenêtre à rejouer.")
         asset, _, _, _ = prelude(store, p.ticker, specs[0], as_of)  # valide l'actif ; chaque fenêtre est validée ci-dessous
@@ -78,6 +82,7 @@ def stress_window(store: DataStore, p: StressWindowParams) -> Evidence:
         rows.append(row)
 
     ok = [r for r in rows if "value" in r]
+    abs_spread, floor_applied = None, False
     if len(ok) < 2:
         verdict, spread, lo, hi = "indetermine", None, None, None
         notices.append(Notice(code="STRESS_UNDETERMINED", message=f"{len(ok)} fenêtre(s) chiffrée(s) : il en faut au moins deux pour comparer."))
@@ -88,7 +93,9 @@ def stress_window(store: DataStore, p: StressWindowParams) -> Evidence:
             notices.append(Notice(code="STRESS_UNDETERMINED", message=f"Mesure nulle sur la fenêtre « {lo['window']} » : écart relatif non défini."))
         else:
             spread = (hi["value"] - lo["value"]) / lo["value"]
-            verdict = "sensible" if spread > threshold else "stable"
+            abs_spread = hi["value"] - lo["value"]
+            floor_applied = spread > threshold and abs_spread < floor  # écart relatif grand, mais écart réel négligeable
+            verdict = "sensible" if spread > threshold and not floor_applied else "stable"
 
     metric_label = "volatilité annualisée" if p.metric == "annualized_volatility" else "perte maximale depuis un sommet"
     value = {
@@ -98,6 +105,9 @@ def stress_window(store: DataStore, p: StressWindowParams) -> Evidence:
         "threshold": threshold,
         "verdict": verdict,  # stable | sensible | indetermine
         "relative_spread": spread,
+        "absolute_spread": abs_spread,
+        "min_abs_spread": floor,
+        "floor_applied": floor_applied,
         "min_window": lo["window"] if lo else None,
         "max_window": hi["window"] if hi else None,
         "n_windows": len(rows),
@@ -109,12 +119,15 @@ def stress_window(store: DataStore, p: StressWindowParams) -> Evidence:
             f"{metric_label} : de {lo['value']:.1%} (« {lo['window']} ») à {hi['value']:.1%} (« {hi['window']} »), "
             f"écart relatif {spread:.0%} pour un seuil de {threshold:.0%} : {verdict}."
         )
+        if floor_applied:
+            value["summary"] += f" L'écart absolu ({abs_spread:.1%}) est sous le plancher de {floor:.1%} : la mesure reste stable."
     return build_evidence(
         store, "stress_window", params, as_of, value=value, n_obs=len(ok), depends_on=depends,
         inputs=[store.input_ref("prices_daily.csv", asset["ticker"], as_of)],
         sources=[store.source_label("prices_daily.csv")], notices=notices,
         assumptions=[
-            f"Écart relatif = (max − min) ÷ min de la {metric_label} entre les fenêtres chiffrées ; « sensible » au-delà de {threshold:.0%}.",
+            f"Écart relatif = (max − min) ÷ min de la {metric_label} entre les fenêtres chiffrées ; « sensible » au-delà de {threshold:.0%}, "
+            f"sauf si l'écart absolu (max − min) reste sous le plancher de {floor:.1%} (une mesure presque nulle n'est pas sensible).",
             "Chaque ligne est une preuve compute_metrics distincte (evidence_id dans rows), recalculable à l'identique.",
             "Fenêtre « hors 2022 » : rendements datés en 2022 retirés, sans faux rendement entre fin 2021 et début 2023.",
         ],

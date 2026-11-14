@@ -28,6 +28,10 @@ class ParsedRequest(BaseModel):
     unknown_tickers: List[str] = []  # symboles repérés mais hors univers
     scope_flags: List[ScopeFlag] = []
     parser: str = "rules"
+    # Allocation décrite dans la demande (« 60 % SPY et 40 % AGG ») : ticker -> fraction. Jamais complétée ni corrigée :
+    # si elle est incomplète ou ne somme pas à 1, l'analyste refuse avec une erreur typée.
+    weights: Dict[str, float] = {}
+    rebalancing: Optional[Literal["rebalanced", "buy_and_hold"]] = None  # hypothèse de rééquilibrage, si la demande la précise
 
 
 # ---- repérage des actifs -------------------------------------------------
@@ -105,6 +109,42 @@ _INTENT_PATTERNS = [
 ]
 
 
+# ---- allocation décrite dans la demande -----------------------------------
+_TOKEN = r"\$?[A-Za-z][A-Za-z0-9]*(?:[.\-][A-Za-z]{2,3})?"
+_NUMBER = r"(\d+(?:[.,]\d+)?)"
+_PCT = r"\s*(?:%|pour\s*cent|percent)"
+# « 60 % SPY », « 60 % en SPY », « 60 % of SPY » : le pourcentage précède l'actif.
+_W_BEFORE = re.compile(_NUMBER + _PCT + r"\s*(?:en|de|d'|dans|sur|in|of|to|into)?\s*(" + _TOKEN + ")", re.I)
+# « SPY 60 % », « SPY à 60 % », « SPY: 60 % », « SPY at 60 % » : le pourcentage suit l'actif.
+_W_AFTER = re.compile("(" + _TOKEN + r")\s*(?:à|a|at|:|=|\()?\s*" + _NUMBER + _PCT, re.I)
+_BUY_HOLD = re.compile(r"achat[- ]et[- ]conserv|buy[- ]and[- ]hold|sans r[ée][ée]quilibr|without rebalanc|no rebalanc", re.I)
+_REBALANCED = re.compile(r"r[ée][ée]quilibr|rebalanc", re.I)
+
+
+def extract_weights(text: str, assets: List[Dict[str, str]]) -> Dict[str, float]:
+    """Poids cités dans la demande, en fraction, associés aux actifs de l'univers. Rien n'est complété ni normalisé.
+
+    Deux ordres sont possibles (« 60 % SPY » ou « SPY 60 % ») : on garde celui qui explique le plus de pourcentages
+    (à égalité, le pourcentage placé avant l'actif). Un actif cité deux fois garde sa première valeur.
+    """
+    def pairs(rx: "re.Pattern[str]", value_group: int, token_group: int) -> Dict[str, float]:
+        out: Dict[str, float] = {}
+        for m in rx.finditer(text):
+            known, _ = find_assets(m.group(token_group), assets)
+            if len(known) == 1 and known[0] not in out:
+                out[known[0]] = float(m.group(value_group).replace(",", ".")) / 100.0
+        return out
+
+    before, after = pairs(_W_BEFORE, 1, 2), pairs(_W_AFTER, 2, 1)
+    return after if len(after) > len(before) else before
+
+
+def detect_rebalancing(text: str) -> Optional[str]:
+    if _BUY_HOLD.search(text):
+        return "buy_and_hold"
+    return "rebalanced" if _REBALANCED.search(text) else None
+
+
 def _detect_flags(text: str) -> List[ScopeFlag]:
     return [f for f in SCOPE_FLAGS if _PATTERNS[f].search(text)]  # type: ignore[misc]
 
@@ -127,8 +167,13 @@ class RuleBasedParser:
                 intent = "evaluate_asset"
         if intent == "compare_assets" and len(tickers) == 1:
             intent = "evaluate_asset"
+        weights = extract_weights(text, assets)
+        tickers = tickers + [t for t in weights if t not in tickers]
+        if weights and len(tickers) >= 2:  # une allocation décrite : scénario, même sans le mot (incomplète : l'analyste la refusera)
+            intent = "build_scenario"  # type: ignore[assignment]
         return ParsedRequest(
-            raw_text=text, intent=intent, tickers=tickers, unknown_tickers=unknown, scope_flags=_detect_flags(text), parser=self.name
+            raw_text=text, intent=intent, tickers=tickers, unknown_tickers=unknown, scope_flags=_detect_flags(text), parser=self.name,
+            weights=weights, rebalancing=detect_rebalancing(text),  # type: ignore[arg-type]
         )
 
 
@@ -177,8 +222,14 @@ class LLMParser:
             unknown += [u for u in u2 if u not in unknown]
             # Les signaux de périmètre détectés par règles s'ajoutent : le LLM ne peut pas les désactiver.
             flags += [f for f in _detect_flags(text) if f not in flags]
+            # Les poids viennent du texte d'origine, jamais du modèle : il ne peut ni en inventer ni en retirer.
+            weights = extract_weights(text, assets)
+            tickers += [t for t in weights if t not in tickers]
+            if weights and len(tickers) >= 2:
+                intent = "build_scenario"
             return ParsedRequest(
-                raw_text=text, intent=intent, tickers=tickers, unknown_tickers=unknown, scope_flags=flags, parser=self.name
+                raw_text=text, intent=intent, tickers=tickers, unknown_tickers=unknown, scope_flags=flags, parser=self.name,
+                weights=weights, rebalancing=detect_rebalancing(text),  # type: ignore[arg-type]
             )
         except Exception:  # réponse invalide OU panne du client (réseau, quota, accès) : le repli par règles reste disponible
             parsed = self._fallback.parse(text, assets)

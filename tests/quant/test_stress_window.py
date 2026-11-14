@@ -109,3 +109,22 @@ def test_fully_excluded_window_is_refused(make_store):
     store.config.window_aliases["vide"] = WindowAlias(description="test", start="2022-01-01", end="2022-12-31", exclude=[p22])
     e = run_tool(store, "compute_metrics", {"ticker": "X", "window": {"alias": "vide"}})
     assert e.status == "refused" and e.error_code == "WINDOW_FULLY_EXCLUDED"
+
+
+def test_absolute_floor_keeps_a_near_zero_measure_stable(make_store):
+    # Volatilités de ~0,8 % (2022) et ~0,4 % : écart relatif de 100 %, mais écart réel de 0,4 point.
+    store = make_store({"X": ("equity", "CAD", _alternating({2021: 0.0005, 2022: 0.0005, 2023: 0.00025}))})
+    e = run_tool(store, "stress_window", {"ticker": "X", "windows": [{"alias": "2022"}, {"start": "2023-01-02", "end": "2023-12-29"}]})
+    v = e.value
+    assert v["relative_spread"] > 0.25 and v["absolute_spread"] < 0.02
+    assert v["verdict"] == "stable" and v["floor_applied"] is True and "plancher" in v["summary"]
+    assert e.params["min_abs_spread"] == 0.02
+    off = run_tool(store, "stress_window", {"ticker": "X", "min_abs_spread": 0, "windows": [{"alias": "2022"}, {"start": "2023-01-02", "end": "2023-12-29"}]})
+    assert off.value["verdict"] == "sensible" and off.value["floor_applied"] is False and off.evidence_id != e.evidence_id
+    assert run_tool(store, "stress_window", {"ticker": "X", "min_abs_spread": -1}).error_code == "INVALID_THRESHOLD"
+
+
+def test_floor_does_not_hide_a_real_shock(make_store):
+    store = make_store({"X": ("equity", "CAD", _alternating({2022: 0.03}))})
+    v = _stress(store).value
+    assert v["verdict"] == "sensible" and v["floor_applied"] is False and v["absolute_spread"] > 0.2

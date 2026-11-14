@@ -1,7 +1,7 @@
 """Registre de preuves : journal ordonné, en ajout seul. Enveloppe les `Evidence` de l'analyste sans les modifier."""
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 
@@ -23,13 +23,17 @@ class LedgerEntry(BaseModel):
 class Ledger:
     """Aucune horloge système : l'ordre vient de `seq`, ce qui garde les traces reproductibles."""
 
-    def __init__(self) -> None:
+    def __init__(self, on_write: Optional[Callable[["LedgerEntry"], None]] = None) -> None:
+        """`on_write` : observateur facultatif appelé à chaque entrée (trace en direct). Il ne peut pas modifier le registre."""
         self._entries: List[LedgerEntry] = []
         self._evidence_ids: set = set()
+        self._on_write = on_write
 
     def write(self, kind: EntryKind, agent: str, payload: Dict[str, Any], evidence_id: Optional[str] = None) -> LedgerEntry:
         entry = LedgerEntry(seq=len(self._entries) + 1, kind=kind, agent=agent, payload=payload, evidence_id=evidence_id)
         self._entries.append(entry)
+        if self._on_write is not None:
+            self._on_write(entry)
         return entry
 
     def write_evidence(self, agent: str, evidence: Evidence) -> Optional[LedgerEntry]:

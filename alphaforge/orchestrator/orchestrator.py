@@ -104,7 +104,9 @@ class Orchestrator:
         explainer: Optional[ExplainFn] = None,
         parser: Optional[Any] = None,
         as_of: Optional[date] = None,
+        on_entry: Optional[Callable[[Any], None]] = None,
     ):
+        self._on_entry = on_entry  # observateur facultatif des écritures du registre (affichage en direct)
         self._analyst = analyst
         self._governance = governance
         self._explainer = explainer
@@ -159,14 +161,19 @@ class Orchestrator:
                 analyst_ids.append(add("analyste", "correlation_matrix",
                                        {"tickers": list(request.tickers), "window": {"alias": "complet"}, **money, **extra}))
         if len(request.tickers) >= 2 and request.intent == "build_scenario":
-            # Rejeu historique d'une allocation fictive. Aucun poids n'est demandé par l'utilisateur : pondération égale,
-            # posée comme hypothèse de scénario (rééquilibrée à chaque période, sans frais). Jamais une recommandation.
+            # Rejeu historique d'une allocation fictive. Si la demande donne des poids, on les transmet tels quels : jamais
+            # complétés ni normalisés (incomplets ou de somme différente de 1, l'analyste refuse avec une erreur typée).
+            # Sinon, pondération égale posée comme hypothèse de scénario. Dans les deux cas, l'origine est consignée.
             if want("portfolio_metrics"):
-                n = len(request.tickers)
+                if request.weights:
+                    positions = [{"ticker": t, "weight": request.weights[t]} for t in request.tickers if t in request.weights]
+                    basis = "user"
+                else:
+                    positions = [{"ticker": t, "weight": 1.0 / len(request.tickers)} for t in request.tickers]
+                    basis = "assumed_equal"
                 analyst_ids.append(add("analyste", "portfolio_metrics", {
-                    "positions": [{"ticker": t, "weight": 1.0 / n} for t in request.tickers],
-                    "window": {"alias": "complet"}, "rebalancing": "rebalanced", **money, **extra}))
-
+                    "positions": positions, "window": {"alias": "complet"}, "rebalancing": request.rebalancing or "rebalanced",
+                    "weights_basis": basis, **money, **extra}))
         gov = add("gouvernance", "review", {"scope_flags": list(request.scope_flags)}, analyst_ids)
         add("explicabilite", "explain", {}, [gov])
         return Plan(steps=steps, unavailable_tools=unavailable)
@@ -187,7 +194,7 @@ class Orchestrator:
 
     def run(self, request_text: str, profile_source: Union[str, Dict[str, Any], InvestorProfile], assets: List[Dict[str, str]]) -> RunResult:
         """`assets` : lignes de l'univers (au moins `ticker` et `name`), pour reconnaître les actifs cités."""
-        ledger = Ledger()
+        ledger = Ledger(on_write=self._on_entry)
 
         # 1. Profil
         try:

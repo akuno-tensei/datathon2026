@@ -86,6 +86,9 @@ class QuantConfig(BaseModel):
     # stress_window : fenêtres rejouées par défaut et seuil de stabilité (variation relative max − min, rapportée au min).
     stress_default_windows: List[str] = ["complet", "2022", "hors_2022", "1_an", "3_ans"]
     stress_threshold: float = 0.25
+    # Plancher absolu : un écart relatif élevé sur une mesure presque nulle (0,4 % -> 0,8 %) n'est pas une vraie sensibilité.
+    # En dessous de ce nombre de points (0,02 = 2 points de volatilité ou de perte), la mesure reste « stable ».
+    stress_min_abs_spread: float = 0.02
 
     # correlation_matrix : observations communes minimales (avertissement en dessous, refus sous corr_min_obs_refuse).
     corr_min_obs_daily: int = 60
