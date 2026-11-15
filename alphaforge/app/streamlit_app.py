@@ -212,6 +212,7 @@ def render_verdict(a: Analysis, key: str) -> None:
     b = views.status_badge(v["status"], lang)
     st.markdown(f"## {b.icon} {b.label}")
     measures = views.verdict_measures(a, lang)
+    st.caption("ℹ " + t("not_suitability", lang))
     if measures:
         st.caption("ℹ " + t("limits_policy", lang))
     for asset in v["assets"] + v.get("alternatives", []):
@@ -663,6 +664,7 @@ def render_add_panel(editing: bool = False) -> None:
         b1.button(t("np_blank", lang), key="pf_blank_btn", on_click=_fill_form, args=(dict(forms.BLANK_PROFILE, language=lang),))
         b2.button(t("np_copy", lang), key="pf_copy_btn", on_click=_fill_form,
                   args=(forms.form_state_from_profile(profile.model_dump(mode="json")),))
+    st.warning("⚠ " + t("np_fictive_only", lang))  # au moment de la saisie : le profil part avec l'analyse dans l'archive
     c1, c2 = st.columns(2)
     c1.text_input(t("np_name", lang), key="pf_name")
     c2.text_input(t("np_id", lang), key="pf_id", disabled=editing, help=t("np_edit_id_locked" if editing else "np_id_help", lang))

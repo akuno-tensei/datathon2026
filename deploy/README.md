@@ -174,11 +174,13 @@ Le banc mesure l'interprétation des demandes (intention, actifs, signaux de pé
 
 Le fichier `bench_results.json` contient `run_at_utc`, `n_requests` et, par interpréteur, `scores`, `max`, `fallbacks`, `latency_median_s` et le détail de chaque passage (points par critère, latences, demandes manquées dans `misses`). Valeurs du relevé du 2026-11-15T05:11:08Z :
 
-| Interpréteur | Score | Replis | Latence médiane |
-|---|---|---|---|
-| `rules` | 30/36 (1 passage) | 0 | 0,0 s (arrondie) |
-| `global.anthropic.claude-haiku-4-5-20251001-v1:0` | 108/108 (3 passages) | 0 | 0,891 s |
-| `us.amazon.nova-2-lite-v1:0` | 105/108 (3 passages) | 0 | 0,519 s |
+| Interpréteur | Score total | Par passage (sur 36) | Replis | Latence médiane |
+|---|---|---|---|---|
+| `rules` | 30/36 (1 passage) | 30 | 0 | 0,0 s (arrondie) |
+| `global.anthropic.claude-haiku-4-5-20251001-v1:0` | 108/108 (3 passages) | 36, 36, 36 | 0 | 0,891 s |
+| `us.amazon.nova-2-lite-v1:0` | 105/108 (3 passages) | 35, 35, 35 | 0 | 0,519 s |
+
+Les totaux n'ont pas le même dénominateur parce que le nombre de passages diffère : un passage vaut 12 demandes × 3 contrôles = 36 points ; un modèle est passé 3 fois car sa réponse peut varier, les règles une fois car elles sont déterministes. La colonne « par passage » compare les trois sur la même base. Douze demandes forment un petit échantillon.
 
 Nova 2 Lite manque, à chaque passage, le signal `asks_transaction` de « Tout le monde parle de Tesla, je devrais en acheter ? » (le fichier ne liste que `asks_personal_advice` pour cette demande). Le README racine juge un signal de périmètre manqué comme l'erreur la plus coûteuse ici, d'où le choix de Claude Haiku 4.5 (`DEFAULT_LLM_MODEL` dans `alphaforge/app/pipeline.py`, `ModelId` dans `app-stack.yaml`).
 

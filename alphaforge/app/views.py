@@ -145,7 +145,9 @@ def agent_decisions(analysis: Analysis, lang: str) -> List[str]:
         trig = [f"{a['ticker']} ({t('status_' + a['status'], lang).lower()})" for a in before.get("assets", []) if a.get("status") != "conforme"]
         alts = list(dict.fromkeys(s["arguments"].get("ticker") for s in steps
                                   if str(s.get("step_id", "")).startswith(f"fb{k}.") and s.get("arguments", {}).get("ticker")))
-        out.append(t("dec_alt", lang, trig=", ".join(trig) or "—", alts=", ".join(alts) or "—", k=k, n=MAX_FEEDBACK_ITERATIONS))
+        final = {x["ticker"]: x.get("status") for x in (verdicts[-1].get("alternatives", []) if verdicts else [])}
+        named = [f"{x} ({t('status_' + final[x], lang).lower()})" if final.get(x) else x for x in alts]  # statut final, jamais omis
+        out.append(t("dec_alt", lang, trig=", ".join(trig) or "—", alts=", ".join(named) or "—", k=k, n=MAX_FEEDBACK_ITERATIONS))
     if verdicts and not n_iter:
         out.append(t("dec_alt_none_ok" if verdicts[-1].get("status") == "conforme" else "dec_alt_none", lang))
     if analysis.enrichment_enabled:  # après la gouvernance : relance pour les alternatives, puis bilan des lacunes

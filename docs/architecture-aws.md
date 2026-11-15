@@ -80,8 +80,8 @@ désigne toujours le même code.
 
 - **Fermeture du compte.** Le compte AWS de l'événement ferme le 16 novembre 2026 à 13 h 59 : la démo hébergée s'arrête. Le
   code reste utilisable hors AWS (règles et instantané SEC), et `deploy/deploy.py` redéploie tout sur un autre compte.
-  Ce qui est perdu : l'adresse CloudFront, l'interprétation par Bedrock (remplacée par les règles, 30/36 au banc d'essai
-  contre 108/108), l'archive S3 et les archives déjà écrites, et la console comme preuve. Ce qui reste : tous les agents,
+  Ce qui est perdu : l'adresse CloudFront, l'interprétation par Bedrock (remplacée par les règles : 30/36 au banc d'essai
+  contre 36/36 par passage pour Haiku 4.5, soit 108/108 sur 3 passages), l'archive S3 et les archives déjà écrites, et la console comme preuve. Ce qui reste : tous les agents,
   calculs, verdicts, explications et profils. Détail et vérification sans AWS : [README, « Après l'événement »](../README.md#après-lévénement).
 - **Pas de limite de requêtes ni d'accès protégé.** L'adresse est publique, sans AWS WAF ni authentification : n'importe
   quel visiteur peut déclencher un appel Bedrock. Chaque analyse fait un appel au modèle, limité à 400 jetons de
@@ -89,8 +89,11 @@ désigne toujours le même code.
   de débit WAF devant CloudFront, une authentification (Amazon Cognito) pour un usage réel, et une alerte AWS Budgets sur
   le compte.
 - **Données des profils dans l'archive.** Le registre archivé dans S3 contient le profil utilisé, y compris le nom affiché
-  et les raisons saisies en texte libre pour un profil créé dans l'interface. Les profils doivent rester fictifs : n'y
-  saisir aucune donnée personnelle réelle. Le bucket est privé, chiffré, et les archives expirent après 60 jours.
+  et les raisons saisies en texte libre pour un profil créé dans l'interface. Les profils doivent rester fictifs ; le
+  formulaire de profil l'écrit au moment de la saisie (« Profil fictif uniquement… »). Le bucket est privé, chiffré, et les
+  archives expirent après 60 jours. Amélioration : archiver le profil sous forme anonymisée (identifiant et empreinte à la
+  place du texte libre). Ce n'est pas fait, car l'empreinte du registre archivé ne correspondrait plus à celle du registre
+  rejoué, et le contrôle de rejeu devrait alors être adapté.
 - **Pas d'alarme.** Les journaux et les métriques du conteneur existent (CloudWatch, Container Insights), mais aucune alarme
   n'est définie. Amélioration : une alarme sur l'état de santé de la cible et sur les erreurs Bedrock.
 - **HTTP entre CloudFront et l'équilibreur.** Le visiteur est toujours en HTTPS ; le dernier tronçon, interne à AWS, est en

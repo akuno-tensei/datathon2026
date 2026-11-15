@@ -199,8 +199,8 @@ GLOSSARY: Dict[str, list] = {
                                        "part d'un seul actif et part de chaque type d'actif."),
         ("Préférences et exclusions", "Une préférence est un souhait : elle oriente l'analyse sans rien bloquer. "
                                       "Une exclusion est un refus strict : un actif exclu est bloqué."),
-        ("Alternative", "Autre actif de l'univers, proposé quand l'actif demandé dépasse les limites du profil. "
-                        "Il est évalué avec les mêmes règles ; ce n'est pas une recommandation."),
+        ("Alternative", "Autre actif de l'univers, évalué à titre de comparaison quand l'actif demandé dépasse les limites du profil. "
+                        "Il passe les mêmes règles et reçoit son propre statut ; ce n'est pas une recommandation."),
         ("FNB", "Fonds négocié en bourse : un panier de titres (actions, obligations, or…) qui s'achète comme une seule action."),
         ("Devise de base", "Monnaie dans laquelle tous les prix sont convertis avant le calcul (CAD ou USD), "
                            "pour comparer des actifs cotés dans des monnaies différentes."),
@@ -229,8 +229,8 @@ GLOSSARY: Dict[str, list] = {
                                             "share of a single asset and share of each asset type."),
         ("Preferences and exclusions", "A preference is a wish: it guides the analysis without blocking anything. "
                                        "An exclusion is a strict refusal: an excluded asset is blocked."),
-        ("Alternative", "Another asset from the universe, offered when the requested asset exceeds the profile limits. "
-                        "It is assessed with the same rules; it is not a recommendation."),
+        ("Alternative", "Another asset from the universe, assessed for comparison when the requested asset exceeds the profile limits. "
+                        "It goes through the same rules and gets its own status; it is not a recommendation."),
         ("ETF", "Exchange-traded fund: a basket of securities (stocks, bonds, gold…) bought like a single share."),
         ("Base currency", "Currency into which all prices are converted before computing (CAD or USD), "
                           "to compare assets quoted in different currencies."),

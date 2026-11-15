@@ -7,9 +7,9 @@ comment, avec quel résultat chiffré, et ce qui ne l'est pas. Chaque chiffre se
 
 | Ce qui est validé | Méthode | Résultat | Commande |
 |---|---|---|---|
-| Les métriques sont justes | Recalcul indépendant avec pandas, depuis le CSV brut, sans le code de l'analyste | 5 actifs sur 5, écart nul (tolérance 1e-9) | `python3 docs/validation_checks.py` |
+| Les métriques sont justes | Recalcul indépendant avec pandas, depuis le CSV brut, sans le code de l'analyste | 5 actifs sur 5 sous la tolérance de 1e-9 (écart maximal mesuré : 0, soit identique à l'arrondi près) | `python3 docs/validation_checks.py` |
 | Une analyse se rejoue à l'identique | Même analyse lancée 3 fois, empreinte SHA-256 du registre comparée | 3 analyses sur 3, une seule empreinte chacune | `python3 docs/validation_checks.py` |
-| La demande est bien comprise | Banc d'essai de 12 demandes, 3 points chacune (intention, actifs, signaux hors périmètre) | Claude Haiku 4.5 : 108/108 ; Nova 2 Lite : 105/108 ; règles seules : 30/36 | `python3 deploy/bench_llm.py` |
+| La demande est bien comprise | Banc d'essai de 12 demandes, 3 contrôles chacune (intention, actifs, signaux hors périmètre), soit 36 points par passage | Par passage : Claude Haiku 4.5 36/36 (3 passages sur 3, total 108/108) ; Nova 2 Lite 35/36 (105/108) ; règles seules 30/36 (un passage, résultat toujours identique). Petit échantillon : voir section 5 | `python3 deploy/bench_llm.py` |
 | L'explication ne dit que ce qui est prouvé | Vérificateur sur chaque énoncé (4 contrôles, section 4) | Énoncé fautif retiré, puis nouvelle rédaction | `python3 -m pytest tests/explainability` |
 | Le code fait ce qui est écrit | 641 tests automatiques, rejoués à chaque envoi par la CI | 641 réussis | `python3 -m pytest` |
 
@@ -27,7 +27,12 @@ la période, dans la devise de l'actif : rendement cumulatif, volatilité annual
 | GLD | 1 255 | 103,43 % | 19,22 % | −28,44 % | −10,27 % | 0 |
 | BTC-USD | 1 827 | 11,20 % | 50,76 % | −75,89 % | −15,97 % | 0 |
 
-Relevé du 15 novembre 2026, date d'analyse 12 novembre 2026. Les tests ajoutent des séries synthétiques à résultat connu
+Relevé du 15 novembre 2026, date d'analyse 12 novembre 2026. Tolérance : 1e-9 ; écart maximal mesuré : 0 sur les quatre
+mesures des cinq actifs, soit un résultat identique à l'arrondi près.
+
+**Limite de ce contrôle.** pandas applique ici les mêmes définitions que l'outil (rendements simples sur `adj_close`,
+écart-type d'échantillon, perte depuis le plus haut atteint). Le recalcul vérifie donc que le code applique correctement
+ces définitions ; il ne valide pas le choix des définitions, qui est documenté dans le README (« Décisions de calcul »). Les tests ajoutent des séries synthétiques à résultat connu
 (série constante, doublement en un an, perte de 50 % puis récupération, aller-retour USD → CAD → USD, deux actifs
 identiques, deux actifs anticorrélés) : `tests/quant/`, 70 tests.
 
@@ -70,6 +75,12 @@ preuve, pas que la phrase qui l'entoure est la bonne. Ce risque est traité aill
   langues (`tests/app/test_app_views.py`), formats des nombres propres à chaque langue (47,7 % et 47.7%).
 
 ## 5. Demandes hors périmètre
+
+**Lecture du banc d'essai.** Chaque passage vaut 12 demandes × 3 contrôles = 36 points. Les modèles Bedrock sont passés
+3 fois, car leur réponse peut varier d'un appel à l'autre (108 points possibles) ; les règles une fois, car elles redonnent
+toujours la même réponse (36 points possibles). Sur la même base d'un passage : Haiku 4.5 36/36, Nova 2 Lite 35/36, règles
+30/36. Douze demandes forment un petit échantillon : il départage les interpréteurs sur des cas typiques, il ne mesure pas
+un taux d'erreur général.
 
 | Demande | Avec Bedrock | Règles seules (sans AWS) |
 |---|---|---|
