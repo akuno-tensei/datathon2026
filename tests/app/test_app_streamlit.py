@@ -41,13 +41,13 @@ def test_send_request_renders_verdict_explanation_limits_and_trace(app):
     txt = _texts(app)
     assert "⚠ AVERTISSEMENT" in txt  # icône et texte, jamais la couleur seule
     assert "Explication" in txt and "Limites et incertitudes" in txt and "Trace des agents" in txt
-    assert any(b.label.startswith("🔎 ev_") for b in app.button)  # nombres reliés à leur preuve
+    assert any(b.label == "Preuve" and (b.help or "").startswith("Preuve · ev_") for b in app.button)  # nombres reliés à leur preuve
 
 
 def test_click_on_evidence_opens_drawer_with_reproduce_command(app):
     app.text_area(key="req_box").set_value("Évalue NVDA")
     next(b for b in app.button if b.label == "Envoyer").click().run()
-    next(b for b in app.button if b.label.startswith("🔎 ev_")).click().run()
+    next(b for b in app.button if b.label == "Preuve" and (b.help or "").startswith("Preuve · ev_")).click().run()
     assert not app.exception, app.exception
     assert "Preuve" in _texts(app)
     assert any("run_tool(store" in c.value for c in app.code)
@@ -192,7 +192,24 @@ def test_shortcut_hint_tells_the_user_to_click_send(app):
 
 
 # ---- création d'un profil quelconque -----------------------------------------
+def _keys(app):
+    return {w.key for w in list(app.text_input) + list(app.button) + list(app.selectbox) + list(app.checkbox)}
+
+
+def _open_add(app):
+    """Ouvre le panneau de création (bouton « Ajouter ») s'il n'est pas déjà ouvert."""
+    if "pf_name" not in _keys(app):
+        app.button(key="pf_add_btn").click().run()
+    return app
+
+
+def _open_del(app):
+    app.button(key="pf_del_open_btn").click().run()
+    return app
+
+
 def _fill(app, name, risk="modere", hz=(5, 10)):
+    _open_add(app)
     app.text_input(key="pf_name").set_value(name)
     app.select_slider(key="pf_risk").set_value(risk)
     app.slider(key="pf_hz").set_value(hz)
@@ -209,6 +226,7 @@ def _add_pref(app, kind, value, weight=None):
 
 
 def test_the_form_starts_blank_not_as_a_copy_of_the_active_profile(app):
+    _open_add(app)
     assert app.text_input(key="pf_name").value == "" and app.text_input(key="pf_id").value == ""
     assert app.select_slider(key="pf_risk").value == "modere" and app.session_state["pf_prefs"] == []
     assert app.button(key="pf_save_btn").disabled  # ni nom ni identifiant : rien à enregistrer
@@ -236,6 +254,7 @@ def test_any_profile_can_be_created_becomes_active_and_drives_the_verdict(app):
 
 
 def test_copy_and_blank_buttons_reset_the_form(app):
+    _open_add(app)
     app.button(key="pf_copy_btn").click().run()
     assert app.select_slider(key="pf_risk").value == "faible_modere" and app.slider(key="pf_hz").value == (3, 5)  # profil actif : Robert
     assert app.text_input(key="pf_name").value == "" and app.text_input(key="pf_id").value == ""  # nom et identifiant à saisir
@@ -298,27 +317,32 @@ def test_a_free_theme_is_accepted_and_flagged_as_unverifiable_for_governance(app
 
 def test_profile_form_labels_follow_the_language(app):
     app.radio(key="lang").set_value("en").run()
+    _open_add(app)
     assert any("Create any profile" in c.value for c in app.caption)
     assert any(b.label == "Start from a blank form" for b in app.button)
 
 
 # ---- suppression d'un profil créé ---------------------------------------------
 def _create(app, name):
+    _open_add(app)
     app.text_input(key="pf_name").set_value(name).run()
     app.button(key="pf_save_btn").click().run()
     return app
 
 
 def test_no_delete_option_without_created_profiles_and_examples_are_never_offered(app):
-    assert any("Aucun profil créé à supprimer" in c.value for c in app.caption)
-    assert not [s for s in app.selectbox if s.key == "pf_del_pick"] and not [b for b in app.button if b.key == "pf_del_btn"]
+    btn = app.button(key="pf_del_open_btn")
+    assert btn.disabled and "Aucun profil créé à supprimer" in btn.help  # rien à supprimer : le bouton le dit
+    assert not {"pf_del_pick", "pf_del_btn"} & _keys(app)
     _create(app, "Mien")
-    pick = app.selectbox(key="pf_del_pick")
-    assert pick.options == ["Mien"]  # seulement ce qui a été créé (noms affichés) : Amira, Mateo et Robert n'y figurent pas
+    assert not app.button(key="pf_del_open_btn").disabled
+    _open_del(app)
+    assert app.selectbox(key="pf_del_pick").options == ["Mien"]  # seulement ce qui a été créé : Amira, Mateo et Robert n'y figurent pas
+    assert "pf_name" not in _keys(app)  # le panneau de suppression ne montre pas le formulaire de création
 
 
 def test_deleting_needs_explicit_confirmation(app):
-    _create(app, "A garder")
+    _open_del(_create(app, "A garder"))
     assert app.button(key="pf_del_btn").disabled and (app.user_dir / "a_garder.json").is_file()
     app.checkbox(key="pf_del_ok").check().run()
     assert not app.button(key="pf_del_btn").disabled
@@ -329,6 +353,7 @@ def test_deleting_needs_explicit_confirmation(app):
 def test_deleting_the_active_profile_falls_back_to_an_example_without_error(app):
     _create(app, "Actif")
     assert app.selectbox(key="profile_sel").value == "actif"
+    _open_del(app)
     app.checkbox(key="pf_del_ok").check().run()
     app.button(key="pf_del_btn").click().run()
     assert not app.exception, app.exception
@@ -336,12 +361,13 @@ def test_deleting_the_active_profile_falls_back_to_an_example_without_error(app)
     assert app.selectbox(key="profile_sel").value == "robert" and "Actif" not in app.selectbox(key="profile_sel").options
     assert any("Profil supprimé : actif" in s.value for s in app.success)
     assert app.session_state["pf_del_ok"] is False  # la confirmation est remise à zéro pour le profil suivant
-    assert any("Aucun profil créé à supprimer" in c.value for c in app.caption)  # plus rien à supprimer : la case a disparu
+    assert app.button(key="pf_del_open_btn").disabled and "pf_del_pick" not in _keys(app)  # plus rien à supprimer : panneau fermé
 
 
 def test_deleting_a_profile_used_in_the_comparison_tab_does_not_break_it(app):
     _create(app, "Compare")
     app.selectbox(key="cmp_l").set_value("compare").run()
+    _open_del(app)
     app.checkbox(key="pf_del_ok").check().run()
     app.button(key="pf_del_btn").click().run()
     assert not app.exception, app.exception
@@ -352,70 +378,60 @@ def test_deleting_a_profile_used_in_the_comparison_tab_does_not_break_it(app):
 
 def test_only_the_chosen_profile_is_deleted_and_an_analysis_survives_its_profile_deletion(app):
     _create(app, "Premier")
-    app.button(key="pf_blank_btn").click().run()
     _create(app, "Second")
-    assert set(app.selectbox(key="pf_del_pick").options) == {"Premier", "Second"}
     app.text_area(key="req_box").set_value("Évalue NVDA")
     next(b for b in app.button if b.label == "Envoyer").click().run()
     analysis = app.session_state["analysis"]
+    _open_del(app)
+    assert set(app.selectbox(key="pf_del_pick").options) == {"Premier", "Second"}
     app.selectbox(key="pf_del_pick").set_value("second").run()
     app.checkbox(key="pf_del_ok").check().run()
     app.button(key="pf_del_btn").click().run()
     assert not app.exception, app.exception
     assert (app.user_dir / "premier.json").is_file() and not (app.user_dir / "second.json").exists()
     assert app.session_state["analysis"] is analysis and analysis.profile.profile_id == "second"  # le résultat déjà affiché reste lisible
+    assert app.selectbox(key="pf_del_pick").options == ["Premier"]  # il en reste un : le panneau reste ouvert
 
 
-# ---- le bouton « Nouveau profil » doit se trouver sans chercher ---------------
-def _profile_panel(app):
-    (panel,) = [e for e in app.expander if "profil" in e.label.lower()]
-    return panel
+# ---- deux boutons sous le sélecteur : « Ajouter » et « Supprimer » ------------
+def test_add_and_delete_buttons_sit_under_the_profile_selector_and_no_dropdown_panel_remains(app):
+    assert app.button(key="pf_add_btn").label == "➕ Ajouter" and not app.button(key="pf_add_btn").disabled
+    assert app.button(key="pf_del_open_btn").label == "🗑 Supprimer"
+    assert not [e for e in app.expander if "profil" in e.label.lower()]  # plus de menu déroulant
+    assert not {"pf_name", "pf_del_pick", "pf_close_btn"} & _keys(app)  # rien n'est ouvert au départ
+    assert "Profil" not in [t.label for t in app.tabs]
 
 
-def test_a_new_profile_button_sits_right_under_the_profile_selector(app):
-    (btn,) = [b for b in app.button if b.key == "pf_open_btn"]
-    assert btn.label == "➕ Nouveau profil"
-    assert not btn.disabled  # toujours utilisable, sans condition préalable
-    assert _profile_panel(app).label == "👤 Créer ou supprimer un profil"
-    assert "Profil" not in [t.label for t in app.tabs]  # plus d'onglet à deviner : le panneau est sous le bandeau, sur toutes les vues
-
-
-def test_clicking_new_profile_opens_the_panel_with_a_blank_form(app):
-    assert _profile_panel(app).proto.expanded is False
+def test_add_opens_a_blank_form_and_close_hides_it(app):
     _fill(app, "Brouillon", risk="eleve")  # un formulaire déjà rempli...
-    app.button(key="pf_open_btn").click().run()
+    app.run()
+    app.button(key="pf_close_btn").click().run()
+    assert "pf_name" not in _keys(app)
+    app.button(key="pf_add_btn").click().run()
     assert not app.exception, app.exception
-    assert _profile_panel(app).proto.expanded is True
     assert app.text_input(key="pf_name").value == "" and app.select_slider(key="pf_risk").value == "modere"  # ...repart de zéro
+    assert "pf_del_pick" not in _keys(app)
 
 
-def test_the_button_is_translated(app):
+def test_the_buttons_are_translated(app):
     app.radio(key="lang").set_value("en").run()
-    assert [b.label for b in app.button if b.key == "pf_open_btn"] == ["➕ New profile"]
-    assert _profile_panel(app).label == "👤 Create or delete a profile"
+    assert app.button(key="pf_add_btn").label == "➕ Add" and app.button(key="pf_del_open_btn").label == "🗑 Delete"
 
 
-def test_after_saving_the_panel_folds_and_the_result_stays_visible(app):
-    app.button(key="pf_open_btn").click().run()
-    app.text_input(key="pf_name").set_value("Visible").run()
-    app.button(key="pf_save_btn").click().run()
-    assert _profile_panel(app).proto.expanded is False
-    assert any("Profil enregistré : visible" in s.value for s in app.success)  # message hors du panneau replié
+def test_after_saving_the_panel_closes_and_the_result_stays_visible(app):
+    _create(app, "Visible")
+    assert "pf_name" not in _keys(app)
+    assert any("Profil enregistré : visible" in s.value for s in app.success)  # message hors du panneau fermé
     assert app.selectbox(key="profile_sel").value == "visible"
     app.run()  # l'action suivante n'affiche plus le message
     assert not any("Profil enregistré" in s.value for s in app.success)
 
 
 def test_the_panel_is_outside_the_tabs_so_it_is_reachable_from_every_view(app):
-    kids = list(app.main.children.values())
-    names = [type(k).__name__ for k in kids]
-    panel_at = next(i for i, k in enumerate(kids) if type(k).__name__ == "Expander" and "profil" in k.label.lower())
-    tabs_at = max(i for i, n in enumerate(names) if n == "Block")  # le bloc des onglets vient après le panneau
-    assert panel_at < tabs_at  # sous le bandeau, avant les onglets : visible quelle que soit la vue
+    _open_add(app)
     for tab in app.tabs:
-        assert not [e for e in tab.children.values() if type(e).__name__ == "Expander" and "profil" in e.label.lower()]
-    app.button(key="pf_open_btn").click().run()
-    assert not app.exception and {"pf_name", "pf_save_btn"} <= {w.key for w in list(app.text_input) + list(app.button)}
+        assert "pf_name" not in {w.key for w in tab.text_input}
+    assert {"pf_name", "pf_save_btn"} <= _keys(app)
 
 
 # ---- agent d'enrichissement dans l'application ---------------------------------
@@ -483,3 +499,39 @@ def test_sec_identification_is_session_only_never_written_to_disk(app, tmp_path)
 
 def test_source_cards_listing_starts_empty(app):
     assert any("Aucune fiche source" in c.value for c in app.caption)
+
+
+# ---- présentation des mesures et des liens de preuve ---------------------------
+def test_measure_bars_say_how_much_of_the_limit_is_used_and_details_move_to_a_caption(app):
+    app.text_area(key="req_box").set_value("Évalue NVDA")
+    next(b for b in app.button if b.label == "Envoyer").click().run()
+    assert not app.exception, app.exception
+    bars = [p.proto.text for p in app.get("progress")]
+    assert bars and all("de la limite" in s for s in bars[:2])
+    assert not any("jours de bourse" in s or "fenêtre «" in s for s in bars)  # le détail technique n'encombre plus la barre
+    caps = [c.value for c in app.caption if c.value.startswith("Pire fenêtre mesurée")]
+    assert any("252 jours de bourse par an" in c for c in caps) and any("prix ajustés" in c for c in caps)
+
+
+def test_evidence_links_just_say_evidence_and_keep_the_full_id_in_the_tooltip(app):
+    app.text_area(key="req_box").set_value("Évalue NVDA")
+    next(b for b in app.button if b.label == "Envoyer").click().run()
+    ev = [b for b in app.button if (b.help or "").startswith("Preuve · ev_")]
+    assert ev and all(b.label == "Preuve" for b in ev)
+    assert all(len(b.help.split("· ")[1]) == 19 for b in ev)  # l'identifiant complet reste accessible au survol
+
+
+def test_the_profile_card_is_readable_units_capitals_and_one_value_per_line(app):
+    txt = _texts(app)  # Robert : faible_modere, avance, deux objectifs
+    assert "3 à 5 ans" in txt and "Faible à modéré" in txt and "Avancé" in txt
+    assert "Préservation du capital" in txt and "Croissance modérée" in txt
+    assert "faible_modere" not in txt and "preservation_capital" not in txt
+    card = next(m.value for m in app.markdown if "**Objectifs**" in m.value)
+    assert "\n    - Préservation du capital\n    - Croissance modérée" in card  # une valeur par ligne
+
+
+def test_the_profile_form_shows_readable_choices_but_stores_the_codes(app):
+    _fill(app, "Lisible", risk="faible_modere")
+    assert app.select_slider(key="pf_risk").value == "faible_modere"  # la valeur enregistrée ne change pas
+    assert "Faible à modéré" in app.select_slider(key="pf_risk").options
+    assert "Préservation du capital" in app.multiselect(key="pf_obj").options

@@ -1,7 +1,7 @@
 """Agent gouvernance : contraintes dérivées du profil, contrôles, verdict visible."""
 from .checks import (
     apply_enrichment,
-    check_data_gaps, check_diversification, check_hard_constraints, check_horizon_fit, check_portfolio_limits, check_risk_limits, check_scope_limits,
+    check_data_gaps, check_diversification, check_exclusion_vocabulary, check_hard_constraints, check_horizon_fit, check_portfolio_limits, check_risk_limits, check_scope_limits,
     check_soft_preferences, derive_constraints,
 )
 from .config import GovernanceConfig, RiskLimits
@@ -11,6 +11,6 @@ from .models import AssetAssessment, Constraints, GovernanceVerdict, Reason, Sco
 __all__ = [
     "apply_enrichment",
     "AssetAssessment", "Constraints", "Governance", "GovernanceConfig", "GovernanceVerdict", "Reason", "RiskLimits",
-    "ScopeRefusal", "check_data_gaps", "check_diversification", "check_hard_constraints", "check_horizon_fit", "check_portfolio_limits", "check_risk_limits",
+    "ScopeRefusal", "check_data_gaps", "check_diversification", "check_exclusion_vocabulary", "check_hard_constraints", "check_horizon_fit", "check_portfolio_limits", "check_risk_limits",
     "check_scope_limits", "check_soft_preferences", "derive_constraints",
 ]

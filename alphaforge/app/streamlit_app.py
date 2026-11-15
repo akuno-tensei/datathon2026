@@ -22,6 +22,7 @@ import streamlit as st  # noqa: E402
 
 from alphaforge.app import forms, views
 from alphaforge.app.i18n import t
+from alphaforge.app.labels import human, humanize_text
 from alphaforge.app.pipeline import AlphaForge, Analysis, enrichment_coverage
 from alphaforge.governance import GovernanceConfig
 from alphaforge.orchestrator import ProfileError, load_profile, validate_profile
@@ -57,19 +58,32 @@ def pct(x: Optional[float], lang: str) -> str:
     return s.replace(".", ",") if lang == "fr" else s.replace(" %", "%")
 
 
-def _open_profiles() -> None:
-    """Rappel du bouton « Nouveau profil » : ouvre le panneau avec un formulaire vierge (fonctions définies plus bas, résolues à l'appel)."""
+def _open_add() -> None:
+    """Rappel du bouton « Ajouter » : ouvre le panneau de création avec un formulaire vierge (fonctions définies plus bas)."""
     _fill_form(dict(forms.BLANK_PROFILE, language=S.get("lang", "fr")))
-    S.pf_open = True
+    S.pf_mode = "add"
+
+
+def _open_delete() -> None:
+    S.pf_del_ok = False
+    S.pf_mode = "delete"
+
+
+def _close_panel() -> None:
+    S.pf_mode = None
 
 
 # ---- bandeau supérieur --------------------------------------------------
 profiles = F.list_profiles()
 ids = [p.profile_id for p in profiles]
-top = st.columns([2.2, 2, 1.6, 1.1, 1.1, 2])
+created = [p for p in profiles if F.profile_origin(p.profile_id) == "créé"]  # seuls ceux-ci se suppriment ; les exemples sont protégés
+S.setdefault("pf_mode", None)  # None | "add" | "delete" : le panneau de gestion n'apparaît que sur demande
+if S.pf_mode == "delete" and not created:
+    S.pf_mode = None
+top = st.columns([2.2, 2.6, 1.6, 1.1, 1.4])
 with top[0]:
     st.markdown("### ⚖ AlphaForge AI")
-with top[5]:
+with top[4]:
     lang = st.radio("FR | EN", ["fr", "en"], horizontal=True, label_visibility="collapsed", key="lang")
 if S.get("pending_profile") in ids:  # profil qu'on vient de créer : il devient le profil actif
     S.profile_sel = S.pop("pending_profile")
@@ -78,50 +92,71 @@ if S.get("profile_sel") not in ids:
 with top[1]:
     pid = st.selectbox(t("profile", lang), ids, key="profile_sel",
                        format_func=lambda i: next(p.display_name for p in profiles if p.profile_id == i))
-    st.button(t("np_new_btn", lang), key="pf_open_btn", on_click=_open_profiles, help=t("np_new_help", lang))
+    pb1, pb2 = st.columns(2)
+    pb1.button(t("np_add_btn", lang), key="pf_add_btn", on_click=_open_add, help=t("np_add_help", lang), width="stretch")
+    pb2.button(t("np_del_open_btn", lang), key="pf_del_open_btn", on_click=_open_delete, disabled=not created, width="stretch",
+               help=t("np_del_open_help" if created else "np_delete_none", lang))
 profile = F.get_profile(pid)
 with top[2]:
     as_of = st.date_input(t("as_of", lang), value=F.store.last_date, min_value=F.store.first_date, max_value=F.store.last_date)
 with top[3]:
     base = st.selectbox(t("base_currency", lang), ["CAD", "USD"], index=0 if profile.base_currency == "CAD" else 1)
-with top[4]:
-    enrich_on = st.toggle(t("enr_toggle", lang), value=True, key="enrich_on")
-    st.markdown(f"⚙ **{t('mode_enriched' if enrich_on else 'mode_core', lang)}**")
 
 st.warning("⚠ " + t("simulation_banner", lang))  # jamais masquable
-if enrich_on:  # ce qui est réellement branché est affiché tel quel : une source absente se voit
-    cov = enrichment_coverage(S.get("sec_ua") or os.environ.get("ALPHAFORGE_SEC_USER_AGENT"))
-    st.caption("ℹ " + t("enr_cov_line", lang, line=" ; ".join(f"{t('enr_tool_' + k, lang)} : {t('enr_cov_' + v, lang)}" for k, v in cov.items())))
-else:
-    st.caption("ℹ " + t("enr_mode_off", lang))
-# Résultat d'un enregistrement ou d'une suppression de profil : visible même quand le panneau ci-dessous est replié.
+# Enrichissement : une ligne à part, sous l'avertissement, pour ne pas déformer le bandeau.
+er1, er2 = st.columns([1.3, 6], vertical_alignment="center")
+with er1:
+    enrich_on = st.toggle(t("enr_toggle_short", lang), value=True, key="enrich_on", help=t("enr_toggle", lang))
+with er2:
+    if enrich_on:  # ce qui est réellement branché est affiché tel quel : une source absente se voit
+        cov = enrichment_coverage(S.get("sec_ua") or os.environ.get("ALPHAFORGE_SEC_USER_AGENT"))
+        st.caption(f"⚙ **{t('mode_enriched', lang)}**")
+        st.caption("ℹ " + t("enr_cov_line", lang, line=" ; ".join(f"{t('enr_tool_' + k, lang)} : {t('enr_cov_' + v, lang)}" for k, v in cov.items())))
+    else:
+        st.caption(f"⚙ **{t('mode_core', lang)}**")
+        st.caption("ℹ " + t("enr_mode_off", lang))
+# Résultat d'un enregistrement ou d'une suppression de profil : visible même quand le panneau est fermé.
 if S.get("pf_flash"):
     st.success("✓ " + S.pop("pf_flash"))
 if S.get("pf_flash_error"):
     st.error("⛔ " + S.pop("pf_flash_error"))
-# Gestion des profils : toujours à portée de vue, ouverte par le bouton « Nouveau profil » (contenu rempli plus bas).
-profile_box = st.expander("👤 " + t("np_manage", lang), expanded=bool(S.get("pf_open")))
+# Panneau de gestion des profils, sous le bandeau, ouvert par « Ajouter » ou « Supprimer » (contenu rempli plus bas).
+profile_box = st.container(border=True) if S.pf_mode else None
 
 
 # ---- rendu des éléments partagés ----------------------------------------
 def evidence_button(eid: str, key: str) -> None:
-    if st.button(f"🔎 {eid}", key=key, help=t("drawer_title", lang)):
+    """Lien discret vers la preuve : libellé court, identifiant complet dans l'info-bulle (traçabilité intacte)."""
+    if st.button(t("ev_btn", lang), key=key, icon=":material/receipt_long:", type="tertiary",
+                 help=f"{t('drawer_title', lang)} · {eid}"):
         S.evidence_open = eid
 
 
 def render_profile_panel(p) -> None:
     v = validate_profile(p)
     st.markdown(f"#### {p.display_name or p.profile_id}")
+
+    def many(items: List[str]) -> str:
+        """Champ à plusieurs valeurs : une valeur par ligne (pas de liste coupée au milieu d'une valeur)."""
+        return "".join(f"\n    - {x}" for x in items) if items else f" {t('none', lang)}"
+
+    def crit(x, weighted: bool) -> str:
+        w = ""
+        if weighted:
+            num = f"{x.weight:g}"
+            w = f" · {t('pf_weight', lang).lower()} {num.replace('.', ',') if lang == 'fr' else num}"
+        return f"{human(x.value, lang)} ({t('ck_' + x.kind, lang).lower()}){w}"
+
     st.markdown(
-        f"- **{t('horizon', lang)}** : {p.horizon_years_min}–{p.horizon_years_max}\n"
-        f"- **{t('risk', lang)}** : {p.risk_tolerance}\n"
-        f"- **{t('experience', lang)}** : {p.experience}\n"
-        f"- **{t('objectives', lang)}** : {', '.join(p.objectives) or t('none', lang)}\n"
-        f"- **{t('preferences', lang)}** : {', '.join(f'{x.kind}:{x.value} ({x.weight:g})' for x in p.soft_preferences) or t('none', lang)}\n"
-        f"- **{t('exclusions', lang)}** : {', '.join(f'{x.kind}:{x.value}' for x in p.hard_exclusions) or t('none', lang)}"
+        f"- **{t('horizon', lang)}** : {t('years_range', lang, a=p.horizon_years_min, b=p.horizon_years_max)}\n"
+        f"- **{t('risk', lang)}** : {human(p.risk_tolerance, lang)}\n"
+        f"- **{t('experience', lang)}** : {human(p.experience, lang)}\n"
+        f"- **{t('objectives', lang)}** :{many([human(o, lang) for o in p.objectives])}\n"
+        f"- **{t('preferences', lang)}** :{many([crit(x, True) for x in p.soft_preferences])}\n"
+        f"- **{t('exclusions', lang)}** :{many([crit(x, False) for x in p.hard_exclusions])}"
     )
     for i in v.issues:
-        (st.error if i.severity == "error" else st.warning)(("⛔ " if i.severity == "error" else "⚠ ") + i.message)
+        (st.error if i.severity == "error" else st.warning)(("⛔ " if i.severity == "error" else "⚠ ") + humanize_text(i.message, lang))
     from alphaforge.governance import GovernanceConfig, derive_constraints
 
     c = derive_constraints(p, GovernanceConfig())
@@ -129,10 +164,10 @@ def render_profile_panel(p) -> None:
     st.markdown(
         f"- {t('max_vol', lang)} : {pct(c.max_volatility, lang)}\n- {t('max_dd', lang)} : {pct(c.max_drawdown, lang)}\n"
         f"- {t('max_weight', lang)} : {pct(c.max_single_asset_weight, lang)}\n"
-        f"- {t('class_caps', lang)} : {', '.join(f'{k} {pct(x, lang)}' for k, x in c.class_caps.items()) or t('none', lang)}"
+        f"- {t('class_caps', lang)} :{many([f'{human(k, lang)} : {pct(x, lang)}' for k, x in c.class_caps.items()])}"
     )
     for adj in c.adjustments:
-        st.caption("ℹ " + adj)
+        st.caption("ℹ " + humanize_text(adj, lang))
 
 
 def render_verdict(a: Analysis, key: str) -> None:
@@ -162,18 +197,19 @@ def render_verdict(a: Analysis, key: str) -> None:
         with st.container(border=True):
             st.markdown(f"**{asset['ticker']}** · {ab.icon} {ab.label}{alt}")
             for i, m in enumerate(measures.get(asset["ticker"], [])):
-                c1, c2, c3 = st.columns([3, 4, 2])
+                c1, c2, c3 = st.columns([3, 4, 1.2], vertical_alignment="center")
                 c1.markdown(f"{m.icon} **{m.label}** : {pct(m.value, lang)} — {t('limit', lang)} {pct(m.limit, lang)}"
                             f" ({t('ok', lang) if m.ok else t('ko', lang)})")
-                c2.progress(m.ratio, text=f"{t('window', lang)} « {m.window} » · {m.basis}")
+                used = m.value / m.limit if m.limit else None
+                c2.progress(m.ratio, text=t("of_limit", lang, p=pct(used, lang)) if m.ok or used is None else t("over_limit", lang, p=pct(used, lang)))
                 with c3:
                     evidence_button(m.evidence_id, f"{key}-m-{asset['ticker']}-{i}")
-                st.caption(m.origin)
+                st.caption(humanize_text(f"{t('worst_window', lang)} : {m.window} · {m.basis} · {m.origin}", lang))
             for j, rl in enumerate(views.asset_reasons(asset, lang)):
-                st.markdown(f"{rl.icon} *{rl.kind}* — {rl.message}")
+                st.markdown(f"{rl.icon} *{rl.kind}* — {humanize_text(rl.message, lang)}")
     for g in v.get("global_reasons", []):
         kind = views.asset_reasons({"reasons": [g]}, lang)[0].kind
-        st.markdown(f"{'⚠' if g['severity'] == 'warn' else 'ℹ'} *{kind}* — {g['message']}")
+        st.markdown(f"{'⚠' if g['severity'] == 'warn' else 'ℹ'} *{kind}* — {humanize_text(g['message'], lang)}")
     for sr in v.get("scope_refusals", []):
         st.error(f"⛔ {t('scope_title', lang)} : {sr['message']} → {sr['offered_instead']}")
 
@@ -182,7 +218,7 @@ def render_lines(lines: List[views.ExplanationLine], key: str) -> None:
     for i, l in enumerate(lines):
         refs = [r for r in l.refs if r.startswith("ev_")]
         cols = st.columns([8, 2])
-        cols[0].markdown(f"`{l.label}` {l.text}")
+        cols[0].markdown(f"`{l.label}` {humanize_text(l.text, lang)}")
         with cols[1]:
             for j, r in enumerate(refs[:2]):
                 evidence_button(r, f"{key}-{i}-{j}")
@@ -201,18 +237,18 @@ def render_enrichment(a: Analysis, key: str) -> None:
     banner = t(f"enr_mode_{ev.mode}", lang, n=ev.n_gaps)
     (st.success if ev.mode == "complete" else st.warning)(("✓ " if ev.mode == "complete" else "⚠ ") + banner)
     for g in ev.needs:
-        st.markdown(f"- {t('enr_needs', lang)} : `{g['kind']}` · {g['ticker']}" + ("" if g["fillable"] else f" — {g['reason']}"))
+        st.markdown(f"- {t('enr_needs', lang)} : {human(g['kind'], lang)} · {g['ticker']}" + ("" if g["fillable"] else f" — {humanize_text(g['reason'], lang)}"))
     for i, r in enumerate(ev.rows):
         with st.container(border=True):
             if r.status == "ok":
-                st.markdown(f"**{r.ticker}** · `{r.kind}` · {t('enr_conf_' + r.confidence, lang)} · {t('enr_published', lang)} {r.date_publication} · {t('enr_source', lang)} {r.source}")
+                st.markdown(f"**{r.ticker}** · {human(r.kind, lang)} · {t('enr_conf_' + r.confidence, lang)} · {t('enr_published', lang)} {r.date_publication} · {t('enr_source', lang)} {r.source}")
                 for f in r.facts[:3]:
                     st.markdown(f"> {f['excerpt']}")
                 if r.url:
                     st.caption(r.url)
             else:
-                st.markdown(f"**{r.ticker}** · `{r.kind}` · ⚠ {t('enr_gap', lang)} · {t('enr_reason', lang)} `{r.reason_code}`")
-                st.caption(r.message or "")
+                st.markdown(f"**{r.ticker}** · {human(r.kind, lang)} · ⚠ {t('enr_gap', lang)} · {t('enr_reason', lang)} {human(r.reason_code, lang)}")
+                st.caption(humanize_text(r.message or "", lang))
     st.caption(t("enr_rule_ab", lang))
     st.caption(t("enr_rule_c", lang))
 
@@ -342,7 +378,7 @@ def render_trace(a: Analysis, key: str) -> None:
     for k in range(1, n + 1):
         st.caption("🔁 " + t("loop", lang, k=k, n=2))
     for i, s in enumerate(views.agent_trace(a, lang)):
-        label = f"{s.icon} {s.agent_label} · {s.text}" + ("  🔁" if s.detail.get("feedback") else "")
+        label = f"{s.icon} {s.agent_label} · {humanize_text(s.text, lang)}" + ("  🔁" if s.detail.get("feedback") else "")
         with st.expander(label, expanded=False):
             st.json(s.detail or {"status": s.status})
             if s.evidence_id:
@@ -403,7 +439,7 @@ def run_analysis(text: str, **kw: Any) -> None:
             if step is None:
                 return
             now = time.perf_counter()
-            status.write(f"{step.icon} **{step.agent_label}** · {step.text} _(+{now - last[0]:.2f} s)_")
+            status.write(f"{step.icon} **{step.agent_label}** · {humanize_text(step.text, lang)} _(+{now - last[0]:.2f} s)_")
             last[0] = now
 
         S.analysis = F.analyze(text, pid, as_of=as_of, base_currency=base, language=lang, on_entry=on_entry,
@@ -465,6 +501,11 @@ with tab_an:
         else:
             st.download_button(t("export_report", lang), data=views.report_markdown(a, lang, F.store),
                                file_name=f"alphaforge_{a.profile.profile_id}_{a.as_of}.md", mime="text/markdown", key="export_md")
+            used = a.result.request.parser if a.result.request else "rules"
+            st.caption("🧠 " + t("parser_" + {"llm": "llm", "rules(fallback)": "fallback"}.get(used, "rules"), lang,
+                                  model=getattr(getattr(F.parser, "_client", None), "model_id", "")))
+            for line in a.archive_notes:
+                st.caption("☁ " + line)
             render_verdict(a, "an")
             render_enrichment(a, "an")
             render_explanation(a, "an")
@@ -542,7 +583,7 @@ def _delete_profile(profile_id: str) -> None:
 if "pf_name" not in S:
     _fill_form(dict(forms.BLANK_PROFILE, language=lang))  # départ : formulaire vierge, pas une copie du profil actif
 
-with profile_box:
+def render_add_panel() -> None:
     st.markdown(f"### {t('profile_editor', lang)}")
     st.caption(t("np_intro", lang))
     b1, b2 = st.columns(2)
@@ -554,11 +595,11 @@ with profile_box:
     c2.text_input(t("np_id", lang), key="pf_id", help=t("np_id_help", lang))
     c3, c4, c5 = st.columns(3)
     c3.selectbox(t("language", lang), ["fr", "en"], key="pf_lang")
-    c4.selectbox(t("experience", lang), ["debutant", "intermediaire", "avance"], key="pf_exp")
+    c4.selectbox(t("experience", lang), ["debutant", "intermediaire", "avance"], key="pf_exp", format_func=lambda x: human(x, lang))
     c5.selectbox(t("base_currency", lang), ["CAD", "USD"], key="pf_cur")
-    st.select_slider(t("risk", lang), forms.RISK_LEVELS, key="pf_risk")
-    st.slider(t("horizon", lang), 0, 40, key="pf_hz")
-    st.multiselect(t("objectives", lang), list(forms.OBJECTIVES), key="pf_obj")
+    st.select_slider(t("risk", lang), forms.RISK_LEVELS, key="pf_risk", format_func=lambda x: human(x, lang))
+    st.slider(t("horizon_unit", lang), 0, 40, key="pf_hz")
+    st.multiselect(t("objectives", lang), list(forms.OBJECTIVES), key="pf_obj", format_func=lambda x: human(x, lang))
 
     opts = forms.criterion_options(F.assets, list(GovernanceConfig().theme_proxies))
 
@@ -567,7 +608,7 @@ with profile_box:
         for i, row in enumerate(S[rows_key]):
             rc1, rc2 = st.columns([8, 1])
             extra = f" · {t('pf_weight', lang)} {row['weight']:g}" if weighted else ""
-            rc1.markdown(f"- `{row['kind']}` : {row['value']}{extra}")
+            rc1.markdown(f"- {t('ck_' + row['kind'], lang)} : {human(row['value'], lang)}{extra}")
             rc2.button("✕", key=f"pf_rm_{prefix}_{i}", on_click=_remove_row, args=(rows_key, i), help=t("np_remove", lang))
         if not S[rows_key]:
             st.caption(t("none", lang))
@@ -577,7 +618,7 @@ with profile_box:
         if kind == "theme":
             k2.text_input(t("np_value", lang), key=vkey, help=t("np_theme_hint", lang, themes=", ".join(opts["theme"])))
         else:
-            k2.selectbox(t("np_value", lang), opts[kind], key=vkey)
+            k2.selectbox(t("np_value", lang), opts[kind], key=vkey, format_func=lambda x: human(x, lang))
         if weighted:
             k3.slider(t("pf_weight", lang), 0.0, 1.0, 0.5, 0.05, key="pf_w_p")
         k4.button(t("np_add", lang), key=f"pf_add_{prefix}", on_click=_add_row, args=(prefix,))
@@ -620,24 +661,30 @@ with profile_box:
     if st.button(t("save", lang), type="primary", key="pf_save_btn", disabled=not can_save):
         saved = F.save_profile(data, overwrite=bool(S.get("pf_overwrite")))
         S.pending_profile = saved.profile_id  # il devient le profil actif
-        S.pf_open = False  # le panneau se replie : le profil est créé et actif
+        S.pf_mode = None  # le panneau se ferme : le profil est créé et actif
         S.pf_flash = t("saved", lang, id=saved.profile_id)
         st.rerun()
     if p_new is not None:
         st.markdown(f"#### {t('np_preview', lang)}")  # aperçu en direct : fiche, incohérences et limites dérivées
         render_profile_panel(p_new)
 
-    st.divider()
-    st.markdown(f"#### {t('np_delete_title', lang)}")
-    created = [p for p in profiles if F.profile_origin(p.profile_id) == "créé"]
-    if not created:
-        st.caption(t("np_delete_none", lang))  # les profils d'exemple ne figurent jamais dans cette liste
-    else:
-        st.caption(t("np_delete_note", lang))
-        victim = st.selectbox(t("np_delete_pick", lang), [p.profile_id for p in created], key="pf_del_pick",
-                              format_func=lambda i: next(p.display_name for p in created if p.profile_id == i))
-        st.checkbox(t("np_delete_confirm", lang, id=victim), key="pf_del_ok")
-        st.button(t("np_delete_btn", lang), key="pf_del_btn", disabled=not S.get("pf_del_ok"), on_click=_delete_profile, args=(victim,))
+
+def render_delete_panel() -> None:
+    st.markdown(f"### {t('np_delete_title', lang)}")
+    st.caption(t("np_delete_note", lang))  # les profils d'exemple ne figurent jamais dans cette liste
+    victim = st.selectbox(t("np_delete_pick", lang), [p.profile_id for p in created], key="pf_del_pick",
+                          format_func=lambda i: next(p.display_name for p in created if p.profile_id == i))
+    st.checkbox(t("np_delete_confirm", lang, id=victim), key="pf_del_ok")
+    st.button(t("np_delete_btn", lang), key="pf_del_btn", type="primary", disabled=not S.get("pf_del_ok"),
+              on_click=_delete_profile, args=(victim,))
+
+
+if profile_box is not None:
+    with profile_box:
+        head, close = st.columns([8, 1.2], vertical_alignment="center")
+        head.markdown(f"**👤 {t('np_manage', lang)}**")
+        close.button(t("np_close", lang), key="pf_close_btn", on_click=_close_panel, width="stretch")
+        render_add_panel() if S.pf_mode == "add" else render_delete_panel()
 
 with tab_src:
     a = S.analysis

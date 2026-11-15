@@ -327,6 +327,16 @@ class _Composer:
             pass
         elif code == "NO_ALTERNATIVE" and tpl:
             pass
+        elif code == "EXCLUSION_VALUE_UNKNOWN" and tpl:
+            k["kind"] = T["exclusion_kinds"].get(m.get("kind", ""), b.lit(m.get("kind", "")))
+            k["value"] = b.lit(m.get("value", ""))
+            sugg, known = m.get("suggestions") or [], m.get("known_values") or []
+            if sugg:
+                k["hint"] = T["exclusion_close"].format(s=", ".join(b.lit(x) for x in sugg))
+            elif known:
+                k["hint"] = T["exclusion_known"].format(s=", ".join(b.lit(x) for x in known))
+            else:
+                k["hint"] = T["exclusion_file"]
         else:
             tpl = None
 

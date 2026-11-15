@@ -11,13 +11,13 @@ Projet du Datathon 2026 (PolyFinances), cas AlphaForge AI. Les documents de réf
 ```bash
 pip install -r alphaforge/requirements.txt          # Python 3.9 ou plus
 streamlit run alphaforge/app/streamlit_app.py       # interface, http://localhost:8501
-python3 -m pytest                                    # 405 tests
+python3 -m pytest                                    # 551 tests
 ```
 
 L'interface se lance depuis n'importe quel dossier. Les données du jeu de départ sont déjà dans `alphaforge_starter/` (voir plus bas pour les régénérer).
 
 Utilisation en bref :
-1. Choisir un profil (Amira, Mateo, Robert, ou en créer un avec le bouton **➕ Nouveau profil**, sous la liste des profils), la date d'analyse, la devise de base et la langue.
+1. Choisir un profil (Amira, Mateo, Robert, ou en créer un avec le bouton **➕ Ajouter**, sous la liste des profils ; **🗑 Supprimer** retire un profil créé), la date d'analyse, la devise de base et la langue.
 2. Écrire une demande (« Évalue NVDA », « Compare NVDA et BTC-USD »), ou construire un scénario de portefeuille en saisissant les poids, ou les écrire dans la demande (« 60 % SPY et 40 % AGG, sans rééquilibrage »).
 3. Lire le verdict, l'explication, la sensibilité à la période, les limites. Cliquer sur un `🔎 ev_…` ouvre la preuve, avec la commande qui la reproduit à l'identique.
 4. L'onglet « Comparer deux profils » met la même demande en face de deux profils. Le bouton d'export produit un rapport Markdown.
@@ -96,7 +96,7 @@ Points d'attention connus, signalés par `data_quality_check` : le « fractionne
 
 ## Profils
 
-Trois personas fictifs dans `alphaforge/orchestrator/profiles/` (`amira.json`, `mateo.json`, `robert.json`). Un nouveau profil se crée dans l'interface (bouton « ➕ Nouveau profil », qui ouvre le panneau « Créer ou supprimer un profil » : formulaire vierge ou copie du profil actif, préférences et exclusions ajoutées par boutons, limites de risque dérivées affichées en direct) ou en ajoutant un fichier JSON : aucun code à modifier. Le profil créé devient le profil actif.
+Trois personas fictifs dans `alphaforge/orchestrator/profiles/` (`amira.json`, `mateo.json`, `robert.json`). Un nouveau profil se crée dans l'interface (bouton « ➕ Ajouter » sous la liste des profils, qui ouvre le formulaire sous le bandeau : formulaire vierge ou copie du profil actif, préférences et exclusions ajoutées par boutons, limites de risque dérivées affichées en direct) ou en ajoutant un fichier JSON : aucun code à modifier. Le profil créé devient le profil actif.
 
 Les profils créés dans l'interface sont enregistrés dans `alphaforge/app/profiles/user/` (ignoré par git). Garde-fous : un profil d'exemple ne peut ni être remplacé ni être supprimé ; remplacer ou supprimer un profil créé demande une confirmation explicite ; un profil incohérent (par exemple un secteur à la fois préféré et exclu) ne peut pas être enregistré.
 
@@ -110,10 +110,34 @@ python3 -m pytest -m smoke         # tests de fumée sur les données réelles
 
 Séries synthétiques à résultat connu (série constante, doublement en un an, drawdown 100→50→100, conversion USD→CAD→USD, deux actifs identiques à 50/50, deux actifs anticorrélés), non-régression temporelle (aucun résultat ne change si on ajoute des données postérieures à `as_of`), et interface testée avec le banc d'essai de Streamlit.
 
+## AWS
+
+**Démo hébergée** (compte de l'événement, actif pendant l'évaluation) : https://d3rh9mi9cqh6mn.cloudfront.net/
+
+AWS intervient à trois endroits du flux, chacun avec un rôle précis :
+
+| Service | Rôle dans la solution | Si le service est indisponible |
+|---|---|---|
+| **Amazon Bedrock** (Claude Haiku 4.5, profil d'inférence global) | L'orchestrateur lui fait interpréter la demande en langage naturel : intention, actifs désignés (« l'or » → GLD), signaux de périmètre (prédiction, transaction, conseil). Le modèle propose, le code dispose : actifs revérifiés contre l'univers, poids lus dans le texte d'origine, signaux de périmètre jamais retirés. Le modèle ne calcule rien et ne recommande rien. | Repli sur l'interprétation par règles, affiché sous le verdict. |
+| **Amazon S3** | Chaque analyse archive son registre complet (`ledger.jsonl`) et un résumé (`summary.json`) sous `runs/AAAA-MM-JJ/<heure>-<empreinte>/`. L'empreinte SHA-256 du registre figure dans le chemin : une analyse rejouée doit donner la même. Bucket privé, chiffré, HTTPS seulement, expiration à 60 jours. | Note « archive indisponible » ; l'analyse est quand même affichée. |
+| **Amazon ECS Fargate, ALB, CloudFront, ECR, CodeBuild** | Hébergement de l'interface : CloudFront (HTTPS) → équilibreur de charge joignable seulement depuis CloudFront, avec un en-tête d'origine → une tâche Fargate. L'image est construite par CodeBuild (pas de Docker requis sur le poste) et scannée à l'envoi dans ECR. | — |
+
+**Choix du modèle.** Banc d'essai sur 12 demandes réalistes (FR et EN, noms d'entreprises, descriptions comme « l'or », demandes de prédiction, d'achat et de conseil), répété 3 fois : Claude Haiku 4.5 obtient 35/36 bonnes réponses, détecte tous les signaux de périmètre, en environ 0,9 s par demande. Amazon Nova 2 Lite est plus rapide (0,5 s) avec le même score, mais il a manqué le signal « transaction » de « Tout le monde parle de Tesla, je devrais en acheter ? » : un signal de périmètre manqué est l'erreur la plus coûteuse ici, d'où Haiku 4.5. L'interprétation par règles seule obtient 30/36.
+
+**Droits (moindre privilège).** Le rôle de la tâche ne peut qu'appeler ce seul modèle (`bedrock:InvokeModel`) et écrire sous `runs/` (`s3:PutObject`) : aucune lecture S3, aucun autre service. Aucun identifiant AWS dans le code : boto3 utilise le rôle de la machine ou de la tâche.
+
+**Déployer ou supprimer** (modèles CloudFormation dans `deploy/`, vérifiés par `cfn-lint`) :
+
+```bash
+python3 deploy/deploy.py --bucket <bucket-des-archives>           # archive du code -> CodeBuild -> ECR -> ECS, ALB, CloudFront
+python3 deploy/deploy.py --bucket <bucket-des-archives> --delete  # supprime les deux piles ; le bucket des archives reste
+```
+
+**En local**, Bedrock et S3 sont activés par variables d'environnement : `ALPHAFORGE_LLM=0` désactive Bedrock (les tests le font), `ALPHAFORGE_LLM_MODEL` change de modèle, `ALPHAFORGE_S3_BUCKET` active l'archive.
+
 ## Ce qui n'est pas couvert
 
 - **Enrichissement** (`alphaforge/enrichment/`, agent 2.1) : l'agent est appelé par l'orchestrateur quand le profil ou la demande crée un besoin (interrupteur « Enrichissement » dans l'interface ; une panne de l'agent n'arrête pas les quatre autres). Seul `EdgarProvider` (métadonnées des dépôts américains, identification SEC nom + courriel demandée dans l'onglet Sources, gardée en session seulement) est branché, avec un cache disque dans `alphaforge/app/cache/` (ignoré par git). Aucun fournisseur de cotes ESG, de fondamentaux, de nouvelles ou de composition de FNB n'est branché : ces besoins apparaissent comme des lacunes nommées. Les préférences ESG de Mateo ne sont donc pas encore vérifiables par des données ; la gouvernance le signale et nomme le substitut déclaré (le FNB filtré ESGV). Une controverse ne bloque que si elle vient d'une source de niveau A ou B ; un signal de niveau C (nouvelles) n'est qu'un avertissement. Les dépôts canadiens (SEDAR+) n'ont pas d'API publique documentée : ils restent une lacune.
-- **Hébergement AWS** : non fait. L'application est lancée localement. Un client Bedrock optionnel existe pour l'interprétation des demandes (`LLMParser`), avec repli sur les règles ; il demande `boto3` et un accès au modèle.
 - **Transparence des FNB** : sans la composition des fonds, un FNB est traité comme une position unique.
 - **Pas de projection** : tout est descriptif ou rétrospectif.
 
@@ -129,5 +153,6 @@ alphaforge/
   app/              pipeline des agents, vues, application Streamlit
 alphaforge_starter/ données de départ et script de régénération
 tests/              un dossier par agent, plus l'interface
+deploy/             modèles CloudFormation et script de déploiement AWS (Dockerfile à la racine)
 Agents.md           architecture des agents
 ```

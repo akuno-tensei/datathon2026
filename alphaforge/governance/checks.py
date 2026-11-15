@@ -3,6 +3,7 @@
 Seuls les contrôles de contraintes dures peuvent bloquer. Un dépassement de limite dérivée ou une donnée
 manquante produit un avertissement, jamais un blocage, sauf classe d'actifs non permise (plafond à 0).
 """
+import difflib
 import re
 from typing import Dict, List
 
@@ -107,6 +108,95 @@ def check_hard_constraints(profile: InvestorProfile, constraints: Constraints, f
                 message=f"La classe « {cls} » n'est pas permise au niveau de risque « {constraints.risk_level_applied} » appliqué à ce profil.",
                 measures={"asset_class": cls, "class_cap": 0.0, "risk_level_applied": constraints.risk_level_applied},
                 evidence_ids=ev,
+            )
+        )
+    return out
+
+
+# ---- check_exclusion_vocabulary ------------------------------------------
+
+_EXCLUSION_KIND_FR = {"asset_class": "classe d'actifs", "sector": "secteur", "ticker": "actif"}
+_MAX_SUGGESTIONS = 5
+_MAX_LISTED = 20  # au-delà, on renvoie au fichier de l'univers plutôt que de tout lister
+_CLOSE_STRING = 0.75  # ressemblance de la valeur entière (« Golds » -> « Gold », pas « Bonds »)
+_CLOSE_WORD = 0.8  # ressemblance d'un mot (« technologie » -> « technology »)
+_WORDS = re.compile(r"[^\W\d_]+")
+
+
+def _vocabulary(kind: str, assets: List[Dict]) -> List[str]:
+    field = {"asset_class": "asset_class", "sector": "sector", "ticker": "ticker"}[kind]
+    return sorted({str(a[field]) for a in assets if a.get(field)})
+
+
+def _exclusion_applies(kind: str, value: str, assets: List[Dict]) -> bool:
+    """Même règle de correspondance que `_matches` : la valeur désigne-t-elle au moins un actif de l'univers ?"""
+    v = _norm(value)
+    for a in assets:
+        if kind == "ticker" and v in (_norm(a["ticker"]), _root(a["ticker"])):
+            return True
+        if kind in ("asset_class", "sector") and _norm(str(a.get(kind, ""))) == v:
+            return True
+    return False
+
+
+def _suggest(kind: str, value: str, assets: List[Dict]) -> List[str]:
+    """Valeurs de l'univers proches de la saisie : inclusion (dans un sens ou l'autre), puis ressemblance orthographique.
+    Pour un actif, le nom est aussi consulté (« Nvidia » -> NVDA). Ce sont des suggestions : rien n'est appliqué à la place."""
+    v = _norm(value)
+    vocab = _vocabulary(kind, assets)
+    out: List[str] = []
+
+    def add(x: str) -> None:
+        if x not in out:
+            out.append(x)
+
+    if len(v) >= 3:
+        for x in vocab:
+            nx = _norm(x)
+            if v in nx or nx in v:
+                add(x)
+        if kind == "ticker":
+            for a in assets:
+                if v in _norm(str(a.get("name", ""))):
+                    add(a["ticker"])
+    by_norm = {_norm(x): x for x in vocab}
+    for m in difflib.get_close_matches(v, list(by_norm), n=_MAX_SUGGESTIONS, cutoff=_CLOSE_STRING):
+        add(by_norm[m])
+    # Mot à mot : traductions proches et fautes de frappe sur un mot (« Technologie » -> « Information Technology »).
+    words = [w for w in _WORDS.findall(v) if len(w) >= 4]
+    for x in vocab:
+        if any(difflib.SequenceMatcher(None, w, xw).ratio() >= _CLOSE_WORD for w in words for xw in _WORDS.findall(_norm(x)) if len(xw) >= 4):
+            add(x)
+    return out[:_MAX_SUGGESTIONS]
+
+
+def check_exclusion_vocabulary(profile: InvestorProfile, assets: List[Dict]) -> List[Reason]:
+    """Une exclusion dure dont la valeur ne désigne aucun actif de l'univers ne bloque rien : on le dit au lieu de se taire.
+
+    Sans ce contrôle, « secteur : Technologie » ne bloquerait jamais NVDA (secteur « Information Technology »), et
+    l'investisseur croirait l'exclusion appliquée. Avertissement, pas blocage : on ne devine pas ce que l'utilisateur voulait.
+    """
+    out: List[Reason] = []
+    for c in profile.hard_exclusions:
+        if c.kind == "theme" or _exclusion_applies(c.kind, c.value, assets):
+            continue  # les thèmes ont leur propre avertissement (THEME_EXCLUSION_UNVERIFIED)
+        suggestions = _suggest(c.kind, c.value, assets)
+        vocab = _vocabulary(c.kind, assets)
+        if suggestions:
+            hint = f" Valeurs proches dans l'univers : {', '.join(suggestions)}."
+        elif len(vocab) <= _MAX_LISTED:
+            hint = f" Valeurs possibles : {', '.join(vocab)}."
+        else:
+            hint = " Les valeurs possibles sont celles de assets_universe.csv."
+        out.append(
+            Reason(
+                check="hard_constraints", code="EXCLUSION_VALUE_UNKNOWN", severity="warn",
+                message=(
+                    f"Exclusion « {_EXCLUSION_KIND_FR[c.kind]} : {c.value} » : cette valeur ne correspond à aucun actif de l'univers, "
+                    "l'exclusion ne s'applique donc à aucun actif." + hint
+                ),
+                measures={"kind": c.kind, "value": c.value, "suggestions": suggestions,
+                          "known_values": vocab if len(vocab) <= _MAX_LISTED else []},
             )
         )
     return out

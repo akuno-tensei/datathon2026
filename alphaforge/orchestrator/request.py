@@ -189,8 +189,20 @@ _LLM_SYSTEM = (
     "Tu convertis une demande d'investisseur en JSON strict, sans commentaire. Clés: "
     '"intent" parmi ' + json.dumps(list(INTENTS)) + ', "mentioned_symbols" (liste de symboles ou noms d\'actifs cités), '
     '"scope_flags" (sous-ensemble de ' + json.dumps(list(SCOPE_FLAGS)) + "). "
-    "Tu ne réponds pas à la demande, tu ne calcules rien et tu ne recommandes rien."
+    "Tu ne réponds pas à la demande, tu ne calcules rien et tu ne recommandes rien. "
+    "Intentions : evaluate_asset = un seul actif à examiner, y compris formulé comme une question de conseil, d'achat ou de "
+    "prédiction (ces signaux vont dans scope_flags, l'intention reste l'examen) ; compare_assets = plusieurs actifs à mettre en "
+    "regard ; build_scenario = une répartition avec des poids ; explain_risk = la question porte sur le pourquoi du risque ; "
+    "unknown = aucun actif ni aucune analyse identifiable."
 )
+
+
+def _llm_system(assets: List[Dict[str, str]]) -> str:
+    """Consigne + univers (symbole, nom, classe) : le modèle peut relier « l'or » à GLD. Ses choix restent revérifiés par le code."""
+    universe = "; ".join(f"{a['ticker']}={a.get('name', '')} ({a.get('asset_class', '')})" for a in assets)
+    return (_LLM_SYSTEM + " Univers d'actifs disponibles : " + universe + ". Dans mentioned_symbols, donne le symbole de l'univers "
+            "quand la demande désigne clairement un de ces actifs (par son nom, sa description ou son symbole) ; sinon recopie le nom tel "
+            "qu'écrit. Ne déduis jamais un actif que la demande ne désigne pas.")
 
 
 class LLMParser:
@@ -207,7 +219,7 @@ class LLMParser:
 
     def parse(self, text: str, assets: List[Dict[str, str]]) -> ParsedRequest:
         try:
-            raw = self._client.complete(_LLM_SYSTEM, text)
+            raw = self._client.complete(_llm_system(assets), text)
             start, end = raw.index("{"), raw.rindex("}") + 1
             data = json.loads(raw[start:end])
             intent = data["intent"]
@@ -227,6 +239,8 @@ class LLMParser:
             tickers += [t for t in weights if t not in tickers]
             if weights and len(tickers) >= 2:
                 intent = "build_scenario"
+            if intent == "unknown" and tickers:  # même règle que l'interpréteur par règles : des actifs cités, une analyse simple
+                intent = "compare_assets" if len(tickers) >= 2 else "evaluate_asset"
             return ParsedRequest(
                 raw_text=text, intent=intent, tickers=tickers, unknown_tickers=unknown, scope_flags=flags, parser=self.name,
                 weights=weights, rebalancing=detect_rebalancing(text),  # type: ignore[arg-type]
@@ -239,11 +253,15 @@ class LLMParser:
 class BedrockClient:
     """Client Bedrock (API Converse). Requiert `boto3` et un accès au modèle dans la région choisie."""
 
-    def __init__(self, model_id: str, region_name: str = "us-east-1"):
+    def __init__(self, model_id: str, region_name: str = "us-east-1", timeout_s: float = 8.0):
         import boto3  # import tardif : le reste du paquet fonctionne sans boto3
+        from botocore.config import Config
 
-        self._client = boto3.client("bedrock-runtime", region_name=region_name)
+        # Délais courts et 2 tentatives au plus : une panne de Bedrock ne bloque jamais l'analyse, le repli par règles prend le relais.
+        cfg = Config(connect_timeout=3, read_timeout=timeout_s, retries={"max_attempts": 2, "mode": "standard"})
+        self._client = boto3.client("bedrock-runtime", region_name=region_name, config=cfg)
         self._model_id = model_id
+        self.model_id = model_id
 
     def complete(self, system: str, user: str) -> str:
         resp = self._client.converse(

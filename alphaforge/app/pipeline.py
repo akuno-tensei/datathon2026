@@ -6,7 +6,7 @@ Aucune règle propre à un persona : les profils sont des données (JSON), y com
 import json
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -14,12 +14,33 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from ..enrichment import CachedProvider, CachingProvider, EdgarProvider, EnrichmentAgent
 from ..explainability import Explainer, Explanation
 from ..governance import Governance
-from ..orchestrator import InvestorProfile, Orchestrator, ProfileError, QuantAnalyst, RuleBasedParser, RunResult, load_profile
+from ..orchestrator import InvestorProfile, LLMParser, Orchestrator, ProfileError, QuantAnalyst, RuleBasedParser, RunResult, load_profile
+from ..orchestrator.request import BedrockClient
 from ..orchestrator.tools import PROFILES_DIR
 from ..quant import DataStore
+from .archive import archive_notes, build_archive
 
 ENRICHMENT_CACHE_DIR = Path(__file__).resolve().parent / "cache" / "enrichment"  # données publiques déjà collectées (hors git)
 USER_PROFILES_DIR = Path(__file__).resolve().parent / "profiles" / "user"  # profils créés depuis l'interface (données locales)
+# Interprétation des demandes par Amazon Bedrock. Modèle retenu après banc d'essai (12 demandes réalistes, 3 passages) :
+# Claude Haiku 4.5, 35/36 bonnes réponses, signaux de périmètre (prédiction, transaction, conseil) tous détectés, ~0,9 s.
+DEFAULT_LLM_MODEL = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+
+
+def build_parser() -> Any:
+    """LLMParser (Bedrock) si activé et disponible ; sinon interprétation par règles. Configuration par variables d'environnement :
+    ALPHAFORGE_LLM (« 0 » pour désactiver), ALPHAFORGE_LLM_MODEL, AWS_REGION. Aucun identifiant AWS dans le code :
+    boto3 lit le rôle de la machine (profil d'instance ou rôle de tâche)."""
+    if os.environ.get("ALPHAFORGE_LLM", "1") == "0":
+        return RuleBasedParser()
+    try:
+        client = BedrockClient(os.environ.get("ALPHAFORGE_LLM_MODEL") or DEFAULT_LLM_MODEL,
+                               region_name=os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-1")
+    except Exception:  # boto3 absent ou configuration invalide : le noyau fonctionne sans Bedrock
+        return RuleBasedParser()
+    return LLMParser(client)
+
+
 _ID = re.compile(r"^[a-z0-9_-]{1,40}$")
 
 
@@ -110,6 +131,7 @@ class Analysis:
     verdict: Optional[Dict[str, Any]]
     explanation: Optional[Explanation]
     enrichment_enabled: bool = False
+    archive_notes: List[str] = field(default_factory=list)  # où le registre a été archivé (S3), ou pourquoi il ne l'a pas été
 
 
 @dataclass
@@ -120,8 +142,11 @@ class Comparison:
 
 
 class AlphaForge:
-    def __init__(self, store: DataStore, user_profiles_dir: Optional[Path] = None):
+    def __init__(self, store: DataStore, user_profiles_dir: Optional[Path] = None, parser: Optional[Any] = None,
+                 archive: Optional[Any] = None):
         self.store = store
+        self.parser = parser if parser is not None else build_parser()
+        self.archive = archive if archive is not None else build_archive()
         self.assets: List[Dict[str, Any]] = store.assets.to_dict("records")
         self.user_dir = Path(user_profiles_dir) if user_profiles_dir else USER_PROFILES_DIR
         self.user_dir.mkdir(parents=True, exist_ok=True)
@@ -214,7 +239,9 @@ class AlphaForge:
         explainer = _CapturingExplainer(Explainer())
         extra: Dict[str, Any] = {}
         if weights or rebalancing:  # scénario saisi dans l'interface : poids en fractions, jamais normalisés ici
-            extra["parser"] = _ScenarioParser(RuleBasedParser(), weights or {}, rebalancing)
+            extra["parser"] = _ScenarioParser(self.parser, weights or {}, rebalancing)
+        else:
+            extra["parser"] = self.parser
         if on_entry is not None:
             extra["on_entry"] = on_entry  # trace en direct : chaque entrée du registre est transmise à l'écriture
         if enrichment:  # mode « Enrichi » (5 agents) ; sinon le noyau à 4 agents travaille seul
@@ -224,7 +251,9 @@ class AlphaForge:
         verdicts = result.ledger.entries("verdict")
         verdict = verdicts[-1].payload if verdicts else None
         expl = explainer.last
-        return Analysis(request_text, p, as_of_r, base, result, verdict, expl, enrichment_enabled=enrichment)
+        an = Analysis(request_text, p, as_of_r, base, result, verdict, expl, enrichment_enabled=enrichment)
+        an.archive_notes = archive_notes(self.archive, an, p.language)
+        return an
 
     def compare(self, request_text: str, left: Any, right: Any, as_of: Optional[date] = None, base_currency: Optional[str] = None,
                 language: Optional[str] = None) -> Comparison:

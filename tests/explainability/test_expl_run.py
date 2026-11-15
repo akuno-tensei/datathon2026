@@ -138,3 +138,15 @@ def test_limits_always_include_past_and_simulation(run):
     texts = [s.text for s in e.limits.statements()]
     assert any("Le passé ne prédit pas l'avenir" in t for t in texts)
     assert any("simulation" in t for t in texts)
+
+
+# ---- exclusion dont la valeur n'existe pas dans l'univers ------------------
+
+
+def test_unknown_exclusion_value_is_explained_in_both_languages(run):
+    r = run("Évalue HIGH", hard_exclusions=[{"kind": "sector", "value": "Technologie"}])
+    fr, en = explain(r, language="fr"), explain(r, language="en")
+    assert fr.report.approved and en.report.approved, (fr.report.issues, en.report.issues)
+    assert "L'exclusion « secteur : Technologie » ne correspond à aucun actif" in fr.text
+    assert "Valeurs proches dans l'univers : Tech." in fr.text
+    assert 'The exclusion "sector: Technologie" matches no asset' in en.text and "Close values in the universe: Tech." in en.text

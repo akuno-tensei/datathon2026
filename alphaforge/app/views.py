@@ -154,7 +154,7 @@ def verdict_measures(analysis: Analysis, lang: str) -> Dict[str, List[MeasureBar
             MeasureBar(t("max_vol", lang), vol, c["max_volatility"], vol <= c["max_volatility"], "✓" if vol <= c["max_volatility"] else "✗",
                        min(vol / c["max_volatility"], 1.0), _wname(wv), origin, wv["value"]["annualization_basis"], wv["evidence_id"]),
             MeasureBar(t("max_dd", lang), dd, c["max_drawdown"], dd <= c["max_drawdown"], "✓" if dd <= c["max_drawdown"] else "✗",
-                       min(dd / c["max_drawdown"], 1.0), _wname(wd), origin, "adj_close, " + _wname(wd), wd["evidence_id"]),
+                       min(dd / c["max_drawdown"], 1.0), _wname(wd), origin, t("dd_basis", lang), wd["evidence_id"]),
         ]
     return out
 

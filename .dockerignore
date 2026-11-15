@@ -1,0 +1,10 @@
+.git
+**/__pycache__
+**/*.pyc
+.pytest_cache
+tests
+deploy/*.zip
+alphaforge/app/cache
+alphaforge/app/profiles/user
+*.pdf
+*.pptx
