@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="templates/diaporama">
+<meta name="theme-statut" content="PROVISOIRE">
+<title>De la consigne au pipeline qui se corrige</title>
+<style>
+:root{--primaire:#DE161D;--primaire-fonce:#A5121A;--secondaire:#1572C5;--accent:#F0AD4E;--sombre:#262626;--fond:#FFFFFF;--fond-alt:#F4F4F4;--texte:#212121;--texte-doux:#595959;--bordure:#D9D9D9;--conf-MESURE:#2E7D32;--conf-CONVERGENT:#1572C5;--conf-INDICATIF:#6F4E9C;--conf-DOCUMENTE:#F0AD4E;--conf-RAISONNE:#E67E22;--conf-REFUTE:#DE161D;--conf-BORNE:#8A8F98;--conf-CONTEXTE:#8A8F98;--police-titres:"Arial";--police-corps:"Arial";--police-mono:"Courier New"}
+/* Diaporama — gabarit HTML autonome. Aucune dépendance, aucun réseau.
+   Les couleurs et les polices viennent UNIQUEMENT des variables injectées depuis le thème
+   (templates/diaporama/themes/*.json) : aucune couleur n'est écrite en dur ici.
+   Géométrie : scène de 13,333 po x 7,5 po (16:9), unités po / pt, identiques au rendu PPTX. */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--sombre); color: var(--texte);
+  font-family: var(--police-corps), Arial, Helvetica, sans-serif;
+  overflow: hidden; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+[hidden] { display: none !important; }
+
+.scene { position: fixed; left: 0; right: 0; top: 0; bottom: var(--bas, 0); overflow: hidden; }
+.stage {
+  position: absolute; left: 50%; top: 50%; width: 13.333in; height: 7.5in;
+  transform-origin: 50% 50%; transform: translate(-50%, -50%) scale(var(--echelle, 1));
+  background: var(--fond); box-shadow: 0 .2in .8in rgba(0, 0, 0, .45);
+}
+
+/* ------------------------------------------------------------ diapositives */
+.diapo { position: absolute; inset: 0; display: none; overflow: hidden; background: var(--fond); color: var(--texte); }
+.diapo.actif { display: block; animation: apparition .18s ease-out; }
+@keyframes apparition { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .diapo.actif { animation: none; } }
+.diapo h1, .diapo h2, .diapo h3, .diapo p, .diapo ul, .diapo ol, .diapo dl, .diapo dd { margin: 0; }
+.diapo code {
+  font-family: var(--police-mono), "Courier New", monospace; font-size: .92em;
+  background: var(--fond-alt); border: 1px solid var(--bordure); border-radius: .04in; padding: 0 .05in;
+}
+
+.onglet { position: absolute; left: .67in; top: .42in; width: .75in; height: .08in; background: var(--primaire); }
+.titre {
+  position: absolute; left: .67in; top: .58in; width: 12in; height: 1in; overflow: hidden;
+  font: 700 30pt/1.12 var(--police-titres), Arial, Helvetica, sans-serif; color: var(--texte);
+}
+.corps { position: absolute; left: .67in; top: 1.75in; width: 12in; height: 4.85in; }
+
+.pied {
+  position: absolute; left: .67in; top: 6.85in; width: 12in; height: .45in;
+  border-top: 1px solid var(--bordure); display: flex; align-items: center; gap: .2in;
+  font-size: 10pt; color: var(--texte-doux);
+}
+.pied-deck { flex: 0 0 3.6in; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pied-centre { flex: 1 1 auto; display: flex; align-items: center; gap: .15in; min-width: 0; white-space: nowrap; overflow: hidden; }
+.pied-src { overflow: hidden; text-overflow: ellipsis; }
+.pied-num { flex: 0 0 1.2in; text-align: right; font-variant-numeric: tabular-nums; }
+.puce-conf { display: inline-flex; align-items: center; gap: .07in; color: var(--texte); font-weight: 700; }
+.pastille { display: inline-block; width: .12in; height: .12in; border-radius: 50%; flex: none; }
+
+/* ------------------------------------------------------------ titre */
+.diapo--titre { background: var(--primaire); color: var(--fond); }
+.diapo--titre .logo { position: absolute; left: .9in; top: .5in; height: .7in; }
+.diapo--titre .genre { position: absolute; left: .9in; top: 1.45in; font: 700 14pt/1 var(--police-corps), Arial, sans-serif; letter-spacing: .12em; }
+.diapo--titre .onglet { left: .9in; top: 1.95in; background: var(--fond); }
+.diapo--titre .titre-principal {
+  position: absolute; left: .9in; top: 2.25in; width: 10.8in; height: 1.9in; overflow: hidden;
+  font: 700 40pt/1.12 var(--police-titres), Arial, sans-serif; color: var(--fond);
+}
+.diapo--titre .sous-titre { position: absolute; left: .9in; top: 4.3in; width: 10.8in; height: 1.2in; overflow: hidden; font-size: 22pt; line-height: 1.25; }
+.diapo--titre .meta { position: absolute; left: .9in; top: 6.3in; width: 11in; font-size: 13pt; }
+.diapo--titre .bande {
+  position: absolute; left: 0; right: 0; bottom: 0; height: .5in; background: var(--primaire-fonce);
+  display: flex; align-items: center; justify-content: flex-end; padding-right: .9in; font-size: 10pt; color: var(--fond);
+}
+
+/* ------------------------------------------------------------ section */
+.diapo--section { background: var(--sombre); color: var(--fond); }
+.diapo--section .barre { position: absolute; left: 0; top: 0; width: .35in; height: 100%; background: var(--primaire); }
+.diapo--section .numero { position: absolute; left: 1.2in; top: 2.2in; font: 700 16pt/1 var(--police-corps), Arial, sans-serif; letter-spacing: .12em; color: var(--accent); }
+.diapo--section .titre-section {
+  position: absolute; left: 1.2in; top: 2.7in; width: 10.5in; height: 2in; overflow: hidden;
+  font: 700 40pt/1.12 var(--police-titres), Arial, sans-serif; color: var(--fond);
+}
+.diapo--section .sous-titre { position: absolute; left: 1.2in; top: 4.9in; width: 10.5in; font-size: 20pt; line-height: 1.25; }
+.diapo--section .pied-num-section { position: absolute; right: .67in; bottom: .3in; font-size: 10pt; color: var(--fond); }
+
+/* ------------------------------------------------------------ listes */
+.puces, .numerotee { list-style: none; padding: 0; }
+.puces > li { position: relative; padding-left: .38in; margin-bottom: .14in; line-height: 1.2; }
+.puces > li::before { content: ""; position: absolute; left: .05in; top: calc(.6em - .06in); width: .12in; height: .12in; border-radius: 50%; background: var(--primaire); }
+.puces .sous { list-style: none; padding: 0; margin-top: .05in; font-size: calc(1em - 3pt); color: var(--texte-doux); }
+.puces .sous > li { position: relative; padding-left: .38in; margin-bottom: .05in; line-height: 1.2; }
+.puces .sous > li::before { content: "–"; position: absolute; left: .05in; }
+.numerotee { counter-reset: n; }
+.numerotee > li { counter-increment: n; position: relative; padding-left: .5in; margin-bottom: .2in; line-height: 1.2; }
+.numerotee > li::before { content: counter(n) "."; position: absolute; left: 0; top: 0; font-weight: 700; color: var(--primaire); }
+
+/* ------------------------------------------------------------ objectifs, légende */
+.intro { position: absolute; left: .67in; top: 1.75in; width: 12in; font-size: 16pt; color: var(--texte-doux); }
+.obj-grille { position: absolute; left: .67in; top: 2.3in; width: 12in; height: 4.3in; display: flex; gap: .5in; }
+.obj-liste { flex: 0 0 7.4in; }
+.carte-format { flex: 1 1 auto; align-self: flex-start; background: var(--fond-alt); border-top: .06in solid var(--primaire); padding: .25in; font-size: 16pt; }
+.carte-format dt { font-weight: 700; font-size: 12pt; color: var(--texte-doux); letter-spacing: .06em; text-transform: uppercase; }
+.carte-format dd { margin: 0 0 .22in; }
+.carte-format dd:last-child { margin-bottom: 0; }
+.legende { display: grid; grid-template-columns: 2.4in 1fr; row-gap: .13in; align-items: center; }
+.legende .puce-conf { font-size: 16pt; }
+.legende p { font-size: 15pt; }
+
+/* ------------------------------------------------------------ deux colonnes, étapes */
+.colonnes { display: flex; gap: .5in; }
+.colonne { flex: 1 1 0; border-top: .05in solid var(--primaire); padding-top: .15in; }
+.colonne h3 { font: 700 20pt/1.2 var(--police-titres), Arial, sans-serif; margin-bottom: .2in; }
+.etapes { display: flex; gap: .2in; height: 3.9in; }
+.etape { flex: 1 1 0; background: var(--fond-alt); border: 1px solid var(--bordure); border-radius: .1in; padding: .2in; }
+.etape .rond {
+  width: .55in; height: .55in; border-radius: 50%; background: var(--primaire); color: var(--fond);
+  font: 700 20pt/.55in var(--police-titres), Arial, sans-serif; text-align: center; margin-bottom: .15in;
+}
+.etape h3 { font-weight: 700; margin-bottom: .12in; line-height: 1.2; }
+.etape p { line-height: 1.2; }
+
+/* ------------------------------------------------------------ tableau */
+.tableau { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.tableau th { background: var(--primaire); color: var(--fond); text-align: left; font-weight: 700; padding: .11in .15in; }
+.tableau td { padding: .11in .15in; vertical-align: middle; line-height: 1.2; }
+.tableau tbody tr:nth-child(odd) td { background: var(--fond-alt); }
+.diapo .legende-tableau { margin-top: .3in; font-size: 13pt; color: var(--texte-doux); }
+
+/* ------------------------------------------------------------ message */
+.diapo--message .barre { position: absolute; left: .67in; width: .12in; background: var(--primaire); }
+.diapo--message .kicker { position: absolute; left: 1.1in; font: 700 14pt/1 var(--police-corps), Arial, sans-serif; letter-spacing: .12em; color: var(--primaire); }
+.diapo--message .enonce {
+  position: absolute; left: 1.1in; width: 11in; overflow: hidden;
+  font: 700 34pt/1.15 var(--police-titres), Arial, sans-serif; color: var(--texte);
+}
+.diapo--message .precision { position: absolute; left: 1.1in; width: 11in; font-size: 18pt; line-height: 1.25; color: var(--texte-doux); }
+
+/* ------------------------------------------------------------ exercice, quiz */
+.etiquette {
+  background: var(--primaire); color: var(--fond); font: 700 11pt/1 var(--police-corps), Arial, sans-serif;
+  letter-spacing: .08em; padding: .08in .16in; border-radius: .3in;
+}
+.etiquette.haut { position: absolute; left: .67in; top: .2in; }
+.exo-grille { display: flex; gap: .4in; }
+.consigne { flex: 0 0 7.7in; line-height: 1.25; }
+.encadre { flex: 1 1 auto; align-self: flex-start; background: var(--fond-alt); border-left: .06in solid var(--primaire); padding: .2in; font-size: 16pt; line-height: 1.25; }
+.encadre h3 { font: 700 12pt/1.2 var(--police-corps), Arial, sans-serif; color: var(--primaire); letter-spacing: .06em; margin-bottom: .08in; }
+.encadre p + h3 { margin-top: .2in; }
+.bouton {
+  font: 700 13pt/1 var(--police-corps), Arial, sans-serif; color: var(--fond); background: var(--secondaire);
+  border: 0; border-radius: .06in; padding: .12in .22in; cursor: pointer;
+}
+.bouton:hover { background: var(--sombre); }
+.exo .btn-corrige { position: absolute; left: 0; bottom: 0; z-index: 2; }
+.exo .corrige {
+  position: absolute; left: 0; right: 0; top: 0; bottom: .75in; z-index: 1; overflow: auto;
+  background: var(--fond); border: 1px solid var(--bordure); border-left: .06in solid var(--secondaire);
+  padding: .2in .3in; font-size: 16pt; line-height: 1.3;
+}
+.exo .corrige strong { display: block; margin-bottom: .1in; font-size: 12pt; letter-spacing: .06em; text-transform: uppercase; color: var(--secondaire); }
+.choix { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .18in; }
+.choix button {
+  display: flex; align-items: center; gap: .2in; width: 100%; padding: .14in .22in; text-align: left;
+  font: 400 20pt/1.2 var(--police-corps), Arial, sans-serif; color: var(--texte); background: var(--fond);
+  border: 2px solid var(--bordure); border-radius: .1in; cursor: pointer;
+}
+.choix button:hover { border-color: var(--primaire); }
+.lettre {
+  flex: 0 0 .5in; height: .5in; border-radius: 50%; background: var(--fond-alt); border: 1px solid var(--bordure);
+  display: flex; align-items: center; justify-content: center; font-weight: 700;
+}
+.choix button.ok { border-color: var(--conf-MESURE); }
+.choix button.ok .lettre { background: var(--conf-MESURE); color: var(--fond); border-color: var(--conf-MESURE); }
+.choix button.ko { border-color: var(--primaire); }
+.choix button.ko .lettre { background: var(--primaire); color: var(--fond); border-color: var(--primaire); }
+.explication { margin-top: .2in; padding: .15in .22in; background: var(--fond-alt); border-left: .06in solid var(--primaire); font-size: 15pt; line-height: 1.25; }
+button:focus-visible, .plan button:focus-visible { outline: 3px solid var(--secondaire); outline-offset: 2px; }
+
+/* ------------------------------------------------------------ chrome (hors scène) */
+.barre-progression { position: fixed; left: 0; top: 0; right: 0; height: 4px; z-index: 20; }
+.barre-progression div { height: 100%; width: 0; background: var(--primaire); transition: width .2s; }
+.commandes {
+  position: fixed; left: 50%; bottom: .18in; transform: translateX(-50%); z-index: 20;
+  display: flex; align-items: center; gap: .08in; padding: .06in .14in; border-radius: .3in;
+  background: var(--sombre); color: var(--fond); font: 12pt var(--police-corps), Arial, sans-serif;
+  border: 1px solid var(--texte-doux); opacity: 0; transition: opacity .2s;
+}
+.commandes.visible, .commandes:focus-within { opacity: .95; }
+.commandes button { font: inherit; color: inherit; background: transparent; border: 0; cursor: pointer; padding: .05in .1in; border-radius: .1in; }
+.commandes button:hover { background: var(--texte-doux); }
+.commandes .compteur { min-width: .9in; text-align: center; font-variant-numeric: tabular-nums; }
+.notes-panneau {
+  position: fixed; left: 0; right: 0; bottom: 0; height: 2.2in; z-index: 15; overflow: auto;
+  background: var(--fond); color: var(--texte); border-top: 3px solid var(--primaire);
+  padding: .15in .4in; font: 14pt/1.4 var(--police-corps), Arial, sans-serif;
+}
+.notes-panneau h2 { margin: 0 0 .06in; font-size: 11pt; letter-spacing: .08em; text-transform: uppercase; color: var(--texte-doux); }
+.notes-panneau p { margin: 0 0 .08in; }
+.plan {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 4.2in; z-index: 30; overflow: auto;
+  background: var(--fond); color: var(--texte); border-left: 3px solid var(--primaire); padding: .3in;
+  font: 13pt/1.3 var(--police-corps), Arial, sans-serif;
+}
+.plan ol { list-style: none; margin: 0; padding: 0; }
+.plan button { display: block; width: 100%; text-align: left; font: inherit; color: inherit; background: transparent; border: 0; padding: .07in .1in; border-radius: .06in; cursor: pointer; }
+.plan button:hover, .plan button[aria-current="true"] { background: var(--fond-alt); }
+.plan button[aria-current="true"] { font-weight: 700; border-left: 4px solid var(--primaire); }
+.aide {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 40; min-width: 5.5in;
+  background: var(--fond); color: var(--texte); border: 3px solid var(--primaire); border-radius: .12in; padding: .3in .4in;
+  font: 14pt/1.5 var(--police-corps), Arial, sans-serif;
+}
+.aide h2 { margin: 0 0 .12in; font-size: 16pt; }
+.aide dl { display: grid; grid-template-columns: auto 1fr; gap: .06in .3in; margin: 0; }
+.aide dt { font-weight: 700; font-family: var(--police-mono), monospace; }
+.aide dd { margin: 0; }
+
+/* ------------------------------------------------------------ parcours : page « niveau » (HTML seul) */
+.diapo--niveau { background: var(--fond); }
+.nv-haut {
+  position: absolute; left: .6in; right: .6in; top: .17in; height: .3in; display: flex; align-items: center;
+  justify-content: space-between; font: 700 10pt/1 var(--police-corps), Arial, sans-serif;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--texte-doux);
+}
+.nv-haut .nv-rang { color: var(--primaire); }
+.nv-progres { position: absolute; left: .6in; right: .6in; top: .5in; height: 3px; background: var(--bordure); border-radius: 2px; overflow: hidden; }
+.nv-progres i { display: block; height: 100%; width: calc(100% * var(--n) / var(--t)); background: var(--primaire); }
+.nv-tete { position: absolute; left: .6in; top: .66in; width: 12.1in; }
+.nv-titre { font: 700 29pt/1.1 var(--police-titres), Arial, sans-serif; color: var(--texte); }
+.nv-clair { margin-top: .07in; font-size: 16pt; line-height: 1.25; color: var(--texte-doux); }
+.nv-clair, .nv-probleme p, .nv-legende p, .nv-limite p, .nv-verdict span { text-wrap: balance; }
+.nv-label { display: block; margin-bottom: .05in; font: 700 9.5pt/1 var(--police-corps), Arial, sans-serif; letter-spacing: .12em; color: var(--primaire); }
+
+.nv-gauche { position: absolute; z-index: 3; left: .6in; top: 1.72in; width: 8.5in; height: 4.58in; display: flex; flex-direction: column; gap: .13in; }
+.nv-probleme { min-height: .76in; }
+.nv-probleme p { font-size: 15pt; line-height: 1.22; }
+.nv-panneaux { position: relative; flex: 1 1 auto; display: flex; gap: .2in; min-height: 0; }
+.nv-panneau {
+  flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; background: var(--fond);
+  border: 1px solid var(--bordure); border-radius: .12in; overflow: hidden; box-shadow: 0 .03in .14in rgba(0, 0, 0, .08);
+}
+.nv-panneau header { display: flex; align-items: center; gap: .12in; padding: .1in .15in .08in; }
+.nv-pastille { flex: none; padding: .05in .13in; border-radius: .2in; font: 700 9.5pt/1 var(--police-corps), Arial, sans-serif; letter-spacing: .1em; color: var(--fond); }
+.nv-avant .nv-pastille { background: var(--primaire); }
+.nv-apres .nv-pastille { background: var(--secondaire); }
+.nv-sous { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5pt; font-weight: 700; color: var(--texte); }
+.nv-code {
+  flex: 1 1 auto; margin: 0 .1in; padding: .1in .12in; overflow: hidden; border-radius: .08in;
+  background: var(--sombre); color: var(--fond); font: 400 11pt/1.32 var(--police-mono), "Courier New", monospace;
+}
+.nv-l { white-space: pre-wrap; overflow-wrap: anywhere; }
+.nv-code mark { padding: 0 .03in; border-radius: .03in; font-weight: 700; color: var(--fond); background: var(--primaire); }
+.nv-apres .nv-code mark { background: var(--secondaire); }
+.nv-verdict { display: flex; align-items: flex-start; gap: .09in; min-height: .62in; padding: .09in .15in .11in; font: 700 12.5pt/1.2 var(--police-corps), Arial, sans-serif; }
+.nv-avant .nv-verdict { color: var(--primaire-fonce); }
+.nv-apres .nv-verdict { color: var(--secondaire); }
+.nv-ico { flex: none; width: .2in; height: .2in; margin-top: .01in; }
+.nv-ico circle { fill: currentColor; }
+.nv-ico path { fill: none; stroke: var(--fond); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.nv-fleche {
+  position: absolute; left: calc(50% - .26in); top: .72in; z-index: 3; width: .52in; height: .52in; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; background: var(--fond); border: 2px solid var(--bordure);
+  box-shadow: 0 .02in .08in rgba(0, 0, 0, .18);
+}
+.nv-fleche svg { width: .3in; height: .3in; }
+.nv-fleche path { fill: none; stroke: var(--primaire); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+.nv-preuve { position: relative; flex: none; display: flex; align-items: center; gap: .25in; min-height: .95in; padding: .1in .18in; background: var(--fond-alt); border-left: .07in solid var(--primaire); border-radius: .08in; }
+.nv-chiffre { flex: 0 0 3.5in; white-space: nowrap; font-family: var(--police-titres), Arial, sans-serif; font-weight: 700; line-height: 1.05; color: var(--primaire); }
+.nv-legende { flex: 1 1 auto; min-width: 0; }
+.nv-legende p { font-size: 13pt; line-height: 1.22; }
+.nv-meta { display: flex; align-items: center; gap: .2in; margin-top: .07in; font-size: 10.5pt; }
+.nv-sources summary { cursor: pointer; list-style: none; font-weight: 700; color: var(--secondaire); }
+.nv-sources summary::-webkit-details-marker { display: none; }
+.nv-sources summary::before { content: ""; display: inline-block; width: .06in; height: .06in; margin-right: .08in; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-.02in) rotate(-45deg); }
+.nv-sources[open] summary::before { transform: translateY(-.04in) rotate(45deg); }
+.nv-sources ul {
+  position: absolute; right: 0; bottom: calc(100% + .08in); z-index: 5; width: 7.2in; margin: 0; padding: .12in .15in; list-style: none;
+  background: var(--fond); border: 1px solid var(--bordure); border-radius: .08in; box-shadow: 0 .04in .2in rgba(0, 0, 0, .25);
+  font-size: 10pt; line-height: 1.3;
+}
+.nv-sources li { margin: 0 0 .06in; overflow-wrap: anywhere; }
+.nv-sources li:last-child { margin-bottom: 0; }
+.nv-type { display: inline-block; min-width: .95in; margin-right: .06in; font-weight: 700; color: var(--texte-doux); }
+
+.nv-pile { position: absolute; left: 9.4in; top: 1.72in; width: 3.33in; height: 4.58in; display: flex; flex-direction: column; }
+.nv-pile h3 { margin-bottom: .07in; font: 700 9.5pt/1 var(--police-corps), Arial, sans-serif; letter-spacing: .12em; color: var(--texte-doux); }
+.nv-pile ol { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: flex-end; gap: .03in; margin: 0; padding: 0; list-style: none; }
+.nv-brique button {
+  width: 100%; display: grid; grid-template-columns: .22in 1fr auto; grid-template-areas: "num nom etiq" ". fichier compte";
+  align-items: center; column-gap: .09in; text-align: left;
+  padding: .035in .09in; border: 1px solid var(--bordure); border-radius: .09in; cursor: pointer;
+  background: var(--fond-alt); color: var(--texte); font: 700 10pt/1.15 var(--police-corps), Arial, sans-serif;
+}
+.nv-brique button:hover { border-color: var(--primaire); }
+.nv-num { grid-area: num; width: .22in; height: .22in; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--fond); border: 1px solid var(--bordure); font-size: 9pt; }
+.nv-nom { grid-area: nom; }
+.nv-etiq { grid-area: etiq; }
+.nv-compte { grid-area: etiq; font-size: 8.5pt; font-weight: 400; color: var(--texte-doux); white-space: nowrap; }
+.nv-nouveau { padding: .02in .07in; border-radius: .1in; font-size: 7.5pt; letter-spacing: .1em; text-transform: uppercase; background: var(--accent); color: var(--sombre); }
+.nv-fichier { grid-area: fichier; margin-top: .02in; overflow-wrap: anywhere; font: 400 8pt/1.2 var(--police-mono), "Courier New", monospace; }
+.nv-courant button { background: var(--primaire); border-color: var(--primaire); color: var(--fond); box-shadow: 0 .05in .2in rgba(0, 0, 0, .25); }
+.nv-courant .nv-num { background: var(--fond); border-color: var(--fond); color: var(--primaire); }
+.nv-courant .nv-compte { grid-area: compte; align-self: end; color: var(--fond); }
+.nv-futur button { background: transparent; border-style: dashed; color: var(--texte-doux); font-weight: 400; opacity: .78; }
+.nv-base { margin-top: .03in; padding: .05in .1in 0; text-align: center; border-top: 3px solid var(--sombre); font: 700 9.5pt/1.2 var(--police-corps), Arial, sans-serif; letter-spacing: .06em; color: var(--texte-doux); }
+.nv-date { margin-top: .05in; font-size: 8pt; color: var(--texte-doux); }
+
+.nv-limite {
+  position: absolute; left: .6in; top: 6.42in; width: 12.13in; height: .72in; display: flex; align-items: center; gap: .3in;
+  padding: .06in .2in; border-radius: .1in; background: var(--sombre); color: var(--fond);
+}
+.nv-limite > div { flex: 1 1 auto; min-width: 0; }
+.nv-limite .nv-label { color: var(--accent); margin-bottom: .03in; }
+.nv-limite p { font-size: 14pt; line-height: 1.18; }
+.nv-suite {
+  flex: 0 0 3.3in; display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: .12in; text-align: left;
+  padding: .06in .15in; border: 2px solid var(--fond); border-radius: .1in; cursor: pointer; background: transparent;
+  color: var(--fond); font-family: var(--police-corps), Arial, sans-serif;
+}
+.nv-suite span { grid-column: 1 / 3; font-size: 8pt; letter-spacing: .12em; color: var(--accent); }
+.nv-suite b { font-size: 12.5pt; line-height: 1.15; }
+.nv-suite:hover { background: var(--primaire); border-color: var(--primaire); }
+.nv-ico-suite { width: .26in; height: .26in; }
+.nv-ico-suite path { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.nv-fin { flex: 0 0 3.3in; text-align: right; font: 700 15pt/1.2 var(--police-titres), Arial, sans-serif; color: var(--accent); }
+
+/* Écran d'ouverture d'un parcours : une surcouche, pas une page (elle s'efface au premier « suivant »). */
+.ouverture { position: absolute; inset: 0; z-index: 12; display: flex; align-items: center; padding: 0 1in; background: var(--primaire); color: var(--fond); }
+.ouv-contenu { width: 11.3in; }
+.ouverture :where(h1, p, ol) { margin: 0; }
+.ouv-genre { font: 700 14pt/1 var(--police-corps), Arial, sans-serif; letter-spacing: .14em; }
+.ouv-titre { margin-top: .25in; font: 700 42pt/1.08 var(--police-titres), Arial, sans-serif; }
+.ouv-sous { margin-top: .22in; max-width: 10.4in; font-size: 19pt; line-height: 1.25; }
+.ouv-lire { margin-top: .5in; font: 700 10.5pt/1 var(--police-corps), Arial, sans-serif; letter-spacing: .14em; color: var(--accent); }
+.ouv-lecture { display: grid; grid-template-columns: repeat(4, 1fr); gap: .18in; margin-top: .12in; padding: 0; list-style: none; counter-reset: n; }
+.ouv-lecture li { counter-increment: n; padding: .14in .17in; border-radius: .1in; background: var(--primaire-fonce); font-size: 12pt; line-height: 1.25; }
+.ouv-lecture li::before { content: counter(n); display: block; margin-bottom: .04in; font: 700 20pt/1 var(--police-titres), Arial, sans-serif; color: var(--accent); }
+.ouv-lecture b { display: block; font-size: 13.5pt; margin-bottom: .03in; }
+.ouv-meta { margin-top: .35in; font-size: 14pt; }
+.ouv-astuce { margin-top: .14in; font-size: 11pt; color: var(--accent); }
+.ouv-go { margin-top: .22in; padding: .11in .32in; border: 0; border-radius: .3in; cursor: pointer; background: var(--fond); color: var(--primaire); font: 700 15pt/1 var(--police-corps), Arial, sans-serif; }
+.ouv-go:hover { background: var(--accent); color: var(--sombre); }
+.ouv-provisoire { position: absolute; right: 1in; bottom: .3in; font-size: 10pt; }
+
+/* Pas à pas : sans JavaScript tout est visible ; avec JavaScript chaque page se dévoile par étapes. */
+.js-etapes .diapo--niveau [data-etape]:not(.revele) { opacity: 0; visibility: hidden; }
+.diapo--niveau [data-etape].revele { animation: nv-entree .5s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes nv-entree { from { opacity: 0; transform: translateY(.2in); } to { opacity: 1; transform: none; } }
+@keyframes nv-pose { 0% { opacity: 0; transform: translateY(-.45in) scale(.96); } 60% { opacity: 1; transform: translateY(.03in); } 100% { opacity: 1; transform: none; } }
+@keyframes nv-barre { from { width: calc(100% * (var(--n) - 1) / var(--t)); } }
+.diapo--niveau.actif .nv-tete { animation: nv-entree .45s ease-out both; }
+.diapo--niveau.actif .nv-probleme { animation: nv-entree .5s ease-out .1s both; }
+.diapo--niveau.actif .nv-courant { animation: nv-pose .65s cubic-bezier(.2, .8, .2, 1) .15s both; }
+.diapo--niveau.actif .nv-progres i { animation: nv-barre .7s ease-out both; }
+body[data-parcours] .barre-progression { display: none; }
+@media (prefers-reduced-motion: reduce) { .diapo--niveau, .diapo--niveau * { animation: none !important; } }
+
+/* ------------------------------------------------------------ impression : une diapositive par page */
+@media print {
+  @page { size: 13.333in 7.5in; margin: 0; }
+  html, body { height: auto; overflow: visible; background: var(--fond); }
+  .scene { position: static; }
+  .stage { position: static; width: auto; height: auto; transform: none; box-shadow: none; }
+  .diapo { display: block !important; position: relative; width: 13.333in; height: 7.5in; page-break-after: always; break-after: page; animation: none; }
+  .diapo:last-of-type { page-break-after: auto; break-after: auto; }
+  .barre-progression, .commandes, .notes-panneau, .plan, .aide { display: none !important; }
+  .notes { display: none !important; }
+  .js-etapes .diapo--niveau [data-etape]:not(.revele) { opacity: 1 !important; visibility: visible !important; }
+  .diapo--niveau, .diapo--niveau * { animation: none !important; }
+  .ouverture { display: none !important; }
+}
+
+</style>
+</head>
+<body data-sur="sur" data-diapositive="Diapositive" data-parcours="1">
+<div class="barre-progression" aria-hidden="true"><div id="progres"></div></div>
+<div class="scene" id="scene"><main class="stage" id="stage" aria-label="De la consigne au pipeline qui se corrige">
+<section class="diapo diapo--niveau" data-index="0" data-etapes="3" aria-roledescription="diapositive" aria-label="Diapositive 1 sur 10 : Une consigne qui nomme le cas"><div class="nv-haut"><span class="nv-deck">De la consigne au pipeline qui se corrige</span><span class="nv-rang">NIVEAU 1 / 10</span></div><div class="nv-progres" style="--n:1;--t:10" aria-hidden="true"><i></i></div><div class="nv-tete"><h2 class="nv-titre">Une consigne qui nomme le cas</h2><p class="nv-clair">Un mot d&#x27;ordre au mur : l&#x27;agent n&#x27;a plus à deviner vos habitudes.</p></div><div class="nv-gauche"><div class="nv-probleme"><span class="nv-label">LE PROBLÈME</span><p>Sans consigne, l&#x27;agent devine vos conventions. Il trouve le bon dossier… mais invente le nom du fichier.</p></div><div class="nv-panneaux"><section class="nv-panneau nv-avant" data-etape="1"><header><span class="nv-pastille">AVANT</span><span class="nv-sous">Sans consigne</span></header><div class="nv-code"><div class="nv-l">Demande : « Ajoute une hypothèse testable… »</div><div class="nv-l">Résultat :</div><div class="nv-l">3-<wbr>hypotheses/<wbr><mark>hypothese-<wbr>exemple-<wbr>vs-<wbr>regle.<wbr>md</mark></div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6"/></svg><span>Bon dossier, nom inventé : 0 conforme sur 24</span></footer></section><div class="nv-fleche" data-etape="2" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5"/></svg></div><section class="nv-panneau nv-apres" data-etape="2"><header><span class="nv-pastille">APRÈS</span><span class="nv-sous">Avec la règle écrite</span></header><div class="nv-code"><div class="nv-l">Règle : hypothèse → 3-<wbr>hypotheses/<wbr>H-<wbr>YYYYMMDD-<wbr>&lt;slug&gt;.<wbr>md</div><div class="nv-l">Résultat :</div><div class="nv-l">3-<wbr>hypotheses/<wbr><mark>H-<wbr>20260920-<wbr>exemple-<wbr>vs-<wbr>regle-<wbr>seule.<wbr>md</mark></div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M4.4 8.3l2.5 2.5 4.7-5.1"/></svg><span>Convention respectée : 24 conformes sur 24</span></footer></section></div><div class="nv-preuve" data-etape="3"><div class="nv-chiffre" style="font-size:34pt">0/24 → 24/24</div><div class="nv-legende"><p>noms conformes sans, puis avec le fichier d&#x27;instructions · 60 runs, même modèle, juge déterministe</p><div class="nv-meta"><span class="puce-conf" title="Testé plusieurs fois, avec un juge automatique : on peut s&#x27;y appuyer."><i class="pastille" style="background:var(--conf-MESURE)"></i>Mesuré</span><details class="nv-sources"><summary>Preuves · 2</summary><ul><li><span class="nv-type">Document</span><code>labs/custom-instruction/o1-terrain/notes.md</code></li><li><span class="nv-type">Base de savoir</span><code>MAITRISE-COPILOT/07-instructions-base-de-savoir.md</code></li></ul></details></div></div></div></div><aside class="nv-pile" aria-label="Le système maintenant"><h3>LE SYSTÈME MAINTENANT</h3><ol><li class="nv-brique nv-futur"><button type="button" data-i="9" aria-label="Aller au niveau 10 : Mémoire + mesure"><span class="nv-num">10</span><span class="nv-nom">Mémoire + mesure</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="8" aria-label="Aller au niveau 9 : Auto-correction"><span class="nv-num">9</span><span class="nv-nom">Auto-correction</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="7" aria-label="Aller au niveau 8 : Pipeline scripté"><span class="nv-num">8</span><span class="nv-nom">Pipeline scripté</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="6" aria-label="Aller au niveau 7 : Orchestration"><span class="nv-num">7</span><span class="nv-nom">Orchestration</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="5" aria-label="Aller au niveau 6 : Hook / garde mécanique"><span class="nv-num">6</span><span class="nv-nom">Hook / garde mécanique</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="4" aria-label="Aller au niveau 5 : Gabarit + script"><span class="nv-num">5</span><span class="nv-nom">Gabarit + script</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="3" aria-label="Aller au niveau 4 : Skill"><span class="nv-num">4</span><span class="nv-nom">Skill</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="2" aria-label="Aller au niveau 3 : Agent spécialisé"><span class="nv-num">3</span><span class="nv-nom">Agent spécialisé</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="1" aria-label="Aller au niveau 2 : Règles ciblées"><span class="nv-num">2</span><span class="nv-nom">Règles ciblées</span></button></li><li class="nv-brique nv-courant"><button type="button" data-i="0" aria-label="Aller au niveau 1 : Instruction du dépôt"><span class="nv-num">1</span><span class="nv-nom">Instruction du dépôt</span><span class="nv-etiq"><span class="nv-nouveau">nouveau</span></span><span class="nv-fichier">.github/copilot-instructions.md</span><span class="nv-compte">1 fichier</span></button></li><li class="nv-brique nv-base"><span class="nv-nom">Le modèle seul</span></li></ol><p class="nv-date">comptes relevés au 2026-11-13</p></aside><div class="nv-limite" data-etape="3"><div><span class="nv-label">MAIS…</span><p>Le fichier a doublé le coût d&#x27;entrée (×2,12), à chaque requête — même quand on ne crée aucun fichier. Et il va grossir.</p></div><button type="button" class="nv-suite" data-action="suivant"><span>NIVEAU SUIVANT</span><b>Une règle par fichier, au bon endroit</b><svg class="nv-ico-suite" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l7.5 7.5L8 19.5"/></svg></button></div><aside class="notes" hidden><p>[≈ 2 min] Message : une consigne ne vaut que si elle NOMME le cas. Montrez les deux fichiers réels : sans consigne l&#x27;agent range presque toujours au bon endroit (17 sur 24) mais invente le nom (0 sur 24) ; avec le fichier d&#x27;instructions, 24 sur 24. La convention H-AAAAMMJJ est arbitraire : aucun modèle ne la devine, donc l&#x27;information vient bien du fichier. À garder en réserve si on vous interroge : (1) cas nommé 10/10, « écris du code robuste » 0/10, comme ne rien dire ; (2) le ton (impératif, vague, interdit) ne change rien : 3/3 pour les trois, 0/3 sans consigne ; (3) une règle écrite contre un échec déjà vu vaut trois fois une règle écrite à l&#x27;aveugle (0,75 contre 0,25). Bornes : modèle de la session (non nommé dans les notes du labo), 60 runs, juge déterministe qui ne voit que le dossier, le nom et la langue — pas la qualité. Transition : « ce fichier coûte le double à chaque requête ; il faut l&#x27;élaguer sans rien perdre ».</p><p>Niveau : Mesuré · Sources : labs/custom-instruction/o1-terrain/notes.md, MAITRISE-COPILOT/07-instructions-base-de-savoir.md</p></aside></section>
+<section class="diapo diapo--niveau" data-index="1" data-etapes="3" aria-roledescription="diapositive" aria-label="Diapositive 2 sur 10 : Une règle par fichier, au bon endroit"><div class="nv-haut"><span class="nv-deck">De la consigne au pipeline qui se corrige</span><span class="nv-rang">NIVEAU 2 / 10</span></div><div class="nv-progres" style="--n:2;--t:10" aria-hidden="true"><i></i></div><div class="nv-tete"><h2 class="nv-titre">Une règle par fichier, au bon endroit</h2><p class="nv-clair">On ne relit pas tout le règlement pour changer une ampoule.</p></div><div class="nv-gauche"><div class="nv-probleme"><span class="nv-label">LE PROBLÈME</span><p>Le fichier a grossi : 320 lignes, 4 931 mots, relus à chaque requête — même pour une tâche sans aucun rapport.</p></div><div class="nv-panneaux"><section class="nv-panneau nv-avant" data-etape="1"><header><span class="nv-pastille">AVANT</span><span class="nv-sous">Un seul gros fichier</span></header><div class="nv-code"><div class="nv-l">copilot-<wbr>instructions : <mark>4 931 mots</mark></div><div class="nv-l">poussé à chaque requête</div><div class="nv-l">25 skills + 20 hooks recopiés dedans</div><div class="nv-l">deux règles qui se contredisent ?</div><div class="nv-l">conflit signalé : <mark>0 fois sur 5</mark></div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6"/></svg><span>Coût payé à chaque tour, contradictions invisibles</span></footer></section><div class="nv-fleche" data-etape="2" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5"/></svg></div><section class="nv-panneau nv-apres" data-etape="2"><header><span class="nv-pastille">APRÈS</span><span class="nv-sous">Un socle + des règles ciblées</span></header><div class="nv-code"><div class="nv-l">copilot-<wbr>instructions : <mark>1 623 mots</mark></div><div class="nv-l">scripts.<wbr>instructions.<wbr>md</div><div class="nv-l">  applyTo: &quot;scripts/<wbr>**/<wbr>*.<wbr>py&quot;</div><div class="nv-l">  stdin=DEVNULL : 2 h 20 perdues</div><div class="nv-l">  <mark>Ne s&#x27;applique PAS</mark> via mesure.<wbr>lancer</div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M4.4 8.3l2.5 2.5 4.7-5.1"/></svg><span>Chaque règle arrive avec sa frontière</span></footer></section></div><div class="nv-preuve" data-etape="3"><div class="nv-chiffre" style="font-size:29pt">−67 % de texte</div><div class="nv-legende"><p>même résultat : nommage 24/24 contre 24/24, −54 % du surcoût propre au fichier (60 runs, juge déterministe)</p><div class="nv-meta"><span class="puce-conf" title="Testé plusieurs fois, avec un juge automatique : on peut s&#x27;y appuyer."><i class="pastille" style="background:var(--conf-MESURE)"></i>Mesuré</span><details class="nv-sources"><summary>Preuves · 4</summary><ul><li><span class="nv-type">Document</span><code>labs/custom-instruction/o2-optimiser/notes.md</code></li><li><span class="nv-type">Document</span><code>labs/custom-instruction/o3-livrer/notes.md</code></li><li><span class="nv-type">Document</span><code>.github/instructions/scripts.instructions.md</code></li><li><span class="nv-type">Base de savoir</span><code>MAITRISE-COPILOT/09-guide-montage-systeme-agentique.md</code></li></ul></details></div></div></div></div><aside class="nv-pile" aria-label="Le système maintenant"><h3>LE SYSTÈME MAINTENANT</h3><ol><li class="nv-brique nv-futur"><button type="button" data-i="9" aria-label="Aller au niveau 10 : Mémoire + mesure"><span class="nv-num">10</span><span class="nv-nom">Mémoire + mesure</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="8" aria-label="Aller au niveau 9 : Auto-correction"><span class="nv-num">9</span><span class="nv-nom">Auto-correction</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="7" aria-label="Aller au niveau 8 : Pipeline scripté"><span class="nv-num">8</span><span class="nv-nom">Pipeline scripté</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="6" aria-label="Aller au niveau 7 : Orchestration"><span class="nv-num">7</span><span class="nv-nom">Orchestration</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="5" aria-label="Aller au niveau 6 : Hook / garde mécanique"><span class="nv-num">6</span><span class="nv-nom">Hook / garde mécanique</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="4" aria-label="Aller au niveau 5 : Gabarit + script"><span class="nv-num">5</span><span class="nv-nom">Gabarit + script</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="3" aria-label="Aller au niveau 4 : Skill"><span class="nv-num">4</span><span class="nv-nom">Skill</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="2" aria-label="Aller au niveau 3 : Agent spécialisé"><span class="nv-num">3</span><span class="nv-nom">Agent spécialisé</span></button></li><li class="nv-brique nv-courant"><button type="button" data-i="1" aria-label="Aller au niveau 2 : Règles ciblées"><span class="nv-num">2</span><span class="nv-nom">Règles ciblées</span><span class="nv-etiq"><span class="nv-nouveau">nouveau</span></span><span class="nv-fichier">.github/instructions/*.instructions.md</span><span class="nv-compte">39 règles</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="0" aria-label="Aller au niveau 1 : Instruction du dépôt"><span class="nv-num">1</span><span class="nv-nom">Instruction du dépôt</span><span class="nv-compte">1 fichier</span></button></li><li class="nv-brique nv-base"><span class="nv-nom">Le modèle seul</span></li></ol><p class="nv-date">comptes relevés au 2026-11-13</p></aside><div class="nv-limite" data-etape="3"><div><span class="nv-label">MAIS…</span><p>Une règle dit comment faire. Elle ne dit ni qui le fait, ni avec quels outils : l&#x27;agent reste un généraliste.</p></div><button type="button" class="nv-suite" data-action="suivant"><span>NIVEAU SUIVANT</span><b>Un agent spécialisé</b><svg class="nv-ico-suite" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l7.5 7.5L8 19.5"/></svg></button></div><aside class="notes" hidden><p>[≈ 2 min] Même tâche, même juge : le fichier élagué de 4 931 à 1 623 mots donne exactement le même résultat (24/24 contre 24/24), pour un surcoût propre au fichier divisé par deux. Principe de coupe : ce qui doit être su AVANT qu&#x27;un fichier naisse (où le ranger, comment le nommer, les portes rouges) reste poussé ; le reste a déjà un véhicule qui se déclenche au bon moment (applyTo). Exemple réel à droite : la règle de scripts/ porte son incident (un lancement en arrière-plan a figé tout un groupe de processus pendant 2 h 20) ET sa frontière (elle ne s&#x27;applique pas via mesure.lancer). À garder en réserve : borner la portée supprime le débordement (hors-champ 0,33 → 1,00 brique par brique ; 0,53 → 0,93 en montage complet, écart large mais pas démontré au sens strict) ; deux règles qui se contredisent sont signalées 9 fois sur 10 quand elles vivent dans deux fichiers, 0 fois sur 5 dans un seul ; une instruction globale du dépôt a été chargée pour 90 968 fichiers et ne servait que dans 145. Honnêteté : nos 35 fichiers entiers ne rappellent que 0,42 pour +75 % de coût, quand une seule règle dédiée et bornée atteint 0,89. Transition : « une règle ne dit pas qui travaille ».</p><p>Niveau : Mesuré · Sources : labs/custom-instruction/o2-optimiser/notes.md, labs/custom-instruction/o3-livrer/notes.md, .github/instructions/scripts.instructions.md, MAITRISE-COPILOT/09-guide-montage-systeme-agentique.md</p></aside></section>
+<section class="diapo diapo--niveau" data-index="2" data-etapes="3" aria-roledescription="diapositive" aria-label="Diapositive 3 sur 10 : Un agent spécialisé"><div class="nv-haut"><span class="nv-deck">De la consigne au pipeline qui se corrige</span><span class="nv-rang">NIVEAU 3 / 10</span></div><div class="nv-progres" style="--n:3;--t:10" aria-hidden="true"><i></i></div><div class="nv-tete"><h2 class="nv-titre">Un agent spécialisé</h2><p class="nv-clair">Une fiche de poste : un métier, des outils limités, des interdits écrits.</p></div><div class="nv-gauche"><div class="nv-probleme"><span class="nv-label">LE PROBLÈME</span><p>Une règle ne choisit pas qui travaille. Un généraliste muni de tous les outils fait aussi ce qu&#x27;il ne devrait pas.</p></div><div class="nv-panneaux"><section class="nv-panneau nv-avant" data-etape="1"><header><span class="nv-pastille">AVANT</span><span class="nv-sous">Agent fourre-tout (exemple)</span></header><div class="nv-code"><div class="nv-l">name: Assistant</div><div class="nv-l">description: Aide sur tout.<wbr></div><div class="nv-l">tools: <mark>tous les outils</mark></div><div class="nv-l">Demande : supprimer un fichier</div><div class="nv-l">→ fichier supprimé <mark>5 fois sur 5</mark></div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6"/></svg><span>Rien ne l&#x27;empêche d&#x27;agir ; ×1,77 de coût en prime</span></footer></section><div class="nv-fleche" data-etape="2" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5"/></svg></div><section class="nv-panneau nv-apres" data-etape="2"><header><span class="nv-pastille">APRÈS</span><span class="nv-sous">Evidence Auditor (réel)</span></header><div class="nv-code"><div class="nv-l">name: &quot;Evidence Auditor&quot;</div><div class="nv-l">description: &quot;Use when a CLAIM must be…</div><div class="nv-l">NOT for repository fit, naming… →</div><div class="nv-l">use Copilot Reviewer</div><div class="nv-l">tools: <mark>[read, search]</mark></div><div class="nv-l">→ ne peut rien écrire</div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M4.4 8.3l2.5 2.5 4.7-5.1"/></svg><span>Un métier, un NON explicite, des outils bornés</span></footer></section></div><div class="nv-preuve" data-etape="3"><div class="nv-chiffre" style="font-size:46pt">5/5 → 0/5</div><div class="nv-legende"><p>suppressions demandées : sans garde-fou, puis avec une liste blanche d&#x27;outils de lecture (3 lectures sur 3) · N=5, claude-haiku-4.5</p><div class="nv-meta"><span class="puce-conf" title="Testé plusieurs fois, avec un juge automatique : on peut s&#x27;y appuyer."><i class="pastille" style="background:var(--conf-MESURE)"></i>Mesuré</span><details class="nv-sources"><summary>Preuves · 4</summary><ul><li><span class="nv-type">Document</span><code>labs/CHAIN-140/notes.md</code></li><li><span class="nv-type">Document</span><code>.github/agents/evidence-auditor.agent.md</code></li><li><span class="nv-type">Base de savoir</span><code>MAITRISE-COPILOT/10-agents-base-de-savoir.md</code></li><li><span class="nv-type">Base de savoir</span><code>MAITRISE-COPILOT/09-guide-montage-systeme-agentique.md</code></li></ul></details></div></div></div></div><aside class="nv-pile" aria-label="Le système maintenant"><h3>LE SYSTÈME MAINTENANT</h3><ol><li class="nv-brique nv-futur"><button type="button" data-i="9" aria-label="Aller au niveau 10 : Mémoire + mesure"><span class="nv-num">10</span><span class="nv-nom">Mémoire + mesure</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="8" aria-label="Aller au niveau 9 : Auto-correction"><span class="nv-num">9</span><span class="nv-nom">Auto-correction</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="7" aria-label="Aller au niveau 8 : Pipeline scripté"><span class="nv-num">8</span><span class="nv-nom">Pipeline scripté</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="6" aria-label="Aller au niveau 7 : Orchestration"><span class="nv-num">7</span><span class="nv-nom">Orchestration</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="5" aria-label="Aller au niveau 6 : Hook / garde mécanique"><span class="nv-num">6</span><span class="nv-nom">Hook / garde mécanique</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="4" aria-label="Aller au niveau 5 : Gabarit + script"><span class="nv-num">5</span><span class="nv-nom">Gabarit + script</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="3" aria-label="Aller au niveau 4 : Skill"><span class="nv-num">4</span><span class="nv-nom">Skill</span></button></li><li class="nv-brique nv-courant"><button type="button" data-i="2" aria-label="Aller au niveau 3 : Agent spécialisé"><span class="nv-num">3</span><span class="nv-nom">Agent spécialisé</span><span class="nv-etiq"><span class="nv-nouveau">nouveau</span></span><span class="nv-fichier">.github/agents/&lt;métier&gt;.agent.md</span><span class="nv-compte">26 agents</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="1" aria-label="Aller au niveau 2 : Règles ciblées"><span class="nv-num">2</span><span class="nv-nom">Règles ciblées</span><span class="nv-compte">39 règles</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="0" aria-label="Aller au niveau 1 : Instruction du dépôt"><span class="nv-num">1</span><span class="nv-nom">Instruction du dépôt</span><span class="nv-compte">1 fichier</span></button></li><li class="nv-brique nv-base"><span class="nv-nom">Le modèle seul</span></li></ol><p class="nv-date">comptes relevés au 2026-11-13</p></aside><div class="nv-limite" data-etape="3"><div><span class="nv-label">MAIS…</span><p>Un agent bien borné ne connaît que ce qu&#x27;on lui écrit. Une longue procédure, utile seulement parfois, encombrerait toutes ses requêtes.</p></div><button type="button" class="nv-suite" data-action="suivant"><span>NIVEAU SUIVANT</span><b>Un skill : la procédure, à la demande</b><svg class="nv-ico-suite" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l7.5 7.5L8 19.5"/></svg></button></div><aside class="notes" hidden><p>[≈ 2 min] Message : un agent, c&#x27;est un métier plus des outils limités. L&#x27;exemple réel est l&#x27;Evidence Auditor : une description qui dit quand l&#x27;utiliser ET quand ne pas l&#x27;utiliser, et seulement [read, search] — il ne peut rien écrire. L&#x27;avant est un exemple construit, la mesure est réelle (CHAIN-140, N=5, claude-haiku-4.5, suppression de fichier explicitement demandée) : sans garde-fou 5 destructions sur 5 ; liste noire d&#x27;un seul outil 0 sur 5 mais l&#x27;agent peut prendre un autre chemin ; juge d&#x27;approbation 5 sur 5 (aucune barrière) ; liste blanche 0 sur 5 et 3 lectures réussies sur 3. Anecdote à raconter : le premier essai avec « read, search » donnait 0 destruction… et 0 lecture, car ces noms n&#x27;existent pas dans le CLI : l&#x27;agent était paralysé. Le contrôle de capacité a évité un faux « ça marche ». Limite : la liste blanche déplace la faille vers celui qui l&#x27;écrit (bash dedans, et la protection tombe). Autres repères (mesures sur un modèle depuis retiré, à rejouer) : un nom d&#x27;agent qui dit son métier choisit à lui seul le bon agent (6 sur 6) ; ne mettez jamais dans un agent une règle qui doit tenir tout le temps (agent seul 0/3, instructions 3/3) ; un catalogue de 3 outils divise le coût par 1,77 ; mais retirer l&#x27;outil qui fait le travail fait chuter une tâche de 27/30 à 8/30.</p><p>Niveau : Mesuré · Sources : labs/CHAIN-140/notes.md, .github/agents/evidence-auditor.agent.md, MAITRISE-COPILOT/10-agents-base-de-savoir.md, MAITRISE-COPILOT/09-guide-montage-systeme-agentique.md</p></aside></section>
+<section class="diapo diapo--niveau" data-index="3" data-etapes="3" aria-roledescription="diapositive" aria-label="Diapositive 4 sur 10 : Un skill : la procédure, à la demande"><div class="nv-haut"><span class="nv-deck">De la consigne au pipeline qui se corrige</span><span class="nv-rang">NIVEAU 4 / 10</span></div><div class="nv-progres" style="--n:4;--t:10" aria-hidden="true"><i></i></div><div class="nv-tete"><h2 class="nv-titre">Un skill : la procédure, à la demande</h2><p class="nv-clair">Le classeur de procédures : on ne le sort du tiroir que si la tâche le demande.</p></div><div class="nv-gauche"><div class="nv-probleme"><span class="nv-label">LE PROBLÈME</span><p>Une procédure longue, utile parfois, encombre les instructions (poussées à chaque requête) — et le modèle ne peut pas la deviner.</p></div><div class="nv-panneaux"><section class="nv-panneau nv-avant" data-etape="1"><header><span class="nv-pastille">AVANT</span><span class="nv-sous">Convention maison, sans skill</span></header><div class="nv-code"><div class="nv-l">Demande : fiche selon la convention</div><div class="nv-l">maison de mise en forme</div><div class="nv-l">→ le modèle l&#x27;invente</div><div class="nv-l">réussites : <mark>0 sur 30</mark></div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6"/></svg><span>La convention n&#x27;est pas devinable</span></footer></section><div class="nv-fleche" data-etape="2" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5"/></svg></div><section class="nv-panneau nv-apres" data-etape="2"><header><span class="nv-pastille">APRÈS</span><span class="nv-sous">Un skill du labo (réel)</span></header><div class="nv-code"><div class="nv-l">name: &quot;check-<wbr>source-<wbr>novelty&quot;</div><div class="nv-l">description: &quot;Use when about to ingest…</div><div class="nv-l">… NOT for periodic multi-<wbr>site</div><div class="nv-l">prospecting sweeps → use</div><div class="nv-l">prospect-<wbr>sources.<wbr></div><div class="nv-l">→ chargé à la demande seulement</div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M4.4 8.3l2.5 2.5 4.7-5.1"/></svg><span>29 réussites sur 30, convention livrée à la demande</span></footer></section></div><div class="nv-preuve" data-etape="3"><div class="nv-chiffre" style="font-size:34pt">0/30 → 29/30</div><div class="nv-legende"><p>fiches selon une convention maison, sans puis avec skill livré · même modèle (claude-haiku-4.5), même prompt, 60 runs</p><div class="nv-meta"><span class="puce-conf" title="Testé plusieurs fois, avec un juge automatique : on peut s&#x27;y appuyer."><i class="pastille" style="background:var(--conf-MESURE)"></i>Mesuré</span><details class="nv-sources"><summary>Preuves · 3</summary><ul><li><span class="nv-type">Document</span><code>labs/capacites/l12-capa3-30r-b/notes.md</code></li><li><span class="nv-type">Document</span><code>.github/skills/check-source-novelty/SKILL.md</code></li><li><span class="nv-type">Base de savoir</span><code>MAITRISE-COPILOT/09-guide-montage-systeme-agentique.md</code></li></ul></details></div></div></div></div><aside class="nv-pile" aria-label="Le système maintenant"><h3>LE SYSTÈME MAINTENANT</h3><ol><li class="nv-brique nv-futur"><button type="button" data-i="9" aria-label="Aller au niveau 10 : Mémoire + mesure"><span class="nv-num">10</span><span class="nv-nom">Mémoire + mesure</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="8" aria-label="Aller au niveau 9 : Auto-correction"><span class="nv-num">9</span><span class="nv-nom">Auto-correction</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="7" aria-label="Aller au niveau 8 : Pipeline scripté"><span class="nv-num">8</span><span class="nv-nom">Pipeline scripté</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="6" aria-label="Aller au niveau 7 : Orchestration"><span class="nv-num">7</span><span class="nv-nom">Orchestration</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="5" aria-label="Aller au niveau 6 : Hook / garde mécanique"><span class="nv-num">6</span><span class="nv-nom">Hook / garde mécanique</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="4" aria-label="Aller au niveau 5 : Gabarit + script"><span class="nv-num">5</span><span class="nv-nom">Gabarit + script</span></button></li><li class="nv-brique nv-courant"><button type="button" data-i="3" aria-label="Aller au niveau 4 : Skill"><span class="nv-num">4</span><span class="nv-nom">Skill</span><span class="nv-etiq"><span class="nv-nouveau">nouveau</span></span><span class="nv-fichier">.github/skills/&lt;nom&gt;/SKILL.md</span><span class="nv-compte">41 skills</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="2" aria-label="Aller au niveau 3 : Agent spécialisé"><span class="nv-num">3</span><span class="nv-nom">Agent spécialisé</span><span class="nv-compte">26 agents</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="1" aria-label="Aller au niveau 2 : Règles ciblées"><span class="nv-num">2</span><span class="nv-nom">Règles ciblées</span><span class="nv-compte">39 règles</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="0" aria-label="Aller au niveau 1 : Instruction du dépôt"><span class="nv-num">1</span><span class="nv-nom">Instruction du dépôt</span><span class="nv-compte">1 fichier</span></button></li><li class="nv-brique nv-base"><span class="nv-nom">Le modèle seul</span></li></ol><p class="nv-date">comptes relevés au 2026-11-13</p></aside><div class="nv-limite" data-etape="3"><div><span class="nv-label">MAIS…</span><p>Un skill reste du texte : rien ne garantit qu&#x27;il soit chargé, ni suivi à l&#x27;identique. Ce qui doit être identique à chaque fois sort du modèle.</p></div><button type="button" class="nv-suite" data-action="suivant"><span>NIVEAU SUIVANT</span><b>Un gabarit et un script</b><svg class="nv-ico-suite" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l7.5 7.5L8 19.5"/></svg></button></div><aside class="notes" hidden><p>[≈ 2 min] Message : un skill, c&#x27;est une procédure rangée à part, chargée seulement quand la tâche la demande. Mesure (30 runs par bras, claude-haiku-4.5, même prompt, mêmes entrées) : une convention maison de mise en forme que le prompt ne décrit pas — sans skill 0 réussite sur 30, avec le skill livré 29 sur 30, intervalles disjoints. Pourquoi un skill plutôt qu&#x27;une instruction : les instructions sont POUSSÉES (coût à chaque requête), les skills sont TIRÉS. De 1 à 41 skills, le coût n&#x27;augmente que de 8 % et le rappel ne baisse pas ; 35 fichiers d&#x27;instructions, eux, coûtent +75 %. Règle d&#x27;or : élaguez le copilot-instructions, laissez grandir la bibliothèque de skills. La description doit nommer ce qu&#x27;elle exclut (« NOT for … → use … »), comme ci-dessus. Précaution : le chargement n&#x27;est pas garanti. Sur le même petit modèle, un montage a donné 0 chargement sur 6 (2026-09-20) et un autre 29 sur 30 (2026-10-06) : exigez un canari de chargement avant de conclure. Résultat candidat : un modèle, un type de tâche.</p><p>Niveau : Mesuré · Sources : labs/capacites/l12-capa3-30r-b/notes.md, .github/skills/check-source-novelty/SKILL.md, MAITRISE-COPILOT/09-guide-montage-systeme-agentique.md</p></aside></section>
+<section class="diapo diapo--niveau" data-index="4" data-etapes="3" aria-roledescription="diapositive" aria-label="Diapositive 5 sur 10 : Un gabarit et un script"><div class="nv-haut"><span class="nv-deck">De la consigne au pipeline qui se corrige</span><span class="nv-rang">NIVEAU 5 / 10</span></div><div class="nv-progres" style="--n:5;--t:10" aria-hidden="true"><i></i></div><div class="nv-tete"><h2 class="nv-titre">Un gabarit et un script</h2><p class="nv-clair">La machine à café : on n&#x27;attend plus du barista qu&#x27;il invente, on appuie sur un bouton.</p></div><div class="nv-gauche"><div class="nv-probleme"><span class="nv-label">LE PROBLÈME</span><p>Ce qu&#x27;on refait à chaque fois, l&#x27;agent le refait un peu différemment — et ses chiffres, il les écrit de mémoire.</p></div><div class="nv-panneaux"><section class="nv-panneau nv-avant" data-etape="1"><header><span class="nv-pastille">AVANT</span><span class="nv-sous">Le modèle écrit de mémoire</span></header><div class="nv-code"><div class="nv-l">Rapport rédigé par l&#x27;agent :</div><div class="nv-l">« <mark>329</mark> runs exploités »</div><div class="nv-l">nombre écrit de mémoire</div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6"/></svg><span>Faux : 5ᵉ chiffre de mémoire démenti ce jour-là</span></footer></section><div class="nv-fleche" data-etape="2" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5"/></svg></div><section class="nv-panneau nv-apres" data-etape="2"><header><span class="nv-pastille">APRÈS</span><span class="nv-sous">Le code compte et fabrique</span></header><div class="nv-code"><div class="nv-l">on recompte sur disque : <mark>273</mark> runs</div><div class="nv-l">deck.<wbr>json = la spec, sans style</div><div class="nv-l">le générateur fabrique le HTML</div><div class="nv-l">défaut dans la spec ?</div><div class="nv-l"><mark>aucun fichier n&#x27;est écrit</mark></div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M4.4 8.3l2.5 2.5 4.7-5.1"/></svg><span>Le compte vient du disque ; le générateur refuse le défaut</span></footer></section></div><div class="nv-preuve" data-etape="3"><div class="nv-chiffre" style="font-size:46pt">3 sur 13</div><div class="nv-legende"><p>scripts dont le nombre de tests ESTIMÉ était exact : d&#x27;où le rejeu — on joue le témoin et on lit son bilan, on n&#x27;estime plus</p><div class="nv-meta"><span class="puce-conf" title="Testé plusieurs fois, avec un juge automatique : on peut s&#x27;y appuyer."><i class="pastille" style="background:var(--conf-MESURE)"></i>Mesuré</span><details class="nv-sources"><summary>Preuves · 4</summary><ul><li><span class="nv-type">Base de savoir</span><code>MAITRISE-COPILOT/07-instructions-base-de-savoir.md</code></li><li><span class="nv-type">Document</span><code>infos/pipeline/README.md</code></li><li><span class="nv-type">Document</span><code>labs/completude/c4-audit/notes.md</code></li><li><span class="nv-type">Document</span><code>templates/diaporama/README.md</code></li></ul></details></div></div></div></div><aside class="nv-pile" aria-label="Le système maintenant"><h3>LE SYSTÈME MAINTENANT</h3><ol><li class="nv-brique nv-futur"><button type="button" data-i="9" aria-label="Aller au niveau 10 : Mémoire + mesure"><span class="nv-num">10</span><span class="nv-nom">Mémoire + mesure</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="8" aria-label="Aller au niveau 9 : Auto-correction"><span class="nv-num">9</span><span class="nv-nom">Auto-correction</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="7" aria-label="Aller au niveau 8 : Pipeline scripté"><span class="nv-num">8</span><span class="nv-nom">Pipeline scripté</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="6" aria-label="Aller au niveau 7 : Orchestration"><span class="nv-num">7</span><span class="nv-nom">Orchestration</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="5" aria-label="Aller au niveau 6 : Hook / garde mécanique"><span class="nv-num">6</span><span class="nv-nom">Hook / garde mécanique</span></button></li><li class="nv-brique nv-courant"><button type="button" data-i="4" aria-label="Aller au niveau 5 : Gabarit + script"><span class="nv-num">5</span><span class="nv-nom">Gabarit + script</span><span class="nv-etiq"><span class="nv-nouveau">nouveau</span></span><span class="nv-fichier">templates/ · scripts/ · outils/</span><span class="nv-compte">166 scripts</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="3" aria-label="Aller au niveau 4 : Skill"><span class="nv-num">4</span><span class="nv-nom">Skill</span><span class="nv-compte">41 skills</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="2" aria-label="Aller au niveau 3 : Agent spécialisé"><span class="nv-num">3</span><span class="nv-nom">Agent spécialisé</span><span class="nv-compte">26 agents</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="1" aria-label="Aller au niveau 2 : Règles ciblées"><span class="nv-num">2</span><span class="nv-nom">Règles ciblées</span><span class="nv-compte">39 règles</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="0" aria-label="Aller au niveau 1 : Instruction du dépôt"><span class="nv-num">1</span><span class="nv-nom">Instruction du dépôt</span><span class="nv-compte">1 fichier</span></button></li><li class="nv-brique nv-base"><span class="nv-nom">Le modèle seul</span></li></ol><p class="nv-date">comptes relevés au 2026-11-13</p></aside><div class="nv-limite" data-etape="3"><div><span class="nv-label">MAIS…</span><p>Un script ne voit que ce qu&#x27;il sait lire : sans consigne, il n&#x27;attrape que 3 violations sur 18. Et il juge après coup, jamais avant.</p></div><button type="button" class="nv-suite" data-action="suivant"><span>NIVEAU SUIVANT</span><b>Un garde-fou qui empêche, pas qui rappelle</b><svg class="nv-ico-suite" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l7.5 7.5L8 19.5"/></svg></button></div><aside class="notes" hidden><p>[≈ 2 min] Message : ce qui se compte ou se fabrique doit sortir du modèle. Deux illustrations. (1) Un chiffre écrit de mémoire : « 329 runs » alors que le compte était 273 — cinquième chiffre de mémoire démenti dans la journée ; il a été recompté sur le disque, et l&#x27;état de couverture est depuis recompté par un script (couverture.py), qui avait déjà attrapé un « 743 runs » pour 702. De même, l&#x27;estimation statique du nombre de tests n&#x27;était exacte que pour 3 scripts sur 13 : le pipeline JOUE maintenant chaque témoin et publie son bilan. (2) Ce diaporama : une spec JSON sans champ de style, un générateur qui refuse tout défaut — un texte trop long et aucun fichier n&#x27;est écrit. Deux nuances mesurées à ne pas omettre : un contrôle déterministe est parfait et gratuit sur son format (10/10 sur les littéraux) mais aveugle ailleurs (0/9 sur le sémantique pur), d&#x27;où « déterministe d&#x27;abord, juge pour le reste » (pattern P-20260714) ; et un script ne remplace pas la consigne : sans consigne il n&#x27;attrape que 3 violations sur 18 (17 %), car une omission ne laisse aucune trace. La consigne agit à la production, le script à la détection. Transition : « le script juge après coup ; et si l&#x27;erreur est irréversible ? »</p><p>Niveau : Mesuré · Sources : MAITRISE-COPILOT/07-instructions-base-de-savoir.md, infos/pipeline/README.md, labs/completude/c4-audit/notes.md, templates/diaporama/README.md</p></aside></section>
+<section class="diapo diapo--niveau" data-index="5" data-etapes="3" aria-roledescription="diapositive" aria-label="Diapositive 6 sur 10 : Un garde-fou qui empêche, pas qui rappelle"><div class="nv-haut"><span class="nv-deck">De la consigne au pipeline qui se corrige</span><span class="nv-rang">NIVEAU 6 / 10</span></div><div class="nv-progres" style="--n:6;--t:10" aria-hidden="true"><i></i></div><div class="nv-tete"><h2 class="nv-titre">Un garde-fou qui empêche, pas qui rappelle</h2><p class="nv-clair">Le verrou sur la porte : on n&#x27;attend plus que chacun pense à ne pas entrer.</p></div><div class="nv-gauche"><div class="nv-probleme"><span class="nv-label">LE PROBLÈME</span><p>Une règle écrite se contourne en silence — surtout quand l&#x27;erreur coûte cher et qu&#x27;elle est difficile à voir.</p></div><div class="nv-panneaux"><section class="nv-panneau nv-avant" data-etape="1"><header><span class="nv-pastille">AVANT</span><span class="nv-sous">Règle écrite seulement</span></header><div class="nv-code"><div class="nv-l">« aucun appel avant approbation »</div><div class="nv-l">2026-<wbr>10-<wbr>15 : le moteur joue la tâche</div><div class="nv-l">qui exigeait l&#x27;approbation d&#x27;un humain</div><div class="nv-l"><mark>307,9 crédits</mark> dépensés</div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6"/></svg><span>La dépense était journalisée, pas empêchée</span></footer></section><div class="nv-fleche" data-etape="2" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5"/></svg></div><section class="nv-panneau nv-apres" data-etape="2"><header><span class="nv-pastille">APRÈS</span><span class="nv-sous">Garde dans le code (simplifié)</span></header><div class="nv-code"><div class="nv-l">if tache in hors_<wbr>moteur:</div><div class="nv-l">    return {&quot;etat&quot;: INVALIDE,</div><div class="nv-l">      &quot;raison&quot;: &quot;… <mark>rien ne part</mark>&quot;}</div><div class="nv-l">rien ne part, rien ne s&#x27;écrit</div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M4.4 8.3l2.5 2.5 4.7-5.1"/></svg><span>Le lanceur refuse : rien ne part, rien n&#x27;est compté</span></footer></section></div><div class="nv-preuve" data-etape="3"><div class="nv-chiffre" style="font-size:41pt">5/5 · +4 %</div><div class="nv-legende"><p>dire ET bloquer : 5 tâches faites sur 5 pour +4 % de coût ; bloquer seul : 3 sur 5 pour +177 % · 5 runs par montage, refus muet</p><div class="nv-meta"><span class="puce-conf" title="Mesuré, mais l&#x27;écart n&#x27;est pas démontré à cette puissance : une piste solide."><i class="pastille" style="background:var(--conf-INDICATIF)"></i>Indicatif</span><details class="nv-sources"><summary>Preuves · 4</summary><ul><li><span class="nv-type">Base de savoir</span><code>MAITRISE-COPILOT/09-guide-montage-systeme-agentique.md</code></li><li><span class="nv-type">Pattern</span><code>7-patterns/P-20260908-mecanisme-hook-bloque-independamment-du-modele.md</code> <em>(candidat (indicatif))</em></li><li><span class="nv-type">Document</span><code>labs/_commun/mesure.py</code></li><li><span class="nv-type">Document</span><code>outils/garde-temoins/sitecustomize.py</code></li></ul></details></div></div></div></div><aside class="nv-pile" aria-label="Le système maintenant"><h3>LE SYSTÈME MAINTENANT</h3><ol><li class="nv-brique nv-futur"><button type="button" data-i="9" aria-label="Aller au niveau 10 : Mémoire + mesure"><span class="nv-num">10</span><span class="nv-nom">Mémoire + mesure</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="8" aria-label="Aller au niveau 9 : Auto-correction"><span class="nv-num">9</span><span class="nv-nom">Auto-correction</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="7" aria-label="Aller au niveau 8 : Pipeline scripté"><span class="nv-num">8</span><span class="nv-nom">Pipeline scripté</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="6" aria-label="Aller au niveau 7 : Orchestration"><span class="nv-num">7</span><span class="nv-nom">Orchestration</span></button></li><li class="nv-brique nv-courant"><button type="button" data-i="5" aria-label="Aller au niveau 6 : Hook / garde mécanique"><span class="nv-num">6</span><span class="nv-nom">Hook / garde mécanique</span><span class="nv-etiq"><span class="nv-nouveau">nouveau</span></span><span class="nv-fichier">outils/garde-temoins/ · mesure.py</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="4" aria-label="Aller au niveau 5 : Gabarit + script"><span class="nv-num">5</span><span class="nv-nom">Gabarit + script</span><span class="nv-compte">166 scripts</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="3" aria-label="Aller au niveau 4 : Skill"><span class="nv-num">4</span><span class="nv-nom">Skill</span><span class="nv-compte">41 skills</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="2" aria-label="Aller au niveau 3 : Agent spécialisé"><span class="nv-num">3</span><span class="nv-nom">Agent spécialisé</span><span class="nv-compte">26 agents</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="1" aria-label="Aller au niveau 2 : Règles ciblées"><span class="nv-num">2</span><span class="nv-nom">Règles ciblées</span><span class="nv-compte">39 règles</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="0" aria-label="Aller au niveau 1 : Instruction du dépôt"><span class="nv-num">1</span><span class="nv-nom">Instruction du dépôt</span><span class="nv-compte">1 fichier</span></button></li><li class="nv-brique nv-base"><span class="nv-nom">Le modèle seul</span></li></ol><p class="nv-date">comptes relevés au 2026-11-13</p></aside><div class="nv-limite" data-etape="3"><div><span class="nv-label">MAIS…</span><p>Un garde-fou qui guette un mot se contourne : 4 évasions sur 20 (encodage, script intermédiaire). Il faut vérifier l&#x27;effet réel.</p></div><button type="button" class="nv-suite" data-action="suivant"><span>NIVEAU SUIVANT</span><b>Une brigade : un chef, des spécialistes</b><svg class="nv-ico-suite" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l7.5 7.5L8 19.5"/></svg></button></div><aside class="notes" hidden><p>[≈ 2 min] Message : une consigne rappelle, un garde-fou empêche. Incident fondateur : le 2026-10-15 une tâche qui exigeait l&#x27;approbation d&#x27;un humain a été jouée par le moteur (307,9 crédits) — la règle n&#x27;était que de la prose, la dépense était journalisée, pas empêchée. Aujourd&#x27;hui le lanceur refuse avant toute écriture. Même esprit : le garde-témoins (outils/garde-temoins/sitecustomize.py) rend impossible tout appel d&#x27;agent payant, git push et accès réseau pendant le rejeu des tests : « une consigne ne pas le faire serait enfreinte en silence ; ce fichier le rend impossible ». Mesures (5 runs par montage, donc indicatif) : dire 5/5 (+3 %) ; bloquer seul 3/5 (+177 % : un refus muet laisse l&#x27;agent devant un mur, 2 fois sur 5 il abandonne) ; dire ET bloquer 5/5 (+4 %). Le filet n&#x27;est gratuit que si la consigne passe presque toujours. Un hook qui guette un mot se contourne : 12 chemins directs sur 12 bloqués, mais encodage 3 évasions sur 4 et script intermédiaire 1 sur 4 (CHAIN-097, indicatif) ; préférer une vérification structurelle (permissions, effet réel). Borne produit : au terminal, un hook posé dans le dépôt est inerte (0/10), seul COPILOT_HOME agit (10/10), mesuré sur le CLI 1.0.83. Et un hook jamais déclenché donne 0/30 : vérifiez l&#x27;effet, pas la déclaration.</p><p>Niveau : Indicatif · Sources : MAITRISE-COPILOT/09-guide-montage-systeme-agentique.md, P-20260908-mecanisme-hook-bloque-independamment-du-modele, labs/_commun/mesure.py, outils/garde-temoins/sitecustomize.py</p></aside></section>
+<section class="diapo diapo--niveau" data-index="6" data-etapes="3" aria-roledescription="diapositive" aria-label="Diapositive 7 sur 10 : Une brigade : un chef, des spécialistes"><div class="nv-haut"><span class="nv-deck">De la consigne au pipeline qui se corrige</span><span class="nv-rang">NIVEAU 7 / 10</span></div><div class="nv-progres" style="--n:7;--t:10" aria-hidden="true"><i></i></div><div class="nv-tete"><h2 class="nv-titre">Une brigade : un chef, des spécialistes</h2><p class="nv-clair">Un chef distribue, des spécialistes exécutent, et personne ne note son propre plat.</p></div><div class="nv-gauche"><div class="nv-probleme"><span class="nv-label">LE PROBLÈME</span><p>Un seul agent fait tout, se relit lui-même et dit « fait » : on le croit sur parole.</p></div><div class="nv-panneaux"><section class="nv-panneau nv-avant" data-etape="1"><header><span class="nv-pastille">AVANT</span><span class="nv-sous">Un agent qui se relit</span></header><div class="nv-code"><div class="nv-l">Déclarations sans trace :</div><div class="nv-l">« le fichier est écrit »</div><div class="nv-l">« la commande a réussi »</div><div class="nv-l">« c&#x27;est mémorisé »</div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6"/></svg><span>Observé 4 fois en une semaine ; 2 fois à l&#x27;envers</span></footer></section><div class="nv-fleche" data-etape="2" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5"/></svg></div><section class="nv-panneau nv-apres" data-etape="2"><header><span class="nv-pastille">APRÈS</span><span class="nv-sous">Chef + vérification disque</span></header><div class="nv-code"><div class="nv-l">chef → délègue au spécialiste</div><div class="nv-l">spécialiste → écrit le livrable</div><div class="nv-l">chef → LIT le disque :</div><div class="nv-l">  présent ? <mark>oui</mark> → étape suivante</div><div class="nv-l">  absent ? <mark>non</mark> → on relance</div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M4.4 8.3l2.5 2.5 4.7-5.1"/></svg><span>Le disque tranche, jamais l&#x27;auto-rapport</span></footer></section></div><div class="nv-preuve" data-etape="3"><div class="nv-chiffre" style="font-size:32pt">2 à 4 sur ~50</div><div class="nv-legende"><p>défauts perdus en déléguant ; la forme du message n&#x27;y change rien. Séparer les rôles sert à borner et à lire, pas à mieux juger</p><div class="nv-meta"><span class="puce-conf" title="Mesuré, mais l&#x27;écart n&#x27;est pas démontré à cette puissance : une piste solide."><i class="pastille" style="background:var(--conf-INDICATIF)"></i>Indicatif</span><details class="nv-sources"><summary>Preuves · 4</summary><ul><li><span class="nv-type">Base de savoir</span><code>MAITRISE-COPILOT/13-orchestration-base-de-savoir.md</code></li><li><span class="nv-type">Document</span><code>.github/instructions/anti-fail-open.instructions.md</code></li><li><span class="nv-type">Document</span><code>.github/skills/verify-handoff/SKILL.md</code></li><li><span class="nv-type">Document</span><code>infos/pipeline/README.md</code></li></ul></details></div></div></div></div><aside class="nv-pile" aria-label="Le système maintenant"><h3>LE SYSTÈME MAINTENANT</h3><ol><li class="nv-brique nv-futur"><button type="button" data-i="9" aria-label="Aller au niveau 10 : Mémoire + mesure"><span class="nv-num">10</span><span class="nv-nom">Mémoire + mesure</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="8" aria-label="Aller au niveau 9 : Auto-correction"><span class="nv-num">9</span><span class="nv-nom">Auto-correction</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="7" aria-label="Aller au niveau 8 : Pipeline scripté"><span class="nv-num">8</span><span class="nv-nom">Pipeline scripté</span></button></li><li class="nv-brique nv-courant"><button type="button" data-i="6" aria-label="Aller au niveau 7 : Orchestration"><span class="nv-num">7</span><span class="nv-nom">Orchestration</span><span class="nv-etiq"><span class="nv-nouveau">nouveau</span></span><span class="nv-fichier">agents · handoffs · verify-handoff</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="5" aria-label="Aller au niveau 6 : Hook / garde mécanique"><span class="nv-num">6</span><span class="nv-nom">Hook / garde mécanique</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="4" aria-label="Aller au niveau 5 : Gabarit + script"><span class="nv-num">5</span><span class="nv-nom">Gabarit + script</span><span class="nv-compte">166 scripts</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="3" aria-label="Aller au niveau 4 : Skill"><span class="nv-num">4</span><span class="nv-nom">Skill</span><span class="nv-compte">41 skills</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="2" aria-label="Aller au niveau 3 : Agent spécialisé"><span class="nv-num">3</span><span class="nv-nom">Agent spécialisé</span><span class="nv-compte">26 agents</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="1" aria-label="Aller au niveau 2 : Règles ciblées"><span class="nv-num">2</span><span class="nv-nom">Règles ciblées</span><span class="nv-compte">39 règles</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="0" aria-label="Aller au niveau 1 : Instruction du dépôt"><span class="nv-num">1</span><span class="nv-nom">Instruction du dépôt</span><span class="nv-compte">1 fichier</span></button></li><li class="nv-brique nv-base"><span class="nv-nom">Le modèle seul</span></li></ol><p class="nv-date">comptes relevés au 2026-11-13</p></aside><div class="nv-limite" data-etape="3"><div><span class="nv-label">MAIS…</span><p>Les chefs et les spécialistes sont des agents : qui les enchaîne la nuit, les relance quand ça plante, et reprend là où on s&#x27;est arrêté ?</p></div><button type="button" class="nv-suite" data-action="suivant"><span>NIVEAU SUIVANT</span><b>Un pipeline scripté, qui reprend seul</b><svg class="nv-ico-suite" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l7.5 7.5L8 19.5"/></svg></button></div><aside class="notes" hidden><p>[≈ 3 min] Message : une brigade n&#x27;est pas plus juste, elle est plus lisible, plus bornée et plus rapide. Mesure candidate (2 répliques, une cible, modèles depuis retirés) : un relais perd 2 à 4 défauts sur une cinquantaine, indiscernable d&#x27;un agent qui voit tout, et nettement au-dessus d&#x27;un témoin qui ne reçoit rien (environ 7 sur 11 contre 3,4) ; la forme du message (prose ou champs imposés) ne change rien ; l&#x27;ordre séquentiel ou parallèle non plus — on prend le parallèle pour la latence. On ne scinde donc pas un agent pour la performance, mais pour la lisibilité, la réutilisation et le bornage des outils. Anecdote utile : un des modèles trouvait 9 défauts sur 11 sans rien recevoir — il devinait. Sans bras témoin aveugle, on aurait cru qu&#x27;il transmettait parfaitement. Règle de la maison : un agent ne fabrique jamais sa propre preuve ; le chef lit le disque (skill verify-handoff) et relance si le livrable manque. Constat du labo : 4 fois en une semaine un agent a déclaré un état sans trace, dont 2 fois l&#x27;exact inverse de la réalité.</p><p>Niveau : Indicatif · Sources : MAITRISE-COPILOT/13-orchestration-base-de-savoir.md, .github/instructions/anti-fail-open.instructions.md, .github/skills/verify-handoff/SKILL.md, infos/pipeline/README.md</p></aside></section>
+<section class="diapo diapo--niveau" data-index="7" data-etapes="3" aria-roledescription="diapositive" aria-label="Diapositive 8 sur 10 : Un pipeline scripté, qui reprend seul"><div class="nv-haut"><span class="nv-deck">De la consigne au pipeline qui se corrige</span><span class="nv-rang">NIVEAU 8 / 10</span></div><div class="nv-progres" style="--n:8;--t:10" aria-hidden="true"><i></i></div><div class="nv-tete"><h2 class="nv-titre">Un pipeline scripté, qui reprend seul</h2><p class="nv-clair">Un chef qui ne dort pas : toutes les 10 s, il regarde ce qui est vraiment posé sur le plan.</p></div><div class="nv-gauche"><div class="nv-probleme"><span class="nv-label">LE PROBLÈME</span><p>« Aucun run en cours » alors que douze pistes attendaient : chacune était lancée à la main, une par une.</p></div><div class="nv-panneaux"><section class="nv-panneau nv-avant" data-etape="1"><header><span class="nv-pastille">AVANT</span><span class="nv-sous">Lancer à la main</span></header><div class="nv-code"><div class="nv-l">tableau de bord :</div><div class="nv-l">« aucun run en cours »</div><div class="nv-l">12 pistes en attente</div><div class="nv-l">un lancement manuel par piste</div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6"/></svg><span>Personne ne les enchaînait</span></footer></section><div class="nv-fleche" data-etape="2" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5"/></svg></div><section class="nv-panneau nv-apres" data-etape="2"><header><span class="nv-pastille">APRÈS</span><span class="nv-sous">Le disque dicte le geste</span></header><div class="nv-code"><div class="nv-l">toutes les 10 s :</div><div class="nv-l">  lire le DISQUE : plan et preuves</div><div class="nv-l">  déduire le prochain geste</div><div class="nv-l">  le lancer, détaché, sous verrou</div><div class="nv-l">arrêt ou plantage → on repart du disque</div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M4.4 8.3l2.5 2.5 4.7-5.1"/></svg><span>Reprise naturelle : l&#x27;état vit sur le disque</span></footer></section></div><div class="nv-preuve" data-etape="3"><div class="nv-chiffre" style="font-size:32pt">2 778 / 2 844</div><div class="nv-legende"><p>étapes faites sur 2 844, dans 69 programmes (960 tâches) · relevé du 2026‑11‑13 dans chantier/*/state/plan.json</p><div class="nv-meta"><span class="puce-conf" title="Savoir général ou mise en situation : n&#x27;engage pas les mesures du labo."><i class="pastille" style="background:var(--conf-CONTEXTE)"></i>Contexte</span><details class="nv-sources"><summary>Preuves · 4</summary><ul><li><span class="nv-type">Document</span><code>infos/pipeline/phases/P1-ordonnancer.md</code></li><li><span class="nv-type">Document</span><code>infos/pipeline/phases/P8-cloturer.md</code></li><li><span class="nv-type">Document</span><code>infos/pipeline/revue/plan-spec.json</code></li><li><span class="nv-type">Document</span><code>chantier/README.md</code></li></ul></details></div></div></div></div><aside class="nv-pile" aria-label="Le système maintenant"><h3>LE SYSTÈME MAINTENANT</h3><ol><li class="nv-brique nv-futur"><button type="button" data-i="9" aria-label="Aller au niveau 10 : Mémoire + mesure"><span class="nv-num">10</span><span class="nv-nom">Mémoire + mesure</span></button></li><li class="nv-brique nv-futur"><button type="button" data-i="8" aria-label="Aller au niveau 9 : Auto-correction"><span class="nv-num">9</span><span class="nv-nom">Auto-correction</span></button></li><li class="nv-brique nv-courant"><button type="button" data-i="7" aria-label="Aller au niveau 8 : Pipeline scripté"><span class="nv-num">8</span><span class="nv-nom">Pipeline scripté</span><span class="nv-etiq"><span class="nv-nouveau">nouveau</span></span><span class="nv-fichier">scripts/enchainer_pistes.py · chantier/</span><span class="nv-compte">12 étapes</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="6" aria-label="Aller au niveau 7 : Orchestration"><span class="nv-num">7</span><span class="nv-nom">Orchestration</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="5" aria-label="Aller au niveau 6 : Hook / garde mécanique"><span class="nv-num">6</span><span class="nv-nom">Hook / garde mécanique</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="4" aria-label="Aller au niveau 5 : Gabarit + script"><span class="nv-num">5</span><span class="nv-nom">Gabarit + script</span><span class="nv-compte">166 scripts</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="3" aria-label="Aller au niveau 4 : Skill"><span class="nv-num">4</span><span class="nv-nom">Skill</span><span class="nv-compte">41 skills</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="2" aria-label="Aller au niveau 3 : Agent spécialisé"><span class="nv-num">3</span><span class="nv-nom">Agent spécialisé</span><span class="nv-compte">26 agents</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="1" aria-label="Aller au niveau 2 : Règles ciblées"><span class="nv-num">2</span><span class="nv-nom">Règles ciblées</span><span class="nv-compte">39 règles</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="0" aria-label="Aller au niveau 1 : Instruction du dépôt"><span class="nv-num">1</span><span class="nv-nom">Instruction du dépôt</span><span class="nv-compte">1 fichier</span></button></li><li class="nv-brique nv-base"><span class="nv-nom">Le modèle seul</span></li></ol><p class="nv-date">comptes relevés au 2026-11-13</p></aside><div class="nv-limite" data-etape="3"><div><span class="nv-label">MAIS…</span><p>Un pipeline sait enchaîner, pas se réparer : une cuisine « allumée » n&#x27;est pas une cuisine qui se relève seule.</p></div><button type="button" class="nv-suite" data-action="suivant"><span>NIVEAU SUIVANT</span><b>Une maintenance qui se corrige elle-même</b><svg class="nv-ico-suite" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l7.5 7.5L8 19.5"/></svg></button></div><aside class="notes" hidden><p>[≈ 3 min] Message : le pipeline est un squelette de scripts ; le modèle n&#x27;intervient qu&#x27;aux étapes où il faut comprendre. Chaque programme a un plan (plan-spec.json) qui liste ses livrables attendus (expects) ; le moteur seul tient l&#x27;état (state/plan.json) ; un statut « fait » ne survit pas à l&#x27;absence de sa preuve : la clôture relit le disque et rouvre ce qui manque. Toutes les 10 secondes, l&#x27;ordonnanceur lit le disque, déduit le prochain geste et le lance dans un processus détaché sous verrou ; il ralentit quand la cuisine sature et n&#x27;insiste plus sur un plat raté trois fois. Les 12 étapes : cadrer, ordonnancer, hypothétiser, protocoler, réviser, concevoir la mesure, jouer, documenter, clôturer, soigner, montrer, valider. Relevé du 2026-11-13 : 69 programmes, 960 tâches, 2 844 étapes dont 2 778 faites, 62 à refaire, 4 non tranchées (somme des fichiers chantier/*/state/plan.json ; c&#x27;est un état des lieux, pas une mesure d&#x27;effet). Pour explorer : infos/pipeline/index.html, qui rejoue six histoires pas à pas. Démo optionnelle (2 min) : le kit de l&#x27;atelier Polytechnique (agent_demo.py, hors dépôt) montre le même squelette en 100 lignes — le code tient la boucle, bornée à 4 décisions, et le modèle ne choisit que l&#x27;outil suivant ; « --case B » rejoue l&#x27;abstention (« cause indéterminée » plutôt qu&#x27;une cause inventée). Politique simulée : il illustre, il ne mesure aucun modèle.</p><p>Niveau : Contexte · Sources : infos/pipeline/phases/P1-ordonnancer.md, infos/pipeline/phases/P8-cloturer.md, infos/pipeline/revue/plan-spec.json, chantier/README.md</p></aside></section>
+<section class="diapo diapo--niveau" data-index="8" data-etapes="3" aria-roledescription="diapositive" aria-label="Diapositive 9 sur 10 : Une maintenance qui se corrige elle-même"><div class="nv-haut"><span class="nv-deck">De la consigne au pipeline qui se corrige</span><span class="nv-rang">NIVEAU 9 / 10</span></div><div class="nv-progres" style="--n:9;--t:10" aria-hidden="true"><i></i></div><div class="nv-tete"><h2 class="nv-titre">Une maintenance qui se corrige elle-même</h2><p class="nv-clair">Une équipe de maintenance : elle nomme la panne preuve à l&#x27;appui et répare ce qui est mécanique.</p></div><div class="nv-gauche"><div class="nv-probleme"><span class="nv-label">LE PROBLÈME</span><p>La revue du pipeline lit le code lui-même : un protocole réécrit après refus n&#x27;était jamais relu, mais envoyé en conception.</p></div><div class="nv-panneaux"><section class="nv-panneau nv-avant" data-etape="1"><header><span class="nv-pastille">AVANT</span><span class="nv-sous">Le défaut, trouvé par la revue</span></header><div class="nv-code"><div class="nv-l">protocole refusé → réécrit</div><div class="nv-l">l&#x27;ordonnanceur voit l&#x27;ancien refus</div><div class="nv-l">et croit le nouveau protocole relu</div><div class="nv-l"><mark>33 pistes</mark> envoyées sans relecture</div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6"/></svg><span>Le harnais était construit sur un protocole non relu</span></footer></section><div class="nv-fleche" data-etape="2" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5"/></svg></div><section class="nv-panneau nv-apres" data-etape="2"><header><span class="nv-pastille">APRÈS</span><span class="nv-sous">Correctif + témoin</span></header><div class="nv-code"><div class="nv-l">revue_<wbr>acquise() ne compte une revue</div><div class="nv-l">que si <mark>VERDICT: ACCEPTE</mark></div><div class="nv-l">ET postérieure au protocole</div><div class="nv-l">témoin : <mark>23/<wbr>23</mark></div><div class="nv-l">l&#x27;ordonnanceur renvoie en relecture</div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M4.4 8.3l2.5 2.5 4.7-5.1"/></svg><span>Le protocole repasse devant le relecteur</span></footer></section></div><div class="nv-preuve" data-etape="3"><div class="nv-chiffre" style="font-size:46pt">33 pistes</div><div class="nv-legende"><p>montées sur un protocole que personne n&#x27;avait relu : défaut trouvé le 2026‑09‑30, corrigé le 2026‑10‑02 avec un témoin 23/23</p><div class="nv-meta"><span class="puce-conf" title="Testé plusieurs fois, avec un juge automatique : on peut s&#x27;y appuyer."><i class="pastille" style="background:var(--conf-MESURE)"></i>Mesuré</span><details class="nv-sources"><summary>Preuves · 4</summary><ul><li><span class="nv-type">Document</span><code>infos/pipeline/revue/constats/P4.md</code></li><li><span class="nv-type">Document</span><code>infos/pipeline/phases/P4-reviser.md</code></li><li><span class="nv-type">Document</span><code>infos/pipeline/phases/P9-soigner.md</code></li><li><span class="nv-type">Document</span><code>infos/pipeline/phases/P11-valider.md</code></li></ul></details></div></div></div></div><aside class="nv-pile" aria-label="Le système maintenant"><h3>LE SYSTÈME MAINTENANT</h3><ol><li class="nv-brique nv-futur"><button type="button" data-i="9" aria-label="Aller au niveau 10 : Mémoire + mesure"><span class="nv-num">10</span><span class="nv-nom">Mémoire + mesure</span></button></li><li class="nv-brique nv-courant"><button type="button" data-i="8" aria-label="Aller au niveau 9 : Auto-correction"><span class="nv-num">9</span><span class="nv-nom">Auto-correction</span><span class="nv-etiq"><span class="nv-nouveau">nouveau</span></span><span class="nv-fichier">docteur_*.py · superviseur.py</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="7" aria-label="Aller au niveau 8 : Pipeline scripté"><span class="nv-num">8</span><span class="nv-nom">Pipeline scripté</span><span class="nv-compte">12 étapes</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="6" aria-label="Aller au niveau 7 : Orchestration"><span class="nv-num">7</span><span class="nv-nom">Orchestration</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="5" aria-label="Aller au niveau 6 : Hook / garde mécanique"><span class="nv-num">6</span><span class="nv-nom">Hook / garde mécanique</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="4" aria-label="Aller au niveau 5 : Gabarit + script"><span class="nv-num">5</span><span class="nv-nom">Gabarit + script</span><span class="nv-compte">166 scripts</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="3" aria-label="Aller au niveau 4 : Skill"><span class="nv-num">4</span><span class="nv-nom">Skill</span><span class="nv-compte">41 skills</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="2" aria-label="Aller au niveau 3 : Agent spécialisé"><span class="nv-num">3</span><span class="nv-nom">Agent spécialisé</span><span class="nv-compte">26 agents</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="1" aria-label="Aller au niveau 2 : Règles ciblées"><span class="nv-num">2</span><span class="nv-nom">Règles ciblées</span><span class="nv-compte">39 règles</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="0" aria-label="Aller au niveau 1 : Instruction du dépôt"><span class="nv-num">1</span><span class="nv-nom">Instruction du dépôt</span><span class="nv-compte">1 fichier</span></button></li><li class="nv-brique nv-base"><span class="nv-nom">Le modèle seul</span></li></ol><p class="nv-date">comptes relevés au 2026-11-13</p></aside><div class="nv-limite" data-etape="3"><div><span class="nv-label">MAIS…</span><p>Un correctif peut en casser un autre : le 26 septembre, quatre défauts sont venus de corrections. On rejoue donc tous les témoins.</p></div><button type="button" class="nv-suite" data-action="suivant"><span>NIVEAU SUIVANT</span><b>Une mémoire qui nomme, et la preuve</b><svg class="nv-ico-suite" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l7.5 7.5L8 19.5"/></svg></button></div><aside class="notes" hidden><p>[≈ 3 min] Message : « une cuisine qui ne se relève pas seule n&#x27;est pas automatique, elle est juste allumée ». Exemple : la revue du pipeline (chaque affirmation confrontée au code) a trouvé un défaut du code lui-même — un protocole refusé puis réécrit n&#x27;était jamais relu : 36 pistes remontaient, 33 avaient une revue REFUSE plus ancienne que le protocole actuel. Correctif : revue_acquise() n&#x27;accepte qu&#x27;une revue ACCEPTE postérieure au protocole ; témoin 23/23 ; effet vérifié le 2026-10-02. Autres gestes de la maintenance, tous nés d&#x27;incidents : le 2026-10-02 un CLI absent a produit 25 faux abandons en une minute, d&#x27;où la sonde avant tout départ (absent : rien ne part, aucun abandon compté) ; un superviseur qui relance sans fin masque la panne, d&#x27;où la borne de 3 relances par heure — et il le dit ; l&#x27;agent réparateur reçoit une COPIE des fichiers dans un bac, car son raccourci naturel serait de fabriquer la preuve manquante. Limite : le 26 septembre, quatre défauts sont venus de corrections (une porte trop large a refusé seize protocoles justes) ; on rejoue donc tous les témoins (étape P11).</p><p>Niveau : Mesuré · Sources : infos/pipeline/revue/constats/P4.md, infos/pipeline/phases/P4-reviser.md, infos/pipeline/phases/P9-soigner.md, infos/pipeline/phases/P11-valider.md</p></aside></section>
+<section class="diapo diapo--niveau" data-index="9" data-etapes="3" aria-roledescription="diapositive" aria-label="Diapositive 10 sur 10 : Une mémoire qui nomme, et la preuve"><div class="nv-haut"><span class="nv-deck">De la consigne au pipeline qui se corrige</span><span class="nv-rang">NIVEAU 10 / 10</span></div><div class="nv-progres" style="--n:10;--t:10" aria-hidden="true"><i></i></div><div class="nv-tete"><h2 class="nv-titre">Une mémoire qui nomme, et la preuve</h2><p class="nv-clair">Le cahier de bord : l&#x27;échec d&#x27;hier devient la consigne de demain, et rien n&#x27;est cru sans preuve.</p></div><div class="nv-gauche"><div class="nv-probleme"><span class="nv-label">LE PROBLÈME</span><p>Chaque session repart de zéro. Dans nos essais, la mémoire native n&#x27;a rien restitué d&#x27;une session à l&#x27;autre.</p></div><div class="nv-panneaux"><section class="nv-panneau nv-avant" data-etape="1"><header><span class="nv-pastille">AVANT</span><span class="nv-sous">Mémoire native du produit</span></header><div class="nv-code"><div class="nv-l">session 1 : « mémorise cette couleur »</div><div class="nv-l">→ il bricole un fichier de notes</div><div class="nv-l">session 2 : « quelle est la couleur ? »</div><div class="nv-l">→ <mark>il ne retrouve rien</mark></div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6"/></svg><span>Le substitut échoue : la session suivante l&#x27;ignore</span></footer></section><div class="nv-fleche" data-etape="2" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6.5l5.5 5.5-5.5 5.5"/></svg></div><section class="nv-panneau nv-apres" data-etape="2"><header><span class="nv-pastille">APRÈS</span><span class="nv-sous">Boucle fermée par le script</span></header><div class="nv-code"><div class="nv-l">le script note la réponse du modèle</div><div class="nv-l">et NOMME le défaut :</div><div class="nv-l">« du texte autour du JSON »</div><div class="nv-l">il l&#x27;écrit en tête du prochain run :</div><div class="nv-l">« <mark>Ne le reproduis pas.<wbr></mark> »</div></div><footer class="nv-verdict"><svg class="nv-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M4.4 8.3l2.5 2.5 4.7-5.1"/></svg><span>Le défaut nommé devient la mémoire du run suivant</span></footer></section></div><div class="nv-preuve" data-etape="3"><div class="nv-chiffre" style="font-size:37pt">0/12 → 5/12</div><div class="nv-legende"><p>tâches réussies sans, puis avec la boucle fermée (rejeu strict). Le premier relevé, 6/8, était optimiste : elle améliore sans garantir.</p><div class="nv-meta"><span class="puce-conf" title="Mesuré, mais l&#x27;écart n&#x27;est pas démontré à cette puissance : une piste solide."><i class="pastille" style="background:var(--conf-INDICATIF)"></i>Indicatif</span><details class="nv-sources"><summary>Preuves · 4</summary><ul><li><span class="nv-type">Pattern</span><code>7-patterns/P-20260912-boucle-memoire-fermee-defaut-nomme-cumulatif.md</code> <em>(candidat confirmé (intra-chaîne, IC de Wilson disjoints))</em></li><li><span class="nv-type">Document</span><code>labs/CHAIN-121/E-20260911-boucle-memoire-fermee/harness/run_boucle.py</code></li><li><span class="nv-type">Document</span><code>labs/maitrise/lot-06/notes.md</code></li><li><span class="nv-type">Base de savoir</span><code>MAITRISE-COPILOT/00-conventions.md</code></li></ul></details></div></div></div></div><aside class="nv-pile" aria-label="Le système maintenant"><h3>LE SYSTÈME MAINTENANT</h3><ol><li class="nv-brique nv-courant"><button type="button" data-i="9" aria-label="Aller au niveau 10 : Mémoire + mesure"><span class="nv-num">10</span><span class="nv-nom">Mémoire + mesure</span><span class="nv-etiq"><span class="nv-nouveau">nouveau</span></span><span class="nv-fichier">registry/ · labs/ · témoins</span><span class="nv-compte">639 décisions</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="8" aria-label="Aller au niveau 9 : Auto-correction"><span class="nv-num">9</span><span class="nv-nom">Auto-correction</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="7" aria-label="Aller au niveau 8 : Pipeline scripté"><span class="nv-num">8</span><span class="nv-nom">Pipeline scripté</span><span class="nv-compte">12 étapes</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="6" aria-label="Aller au niveau 7 : Orchestration"><span class="nv-num">7</span><span class="nv-nom">Orchestration</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="5" aria-label="Aller au niveau 6 : Hook / garde mécanique"><span class="nv-num">6</span><span class="nv-nom">Hook / garde mécanique</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="4" aria-label="Aller au niveau 5 : Gabarit + script"><span class="nv-num">5</span><span class="nv-nom">Gabarit + script</span><span class="nv-compte">166 scripts</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="3" aria-label="Aller au niveau 4 : Skill"><span class="nv-num">4</span><span class="nv-nom">Skill</span><span class="nv-compte">41 skills</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="2" aria-label="Aller au niveau 3 : Agent spécialisé"><span class="nv-num">3</span><span class="nv-nom">Agent spécialisé</span><span class="nv-compte">26 agents</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="1" aria-label="Aller au niveau 2 : Règles ciblées"><span class="nv-num">2</span><span class="nv-nom">Règles ciblées</span><span class="nv-compte">39 règles</span></button></li><li class="nv-brique nv-passe"><button type="button" data-i="0" aria-label="Aller au niveau 1 : Instruction du dépôt"><span class="nv-num">1</span><span class="nv-nom">Instruction du dépôt</span><span class="nv-compte">1 fichier</span></button></li><li class="nv-brique nv-base"><span class="nv-nom">Le modèle seul</span></li></ol><p class="nv-date">comptes relevés au 2026-11-13</p></aside><div class="nv-limite" data-etape="3"><div><span class="nv-label">MAIS…</span><p>Mesuré sur un seul modèle, au terminal, parfois à N=5 : chaque levier se rejoue sur votre terrain avant d&#x27;être cru.</p></div><button type="button" class="nv-suite" data-action="debut"><span>RECOMMENCER</span><b>Une consigne qui nomme le cas</b><svg class="nv-ico-suite" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5l7.5 7.5L8 19.5"/></svg></button></div><aside class="notes" hidden><p>[≈ 3 min] Message : la mémoire, ici, est un fichier que le code écrit et que le run suivant lit — pas une fonction du produit : dans nos essais la mémoire native n&#x27;a rien restitué d&#x27;une session à l&#x27;autre. Boucle fermée (CHAIN-121, claude-haiku-4.5, tâche « rendre un JSON nu ») : le script de contrôle nomme le défaut (« tu as ajouté du texte autour du JSON ») et l&#x27;écrit en tête de la consigne suivante. Premier relevé 6 sur 8 contre 0 sur 8 ; rejeu en alternance stricte : 5 sur 12 contre 0 sur 12. L&#x27;effet est reproduit mais de moitié : elle améliore sans garantir (deux séries sur quatre retombent à la troisième itération). Autour de cette boucle, la chaîne de mémoire du labo : preuve, niveaux, registre, carte, vues — gardée par des contrôles qui se testent eux-mêmes (--autotest) : « une ligne récente mais fausse ment mieux qu&#x27;une ligne vieille ». 639 décisions journalisées, une par fichier. Clôture : récapitulez les dix niveaux en suivant la pile, puis rappelez les bornes — un seul modèle, le terminal, parfois N=5 : tout se rejoue sur votre terrain.</p><p>Niveau : Indicatif · Sources : P-20260912-boucle-memoire-fermee-defaut-nomme-cumulatif, labs/CHAIN-121/E-20260911-boucle-memoire-fermee/harness/run_boucle.py, labs/maitrise/lot-06/notes.md, MAITRISE-COPILOT/00-conventions.md</p></aside></section>
+<div class="ouverture" id="ouverture" role="dialog" aria-label="De la consigne au pipeline qui se corrige"><div class="ouv-contenu"><p class="ouv-genre">PARCOURS · 10 NIVEAUX</p><h1 class="ouv-titre">De la consigne au pipeline qui se corrige</h1><p class="ouv-sous">Dix niveaux pour monter un système agentique, du plus simple au plus abouti — chaque pas répond à un problème observé</p><p class="ouv-lire">COMMENT LIRE CHAQUE PAGE</p><ol class="ouv-lecture"><li><b>Le problème</b>ce qui coince au niveau d&#x27;avant</li><li><b>Avant / Après</b>un cas réel, capturé sur disque</li><li><b>La preuve</b>mesurée, avec son niveau de confiance</li><li><b>La limite</b>elle appelle le niveau suivant</li></ol><p class="ouv-meta">Équipes techniques et data · 25 min · 2026-11-13 · Agentic Explorer</p><button type="button" class="ouv-go" data-action="ouvrir">Commencer</button><p class="ouv-astuce">→ ou Espace : avancer pas à pas · ? : aide</p></div><p class="ouv-provisoire">Thème provisoire — à confirmer</p></div>
+</main></div>
+<div class="commandes" id="commandes" role="toolbar" aria-label="De la consigne au pipeline qui se corrige">
+<button type="button" data-action="precedent" aria-label="Précédente">&#8249;</button>
+<span class="compteur" id="compteur" aria-hidden="true">1 sur 10</span>
+<button type="button" data-action="suivant" aria-label="Suivante">&#8250;</button>
+<button type="button" data-action="notes">Notes</button>
+<button type="button" data-action="plan">Plan</button>
+<button type="button" data-action="plein">Plein écran</button>
+<button type="button" data-action="aide" aria-label="Aide">?</button>
+</div>
+<aside id="notes" class="notes-panneau" hidden aria-label="Notes de l&#x27;animateur"><h2>Notes de l&#x27;animateur</h2><div id="notes-texte"></div></aside>
+<nav id="plan" class="plan" hidden aria-label="Plan"><ol><li><button type="button" data-i="0">1. Une consigne qui nomme le cas</button></li><li><button type="button" data-i="1">2. Une règle par fichier, au bon endroit</button></li><li><button type="button" data-i="2">3. Un agent spécialisé</button></li><li><button type="button" data-i="3">4. Un skill : la procédure, à la demande</button></li><li><button type="button" data-i="4">5. Un gabarit et un script</button></li><li><button type="button" data-i="5">6. Un garde-fou qui empêche, pas qui rappelle</button></li><li><button type="button" data-i="6">7. Une brigade : un chef, des spécialistes</button></li><li><button type="button" data-i="7">8. Un pipeline scripté, qui reprend seul</button></li><li><button type="button" data-i="8">9. Une maintenance qui se corrige elle-même</button></li><li><button type="button" data-i="9">10. Une mémoire qui nomme, et la preuve</button></li></ol></nav>
+<div id="aide" class="aide" hidden role="dialog" aria-label="Aide"><h2>Aide</h2><dl><dt>← →  Espace</dt><dd>Dévoiler pas à pas, puis changer de page</dd><dt>A</dt><dd>Dévoiler toute la page</dd><dt>Début / Fin</dt><dd>Première / dernière page</dd><dt>N</dt><dd>Notes de l&#x27;animateur</dd><dt>G</dt><dd>Plan du parcours</dd><dt>F</dt><dd>Plein écran</dd><dt>?</dt><dd>Cette aide</dd><dt>Échap</dt><dd>Fermer</dd></dl></div>
+<div id="annonce" class="sr-only" aria-live="polite"></div>
+<script>
+(function () {
+  "use strict";
+
+  var scene = document.getElementById("scene");
+  var stage = document.getElementById("stage");
+  var diapos = Array.prototype.slice.call(stage.querySelectorAll(".diapo"));
+  var total = diapos.length;
+  var courant = 0;
+  // Pas à pas : une page « niveau » se dévoile en `data-etapes` temps ; les autres types n'en ont aucun.
+  var etapes = diapos.map(function (d) { return parseInt(d.getAttribute("data-etapes") || "0", 10); });
+  var etape = 0;
+  if (etapes.some(function (n) { return n > 0; })) { document.body.classList.add("js-etapes"); }
+  var $ = function (id) { return document.getElementById(id); };
+  var notes = $("notes"), notesTexte = $("notes-texte"), plan = $("plan"), aide = $("aide");
+  var annonce = $("annonce"), progres = $("progres"), compteur = $("compteur"), commandes = $("commandes");
+  var ouverture = $("ouverture");
+  var libSur = document.body.getAttribute("data-sur") || "/";
+  var libDiapo = document.body.getAttribute("data-diapositive") || "";
+  var minuterie = null;
+
+  function echelle() {
+    var s = Math.min(scene.clientWidth / 1280, scene.clientHeight / 720);
+    stage.style.setProperty("--echelle", String(s));
+  }
+
+  function majNotes() {
+    var source = diapos[courant].querySelector(".notes");
+    notesTexte.innerHTML = source ? source.innerHTML : "";
+  }
+
+  function majEtape() {
+    var d = diapos[courant];
+    var items = d.querySelectorAll("[data-etape]");
+    for (var k = 0; k < items.length; k++) {
+      if (parseInt(items[k].getAttribute("data-etape"), 10) <= etape) { items[k].classList.add("revele"); }
+      else { items[k].classList.remove("revele"); }
+    }
+    d.setAttribute("data-etape-courante", String(etape));
+  }
+
+  // `debut` : on arrive par « suivant » et la page se dévoile depuis le début ; sinon (saut, retour, adresse) elle est complète.
+  function aller(i, sansHistorique, debut) {
+    i = Math.max(0, Math.min(total - 1, i));
+    diapos[courant].classList.remove("actif");
+    courant = i;
+    diapos[courant].classList.add("actif");
+    etape = debut ? 0 : etapes[courant];
+    majEtape();
+    compteur.textContent = (courant + 1) + " " + libSur + " " + total;
+    progres.style.width = (100 * (courant + 1) / total) + "%";
+    annonce.textContent = diapos[courant].getAttribute("aria-label") || "";
+    majNotes();
+    var boutons = plan.querySelectorAll("button");
+    for (var k = 0; k < boutons.length; k++) {
+      if (k === courant) { boutons[k].setAttribute("aria-current", "true"); } else { boutons[k].removeAttribute("aria-current"); }
+    }
+    if (!sansHistorique && window.history && history.replaceState) {
+      history.replaceState(null, "", "#/" + (courant + 1));
+    }
+  }
+
+  function suivant() {
+    if (fermerOuverture()) { return; }
+    if (etape < etapes[courant]) { etape++; majEtape(); return; }
+    if (courant < total - 1) { aller(courant + 1, false, true); }
+  }
+  function precedent() {
+    if (etape > 0) { etape--; majEtape(); return; }
+    aller(courant - 1);
+  }
+  function toutDevoiler() { etape = etapes[courant]; majEtape(); }
+
+  // Écran d'ouverture d'un parcours : il s'efface au premier « suivant » et n'est jamais une page.
+  function fermerOuverture() {
+    if (ouverture && !ouverture.hasAttribute("hidden")) { ouverture.setAttribute("hidden", ""); return true; }
+    return false;
+  }
+
+  function basculerNotes() {
+    var ouvert = notes.hasAttribute("hidden");
+    if (ouvert) { notes.removeAttribute("hidden"); } else { notes.setAttribute("hidden", ""); }
+    scene.style.setProperty("--bas", ouvert ? notes.offsetHeight + "px" : "0px");
+    echelle();
+  }
+
+  function basculer(element) {
+    if (element.hasAttribute("hidden")) { element.removeAttribute("hidden"); } else { element.setAttribute("hidden", ""); }
+  }
+
+  function fermer() {
+    plan.setAttribute("hidden", "");
+    aide.setAttribute("hidden", "");
+  }
+
+  function pleinEcran() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    }
+  }
+
+  function repondre(bouton) {
+    var quiz = bouton.closest(".quiz");
+    if (!quiz || quiz.getAttribute("data-repondu") === "1") { return; }
+    quiz.setAttribute("data-repondu", "1");
+    var juste = parseInt(quiz.getAttribute("data-reponse"), 10);
+    var boutons = quiz.querySelectorAll(".choix button");
+    for (var k = 0; k < boutons.length; k++) {
+      boutons[k].setAttribute("aria-disabled", "true");
+      if (k === juste) { boutons[k].classList.add("ok"); }
+    }
+    if (boutons[juste] !== bouton) { bouton.classList.add("ko"); }
+    var explication = quiz.querySelector(".explication");
+    if (explication) { explication.removeAttribute("hidden"); }
+  }
+
+  function reveler() {
+    var diapo = diapos[courant];
+    var quiz = diapo.querySelector(".quiz");
+    if (quiz && quiz.getAttribute("data-repondu") !== "1") {
+      var juste = parseInt(quiz.getAttribute("data-reponse"), 10);
+      var cible = quiz.querySelectorAll(".choix button")[juste];
+      if (cible) { repondre(cible); }
+      return;
+    }
+    var corrige = diapo.querySelector(".corrige");
+    var bouton = diapo.querySelector(".btn-corrige");
+    if (corrige) {
+      basculer(corrige);
+      var cache = corrige.hasAttribute("hidden");
+      if (bouton) {
+        bouton.setAttribute("aria-expanded", cache ? "false" : "true");
+        bouton.textContent = bouton.getAttribute(cache ? "data-voir" : "data-masquer") || bouton.textContent;
+      }
+    }
+  }
+
+  function montrerCommandes() {
+    commandes.classList.add("visible");
+    clearTimeout(minuterie);
+    minuterie = setTimeout(function () { commandes.classList.remove("visible"); }, 2500);
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) { return; }
+    var cible = e.target;
+    if (cible && cible.closest && cible.closest("button") && (e.key === " " || e.key === "Enter")) { return; }
+    if (ouverture && !ouverture.hasAttribute("hidden") &&
+        (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " " || e.key === "Enter" || e.key === "Escape")) {
+      fermerOuverture();
+      e.preventDefault();
+      return;
+    }
+    switch (e.key) {
+      case "ArrowRight": case "PageDown": case " ": suivant(); break;
+      case "ArrowLeft": case "PageUp": case "Backspace": precedent(); break;
+      case "Home": aller(0); break;
+      case "End": aller(total - 1); break;
+      case "n": case "N": basculerNotes(); break;
+      case "g": case "G": basculer(plan); break;
+      case "f": case "F": pleinEcran(); break;
+      case "r": case "R": reveler(); break;
+      case "a": case "A": toutDevoiler(); break;
+      case "?": basculer(aide); break;
+      case "Escape": fermer(); break;
+      default: return;
+    }
+    e.preventDefault();
+    montrerCommandes();
+  });
+
+  document.addEventListener("click", function (e) {
+    var bouton = e.target.closest && e.target.closest("button");
+    if (!bouton) { return; }
+    if (bouton.closest(".choix")) { repondre(bouton); return; }
+    if (bouton.classList.contains("btn-corrige")) { reveler(); return; }
+    if (bouton.closest("#plan") && bouton.hasAttribute("data-i")) {
+      aller(parseInt(bouton.getAttribute("data-i"), 10));
+      fermer();
+      return;
+    }
+    if (bouton.closest(".nv-pile") && bouton.hasAttribute("data-i")) {
+      aller(parseInt(bouton.getAttribute("data-i"), 10));
+      return;
+    }
+    var action = bouton.getAttribute("data-action");
+    if (action === "suivant") { suivant(); }
+    else if (action === "debut") { aller(0, false, true); }
+    else if (action === "ouvrir") { fermerOuverture(); }
+    else if (action === "precedent") { precedent(); }
+    else if (action === "notes") { basculerNotes(); }
+    else if (action === "plan") { basculer(plan); }
+    else if (action === "plein") { pleinEcran(); }
+    else if (action === "aide") { basculer(aide); }
+  });
+
+  var departX = null;
+  stage.addEventListener("touchstart", function (e) { departX = e.changedTouches[0].clientX; }, { passive: true });
+  stage.addEventListener("touchend", function (e) {
+    if (departX === null || (e.target.closest && e.target.closest("button"))) { departX = null; return; }
+    var dx = e.changedTouches[0].clientX - departX;
+    departX = null;
+    if (Math.abs(dx) > 50) { if (dx < 0) { suivant(); } else { precedent(); } }
+  }, { passive: true });
+
+  window.addEventListener("resize", echelle);
+  document.addEventListener("mousemove", montrerCommandes);
+  window.addEventListener("hashchange", function () {
+    var m = /^#\/(\d+)$/.exec(location.hash);
+    if (m) { fermerOuverture(); aller(parseInt(m[1], 10) - 1, true); }
+  });
+
+  var depart = /^#\/(\d+)$/.exec(location.hash);
+  if (ouverture) {
+    ouverture.addEventListener("click", fermerOuverture);
+    if (depart) { fermerOuverture(); }
+  }
+  echelle();
+  aller(depart ? parseInt(depart[1], 10) - 1 : 0, true, !depart);
+  montrerCommandes();
+})();
+
+</script>
+</body>
+</html>
