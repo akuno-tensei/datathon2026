@@ -312,7 +312,7 @@ def render_sensitivity(a: Analysis, key: str) -> None:
             evidence_button(tab.evidence_id, f"{key}-stress-{tab.ticker}")
         else:
             st.markdown(f"**{tab.ticker}** — " + t("sens_pending", lang))
-        df = pd.DataFrame(tab.rows)
+        df = pd.DataFrame(tab.rows).drop(columns=["evidence_id"], errors="ignore")  # identifiants : boutons « Preuve » sous le tableau
         for col in ("volatility", "max_drawdown", "total_return"):
             df[col] = df[col].map(lambda x: pct(x, lang) if x == x and x is not None else "—")  # « — » : période non calculée
         df["window"] = df["window"].map(lambda w: window_name(w, lang))
