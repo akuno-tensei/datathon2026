@@ -10,24 +10,32 @@ from typing import Any, Dict, List, Optional
 # Le script se lance par chemin (`streamlit run ...`) : on ajoute la racine du projet pour que `import alphaforge` marche de partout.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from alphaforge.app._reload import refresh  # noqa: E402
+
+# Code modifié depuis le dernier affichage : les modules du projet sont réimportés à jour (voir _reload.py), sans relancer le serveur.
+import os  # noqa: E402
+
+CODE_STAMP = refresh(Path(__file__).resolve().parents[1], purge=os.environ.get("ALPHAFORGE_HOT_RELOAD", "1") != "0")
+
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 
 from alphaforge.app import forms, views
 from alphaforge.app.i18n import t
-from alphaforge.app.pipeline import AlphaForge, Analysis
+from alphaforge.app.pipeline import AlphaForge, Analysis, enrichment_coverage
 from alphaforge.governance import GovernanceConfig
 from alphaforge.orchestrator import ProfileError, load_profile, validate_profile
 
 st.set_page_config(page_title="AlphaForge AI", page_icon="⚖", layout="wide")
 
 
-@st.cache_resource
-def forge() -> AlphaForge:
+@st.cache_resource(max_entries=1)
+def forge(code_stamp: float) -> AlphaForge:
+    """Instance unique, reconstruite quand le code change (l'empreinte est la clé du cache : une ancienne classe n'est jamais réutilisée)."""
     return AlphaForge.from_directory()
 
 
-F = forge()
+F = forge(CODE_STAMP)
 S = st.session_state
 S.setdefault("analysis", None)
 S.setdefault("comparison", None)
@@ -49,6 +57,12 @@ def pct(x: Optional[float], lang: str) -> str:
     return s.replace(".", ",") if lang == "fr" else s.replace(" %", "%")
 
 
+def _open_profiles() -> None:
+    """Rappel du bouton « Nouveau profil » : ouvre le panneau avec un formulaire vierge (fonctions définies plus bas, résolues à l'appel)."""
+    _fill_form(dict(forms.BLANK_PROFILE, language=S.get("lang", "fr")))
+    S.pf_open = True
+
+
 # ---- bandeau supérieur --------------------------------------------------
 profiles = F.list_profiles()
 ids = [p.profile_id for p in profiles]
@@ -64,16 +78,29 @@ if S.get("profile_sel") not in ids:
 with top[1]:
     pid = st.selectbox(t("profile", lang), ids, key="profile_sel",
                        format_func=lambda i: next(p.display_name for p in profiles if p.profile_id == i))
+    st.button(t("np_new_btn", lang), key="pf_open_btn", on_click=_open_profiles, help=t("np_new_help", lang))
 profile = F.get_profile(pid)
 with top[2]:
     as_of = st.date_input(t("as_of", lang), value=F.store.last_date, min_value=F.store.first_date, max_value=F.store.last_date)
 with top[3]:
     base = st.selectbox(t("base_currency", lang), ["CAD", "USD"], index=0 if profile.base_currency == "CAD" else 1)
 with top[4]:
-    st.markdown(f"**{t('mode', lang)}**  \n⚙ {t('mode_core', lang)}")
+    enrich_on = st.toggle(t("enr_toggle", lang), value=True, key="enrich_on")
+    st.markdown(f"⚙ **{t('mode_enriched' if enrich_on else 'mode_core', lang)}**")
 
 st.warning("⚠ " + t("simulation_banner", lang))  # jamais masquable
-st.caption("ℹ " + t("mode_core_note", lang))
+if enrich_on:  # ce qui est réellement branché est affiché tel quel : une source absente se voit
+    cov = enrichment_coverage(S.get("sec_ua") or os.environ.get("ALPHAFORGE_SEC_USER_AGENT"))
+    st.caption("ℹ " + t("enr_cov_line", lang, line=" ; ".join(f"{t('enr_tool_' + k, lang)} : {t('enr_cov_' + v, lang)}" for k, v in cov.items())))
+else:
+    st.caption("ℹ " + t("enr_mode_off", lang))
+# Résultat d'un enregistrement ou d'une suppression de profil : visible même quand le panneau ci-dessous est replié.
+if S.get("pf_flash"):
+    st.success("✓ " + S.pop("pf_flash"))
+if S.get("pf_flash_error"):
+    st.error("⛔ " + S.pop("pf_flash_error"))
+# Gestion des profils : toujours à portée de vue, ouverte par le bouton « Nouveau profil » (contenu rempli plus bas).
+profile_box = st.expander("👤 " + t("np_manage", lang), expanded=bool(S.get("pf_open")))
 
 
 # ---- rendu des éléments partagés ----------------------------------------
@@ -122,7 +149,7 @@ def render_verdict(a: Analysis, key: str) -> None:
                   args=(t("tpl_evaluate", lang, a=opt.ticker),))
     for tk in views.out_of_universe(a):
         st.warning("⚠ " + t("out_of_universe", lang, t=tk))
-        st.button(t("enrich_btn", lang), key=f"{key}-enr-{tk}", disabled=True, help=t("enrich_off", lang))
+        st.button(t("enrich_btn", lang), key=f"{key}-enr-{tk}", disabled=True, help=t("oou_enrich_off", lang))
     v = a.verdict
     if not v:
         return
@@ -159,6 +186,35 @@ def render_lines(lines: List[views.ExplanationLine], key: str) -> None:
         with cols[1]:
             for j, r in enumerate(refs[:2]):
                 evidence_button(r, f"{key}-{i}-{j}")
+
+
+def render_enrichment(a: Analysis, key: str) -> None:
+    """Besoins détectés, données enrichies avec leur niveau de confiance, lacunes non comblées. Le mode dégradé se dit."""
+    ev = views.enrichment_view(a, lang)
+    st.markdown(f"### 🌐 {t('enr_title', lang)}")
+    if ev.mode == "off":
+        st.info("ℹ " + t("enr_mode_off", lang))
+        return
+    if ev.mode == "idle":
+        st.caption(t("enr_no_needs", lang))
+        return
+    banner = t(f"enr_mode_{ev.mode}", lang, n=ev.n_gaps)
+    (st.success if ev.mode == "complete" else st.warning)(("✓ " if ev.mode == "complete" else "⚠ ") + banner)
+    for g in ev.needs:
+        st.markdown(f"- {t('enr_needs', lang)} : `{g['kind']}` · {g['ticker']}" + ("" if g["fillable"] else f" — {g['reason']}"))
+    for i, r in enumerate(ev.rows):
+        with st.container(border=True):
+            if r.status == "ok":
+                st.markdown(f"**{r.ticker}** · `{r.kind}` · {t('enr_conf_' + r.confidence, lang)} · {t('enr_published', lang)} {r.date_publication} · {t('enr_source', lang)} {r.source}")
+                for f in r.facts[:3]:
+                    st.markdown(f"> {f['excerpt']}")
+                if r.url:
+                    st.caption(r.url)
+            else:
+                st.markdown(f"**{r.ticker}** · `{r.kind}` · ⚠ {t('enr_gap', lang)} · {t('enr_reason', lang)} `{r.reason_code}`")
+                st.caption(r.message or "")
+    st.caption(t("enr_rule_ab", lang))
+    st.caption(t("enr_rule_c", lang))
 
 
 def render_explanation(a: Analysis, key: str) -> None:
@@ -350,12 +406,13 @@ def run_analysis(text: str, **kw: Any) -> None:
             status.write(f"{step.icon} **{step.agent_label}** · {step.text} _(+{now - last[0]:.2f} s)_")
             last[0] = now
 
-        S.analysis = F.analyze(text, pid, as_of=as_of, base_currency=base, language=lang, on_entry=on_entry, **kw)
+        S.analysis = F.analyze(text, pid, as_of=as_of, base_currency=base, language=lang, on_entry=on_entry,
+                                enrichment=enrich_on, sec_user_agent=S.get("sec_ua") or None, **kw)
         status.update(label=t("live_done", lang, n=len(S.analysis.result.ledger)), state="complete", expanded=False)
 
 
 # ---- onglets ------------------------------------------------------------
-tab_an, tab_cmp, tab_prof, tab_src = st.tabs([t("tab_analysis", lang), t("tab_compare", lang), t("tab_profile", lang), t("tab_sources", lang)])
+tab_an, tab_cmp, tab_src = st.tabs([t("tab_analysis", lang), t("tab_compare", lang), t("tab_sources", lang)])
 
 with tab_an:
     left, mid, right = st.columns([1.3, 3.2, 1.8])
@@ -409,6 +466,7 @@ with tab_an:
             st.download_button(t("export_report", lang), data=views.report_markdown(a, lang, F.store),
                                file_name=f"alphaforge_{a.profile.profile_id}_{a.as_of}.md", mime="text/markdown", key="export_md")
             render_verdict(a, "an")
+            render_enrichment(a, "an")
             render_explanation(a, "an")
             render_sensitivity(a, "an")
             render_correlation(a, "an")
@@ -428,7 +486,7 @@ with tab_cmp:
     S.setdefault("cmp_req", S.request or t("tpl_evaluate", lang, a="NVDA"))
     creq = c3.text_input(t("request", lang), key="cmp_req")
     if st.button(t("compare_run", lang), type="primary", key="cmp_go"):
-        S.comparison = F.compare(creq, lp, rp, as_of=as_of, base_currency=base, language=lang)
+        S.comparison = F.compare(creq, lp, rp, as_of=as_of, base_currency=base, language=lang)  # noyau seul : comparaison de limites
     cmp = S.comparison
     if cmp is not None:
         st.success("ℹ " + t("same_data", lang, m=cmp.left.result.ledger.evidence()[0]["data_fingerprint"][:12] if cmp.left.result.ledger.evidence() else "—"))
@@ -484,10 +542,8 @@ def _delete_profile(profile_id: str) -> None:
 if "pf_name" not in S:
     _fill_form(dict(forms.BLANK_PROFILE, language=lang))  # départ : formulaire vierge, pas une copie du profil actif
 
-with tab_prof:
+with profile_box:
     st.markdown(f"### {t('profile_editor', lang)}")
-    if S.get("pf_flash"):
-        st.success("✓ " + S.pop("pf_flash"))
     st.caption(t("np_intro", lang))
     b1, b2 = st.columns(2)
     b1.button(t("np_blank", lang), key="pf_blank_btn", on_click=_fill_form, args=(dict(forms.BLANK_PROFILE, language=lang),))
@@ -564,6 +620,7 @@ with tab_prof:
     if st.button(t("save", lang), type="primary", key="pf_save_btn", disabled=not can_save):
         saved = F.save_profile(data, overwrite=bool(S.get("pf_overwrite")))
         S.pending_profile = saved.profile_id  # il devient le profil actif
+        S.pf_open = False  # le panneau se replie : le profil est créé et actif
         S.pf_flash = t("saved", lang, id=saved.profile_id)
         st.rerun()
     if p_new is not None:
@@ -573,8 +630,6 @@ with tab_prof:
     st.divider()
     st.markdown(f"#### {t('np_delete_title', lang)}")
     created = [p for p in profiles if F.profile_origin(p.profile_id) == "créé"]
-    if S.get("pf_flash_error"):
-        st.error("⛔ " + S.pop("pf_flash_error"))
     if not created:
         st.caption(t("np_delete_none", lang))  # les profils d'exemple ne figurent jamais dans cette liste
     else:
@@ -600,4 +655,17 @@ with tab_src:
     if a is not None and not gaps:
         st.caption(t("gaps_none", lang))
     st.caption(f"{t('fingerprint', lang)} : {F.store.fingerprint[:12]}")
-    st.caption("ℹ " + t("mode_core_note", lang))
+    st.markdown(f"### 🌐 {t('enr_cov_title', lang)}")
+    st.text_input(t("enr_sec_label", lang), key="sec_ua", help=t("enr_sec_help", lang), placeholder="Prénom Nom, prenom.nom@exemple.org")
+    cov = enrichment_coverage(S.get("sec_ua") or os.environ.get("ALPHAFORGE_SEC_USER_AGENT"))
+    st.table(pd.DataFrame([{t("enr_source", lang): t("enr_tool_" + k, lang), "": t("enr_cov_" + v, lang)} for k, v in cov.items()]))
+    st.markdown(f"### {t('enr_cards_title', lang)}")
+    cards = views.enrichment_view(a, lang).cards if a is not None else []
+    if not cards:
+        st.caption(t("enr_cards_none", lang))
+    for c in cards:
+        with st.expander(f"{c['name']} · {t('enr_card_retrieved', lang)} {c['retrieved_on']}"):
+            st.markdown(f"**{t('enr_card_class', lang)}** : {c['source_class']}  \n**{t('enr_card_terms', lang)}** : {c['reuse_terms']}")
+            for lim in c["limits"]:
+                st.markdown(f"- {lim}")
+            st.caption(c["origin_url"])

@@ -6,6 +6,7 @@ manquante produit un avertissement, jamais un blocage, sauf classe d'actifs non 
 import re
 from typing import Dict, List
 
+from ..enrichment.config import CONTROVERSY_THEMES, ESG_THEMES
 from ..orchestrator.profile import RISK_RANK, Criterion, InvestorProfile
 from .config import RISK_LEVELS, GovernanceConfig
 from .facts import AssetFacts
@@ -13,7 +14,7 @@ from .models import Constraints, Reason, ScopeRefusal
 
 # Codes de raison qui justifient de chercher une alternative.
 ALTERNATIVE_TRIGGER_CODES = {
-    "EXCLUDED_ASSET_CLASS", "EXCLUDED_SECTOR", "EXCLUDED_TICKER", "CLASS_NOT_PERMITTED",
+    "EXCLUDED_ASSET_CLASS", "EXCLUDED_SECTOR", "EXCLUDED_TICKER", "CLASS_NOT_PERMITTED", "EXCLUDED_THEME_CONTROVERSY",
     "VOLATILITY_ABOVE_LIMIT", "DRAWDOWN_ABOVE_LIMIT",
 }
 
@@ -302,6 +303,105 @@ def check_diversification(evidence: List[dict], tickers: List[str], cfg: Governa
                         evidence_ids=[ev["evidence_id"]],
                     )
                 )
+    return out
+
+
+# ---- apply_enrichment ----------------------------------------------------
+
+
+def _theme_set(criteria, vocabulary) -> set:
+    return {c.value.strip().lower() for c in criteria if c.kind == "theme"} & set(vocabulary)
+
+
+def _source_name(cards: Dict[str, dict], rec: dict) -> str:
+    card = cards.get(rec.get("source_card_id") or "")
+    return card["name"] if card else "source non documentée"
+
+
+def apply_enrichment(reasons: List[Reason], profile: InvestorProfile, ticker: str, records: List[dict], cards: Dict[str, dict]) -> List[Reason]:
+    """Intègre les données de l'agent d'enrichissement au verdict d'un actif (Agents.md 2.4).
+
+    - Une exclusion thématique (controverses) ne **bloque** que sur une donnée de niveau A ou B qui documente des controverses.
+      Un signal de niveau C (texte, nouvelle) ne produit qu'un avertissement, jamais un blocage.
+    - Une donnée A ou B qui ne documente aucune controverse lève l'avertissement « non vérifiable » correspondant.
+    - Une cote ESG disponible mais sans seuil défini n'est pas jugée : on le dit au lieu de conclure.
+    - Chaque lacune non comblée est un avertissement explicite ; chaque donnée enrichie est rappelée avec son niveau et sa date.
+    Aucun seuil n'est inventé : sans donnée enrichie, les raisons existantes restent inchangées.
+    """
+    mine = [r for r in records if r.get("ticker") == ticker]
+    if not mine:
+        return reasons
+    ok = [r for r in mine if r["status"] == "ok"]
+    gaps = [r for r in mine if r["status"] == "lacune_non_comblee"]
+    ab = lambda r: r["confidence"] in ("A", "B")  # noqa: E731
+    ctrl = [r for r in ok if r["need"] == "controversies"]
+    documented = [r for r in ctrl if ab(r) and (r.get("value") or {}).get("controversies")]
+    clean = [r for r in ctrl if ab(r) and "controversies" in (r.get("value") or {}) and not r["value"]["controversies"]]
+    signals = [r for r in ctrl if r["confidence"] == "C" and r.get("facts")]
+    esg_ab = [r for r in ok if r["need"] == "esg" and r["kind"] == "esg" and ab(r)]
+
+    hard_ctrl = _theme_set(profile.hard_exclusions, CONTROVERSY_THEMES)
+    soft_ctrl = _theme_set(profile.soft_preferences, CONTROVERSY_THEMES)
+    soft_esg = _theme_set(profile.soft_preferences, ESG_THEMES)
+
+    def theme_of(r: Reason) -> str:
+        return str(r.measures.get("theme", "")).strip().lower()
+
+    drop = lambda r: (  # noqa: E731
+        (r.code == "THEME_EXCLUSION_UNVERIFIED" and theme_of(r) in hard_ctrl and (documented or clean))
+        or (r.code == "THEME_DATA_MISSING" and theme_of(r) in soft_ctrl and (documented or clean))
+        or (r.code == "THEME_DATA_MISSING" and theme_of(r) in soft_esg and esg_ab)
+    )
+    out = [r for r in reasons if not drop(r)]
+
+    def add(check: str, code: str, severity: str, message: str, recs: List[dict], **measures) -> None:
+        out.append(Reason(check=check, code=code, severity=severity, message=message, measures=measures,  # type: ignore[arg-type]
+                          evidence_ids=[r["record_id"] for r in recs]))
+
+    if documented and hard_ctrl:
+        r0 = documented[0]
+        add("hard_constraints", "EXCLUDED_THEME_CONTROVERSY", "block",
+            f"{ticker} est exclu par le profil (thème : {', '.join(sorted(hard_ctrl))}) : des controverses sont documentées dans une source de "
+            f"niveau {r0['confidence']} ({_source_name(cards, r0)}, publiée le {r0['date_publication']}).",
+            documented, themes=sorted(hard_ctrl), confidence=r0["confidence"], date_publication=r0["date_publication"], source=_source_name(cards, r0))
+    if documented and soft_ctrl:
+        r0 = documented[0]
+        add("soft_preferences", "PREFERENCE_CONTRADICTED", "warn",
+            f"Préférence « {', '.join(sorted(soft_ctrl))} » : des controverses sont documentées pour {ticker} dans une source de niveau "
+            f"{r0['confidence']} ({_source_name(cards, r0)}, publiée le {r0['date_publication']}).",
+            documented, themes=sorted(soft_ctrl), confidence=r0["confidence"], date_publication=r0["date_publication"], source=_source_name(cards, r0))
+    if clean and (hard_ctrl or soft_ctrl) and not documented:
+        r0 = clean[0]
+        add("data_gaps", "THEME_VERIFIED", "info",
+            f"Aucune controverse documentée pour {ticker} dans {_source_name(cards, r0)} (niveau {r0['confidence']}, publiée le "
+            f"{r0['date_publication']}) : ce n'est pas une garantie d'absence, seulement ce que cette source déclare.",
+            clean, confidence=r0["confidence"], date_publication=r0["date_publication"], source=_source_name(cards, r0))
+    if signals and (hard_ctrl or soft_ctrl):
+        r0 = signals[0]
+        add("data_gaps", "CONTROVERSY_SIGNAL_LEVEL_C", "warn",
+            f"Signal qualitatif de niveau C sur {ticker} (publié le {r0['date_publication']}) : à vérifier. Un signal tiré d'un texte "
+            "n'est jamais utilisé pour un calcul et ne bloque jamais à lui seul.",
+            signals, confidence="C", date_publication=r0["date_publication"], source=_source_name(cards, r0))
+    if esg_ab and soft_esg:
+        r0 = esg_ab[0]
+        add("soft_preferences", "ESG_DATA_NO_THRESHOLD", "warn",
+            f"Donnée ESG de niveau {r0['confidence']} disponible pour {ticker} ({_source_name(cards, r0)}, publiée le "
+            f"{r0['date_publication']}), mais aucun seuil ESG n'est défini : l'alignement avec la préférence n'est pas jugé.",
+            esg_ab, confidence=r0["confidence"], date_publication=r0["date_publication"], source=_source_name(cards, r0))
+
+    for r in ok:
+        add("data_gaps", "ENRICHED_DATA", "info",
+            f"Donnée enrichie « {r['kind']} » pour {ticker} : niveau {r['confidence']}, publiée le {r['date_publication']}, "
+            f"source {_source_name(cards, r)}.",
+            [r], kind=r["kind"], need=r["need"], confidence=r["confidence"], date_publication=r["date_publication"], source=_source_name(cards, r))
+    by_kind: Dict[tuple, List[dict]] = {}
+    for g in gaps:
+        by_kind.setdefault((g["kind"], g["need"]), []).append(g)
+    for (kind, need), gs in by_kind.items():
+        codes = sorted({g["reason_code"] for g in gs})
+        add("data_gaps", "ENRICHMENT_GAP", "warn",
+            f"Donnée « {kind} » non comblée pour {ticker} ({', '.join(codes)}) : {gs[0]['message']}",
+            gs, kind=kind, need=need, reason_codes=codes)
     return out
 
 

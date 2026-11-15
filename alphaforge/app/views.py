@@ -59,6 +59,21 @@ def entry_to_step(e: Any, lang: str) -> Optional[TraceStep]:
     if kind == "verdict":
         return TraceStep("gouvernance", t("agent_gouvernance", lang), _ICON.get(p["status"], "•"), p["status"],
                          t("step_verdict", lang, status=t("status_" + p["status"], lang)))
+    if kind == "enrichment":
+        ok = p.get("status") == "ok"
+        text = (t("step_enrich_rec", lang, kind=p["kind"], t=p["ticker"], level=p.get("confidence")) if ok
+                else t("step_enrich_gap", lang, kind=p["kind"], t=p["ticker"], code=p.get("reason_code")))
+        return TraceStep("enrichissement", t("agent_enrichissement", lang), "✓" if ok else "⚠", "ok" if ok else "warning", text,
+                         detail={"record_id": p.get("record_id"), "confidence": p.get("confidence"), "date_publication": p.get("date_publication"),
+                                 "reason_code": p.get("reason_code")})
+    if kind == "note" and p.get("code") in ("needs_detected", "needs_relaunched"):
+        return TraceStep("orchestrateur", t("agent_orchestrateur", lang), "✓", "ok", t("step_needs", lang, message=p["message"]),
+                         detail={"gaps": [{k: g[k] for k in ("kind", "ticker", "fillable", "reason")} for g in p.get("gaps", [])]})
+    if kind == "note" and p.get("code") in ("enrichment_done", "enrichment_failed"):
+        bad = p.get("code") == "enrichment_failed" or p.get("degraded")
+        return TraceStep("enrichissement", t("agent_enrichissement", lang), "⚠" if bad else "✓", "warning" if bad else "ok", p["message"])
+    if kind == "source_card":
+        return None  # la fiche est listée dans « Données et sources » ; elle n'est pas une étape
     if kind == "note" and e.agent == "explicabilite":
         ok = p.get("code") == "explanation_verified"
         return TraceStep("explicabilite", t("agent_explicabilite", lang), "✓" if ok else "⚠", "ok" if ok else "warning",
@@ -265,6 +280,65 @@ def portfolio_view(analysis: Analysis, lang: str) -> Optional[PortfolioView]:
         v["breakdown"], v["risk"]["contributions"], v["risk"]["diversification_ratio"], v["series_id_portfolio"],
         ev.get("assumptions", []), ev.get("warnings", []),
     )
+
+
+@dataclass
+class EnrichmentRow:
+    record_id: str
+    ticker: str
+    kind: str
+    need: str
+    status: str  # "ok" | "lacune"
+    confidence: Optional[str]
+    date_publication: Optional[str]
+    source: str
+    url: Optional[str]
+    reason_code: Optional[str]
+    message: Optional[str]
+    facts: List[Dict[str, Any]]
+    value: Optional[Dict[str, Any]]
+    usable_for_calculation: bool
+
+
+@dataclass
+class EnrichmentView:
+    mode: str  # off | idle | complete | partial | degraded
+    needs: List[Dict[str, Any]]
+    rows: List[EnrichmentRow]
+    cards: List[Dict[str, Any]]
+    n_ok: int
+    n_gaps: int
+    messages: List[str]
+
+
+def enrichment_view(analysis: Analysis, lang: str) -> EnrichmentView:
+    """Ce que l'agent d'enrichissement a détecté et écrit, tel qu'au registre. Aucune donnée n'est ajoutée ici."""
+    led = analysis.result.ledger
+    cards = {e.payload["card_id"]: e.payload for e in led.entries("source_card")}
+    rows: List[EnrichmentRow] = []
+    for e in led.entries("enrichment"):
+        p = e.payload
+        card = cards.get(p.get("source_card_id") or "", {})
+        rows.append(EnrichmentRow(
+            p["record_id"], p["ticker"], p["kind"], p["need"], "ok" if p["status"] == "ok" else "lacune", p.get("confidence"),
+            p.get("date_publication"), card.get("name", "—"), p.get("url"), p.get("reason_code"), p.get("message"),
+            list(p.get("facts", [])), p.get("value"), bool(p.get("usable_for_calculation"))))
+    notes = [e.payload for e in led.entries("note")]
+    needs = [g for n in notes if n.get("code") in ("needs_detected", "needs_relaunched") for g in n.get("gaps", [])]
+    messages = [n["message"] for n in notes if n.get("code") in ("enrichment_done", "enrichment_failed")]
+    failed = any(n.get("code") == "enrichment_failed" for n in notes)
+    n_ok, n_gaps = sum(r.status == "ok" for r in rows), sum(r.status == "lacune" for r in rows)
+    if not analysis.enrichment_enabled:
+        mode = "off"
+    elif failed or (n_gaps and not n_ok):
+        mode = "degraded"
+    elif n_gaps:
+        mode = "partial"
+    elif n_ok:
+        mode = "complete"
+    else:
+        mode = "idle"
+    return EnrichmentView(mode, needs, rows, list(cards.values()), n_ok, n_gaps, messages)
 
 
 @dataclass
@@ -518,6 +592,16 @@ def report_markdown(analysis: Analysis, lang: str, store: Any = None) -> str:
     if pv is not None:
         out += ["", f"## {t('pf_title', lang)}", "", f"_{pv.label}_", "", f"- {pv.rebalancing_description} ({pv.annualization_basis})"]
         out += [f"- {x['ticker']} : {_pc(x['weight'], lang)}" for x in pv.positions]
+    ev = enrichment_view(analysis, lang)
+    if ev.rows:
+        out += ["", f"## {t('enr_title', lang)}", ""]
+        for r in ev.rows:
+            if r.status == "ok":
+                out.append(f"- `{r.record_id}` · {r.ticker} · {r.kind} · {t('enr_level', lang)} {r.confidence} · {t('enr_published', lang)} "
+                           f"{r.date_publication} · {t('enr_source', lang)} {r.source}")
+            else:
+                out.append(f"- `{r.record_id}` · {r.ticker} · {r.kind} · {t('enr_gap', lang)} ({r.reason_code})")
+        out += ["", f"_{t('enr_rule_c', lang)}_"]
     out += ["", f"## {'Preuves' if fr else 'Evidence'}", ""]
     for eid, ev in evidence_index(analysis).items():
         args = reproduce_arguments(eid, analysis)

@@ -4,18 +4,21 @@
 Aucune règle propre à un persona : les profils sont des données (JSON), y compris ceux créés depuis l'interface.
 """
 import json
+import os
 import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
+from ..enrichment import CachedProvider, CachingProvider, EdgarProvider, EnrichmentAgent
 from ..explainability import Explainer, Explanation
 from ..governance import Governance
 from ..orchestrator import InvestorProfile, Orchestrator, ProfileError, QuantAnalyst, RuleBasedParser, RunResult, load_profile
 from ..orchestrator.tools import PROFILES_DIR
 from ..quant import DataStore
 
+ENRICHMENT_CACHE_DIR = Path(__file__).resolve().parent / "cache" / "enrichment"  # données publiques déjà collectées (hors git)
 USER_PROFILES_DIR = Path(__file__).resolve().parent / "profiles" / "user"  # profils créés depuis l'interface (données locales)
 _ID = re.compile(r"^[a-z0-9_-]{1,40}$")
 
@@ -54,6 +57,42 @@ class _CapturingExplainer:
         return self.last.text
 
 
+def build_enrichment_agent(sec_user_agent: Optional[str] = None, cache_dir: Optional[Path] = None, today: Optional[date] = None) -> EnrichmentAgent:
+    """Agent d'enrichissement avec les sources réellement disponibles ; une source absente donne une lacune explicite, jamais une valeur.
+
+    - dépôts (`fetch_filings`) : SEC EDGAR en direct si un identifiant (nom et courriel) est fourni, avec le cache en repli ;
+      sans identifiant, le cache seul (la SEC l'exige) ;
+    - ESG, fondamentaux, nouvelles, composition des FNB : aucune source en direct n'est branchée ; seules des données déjà
+      présentes dans le cache (`<cache>/<type>/<symbole>.json`) sont servies.
+    `today` : date de collecte consignée sur les fiches source (l'agent n'a pas d'horloge).
+    """
+    cache = CachedProvider(Path(cache_dir) if cache_dir else ENRICHMENT_CACHE_DIR, source_id="cache")
+    root = Path(cache_dir) if cache_dir else ENRICHMENT_CACHE_DIR
+    providers: Dict[str, Any] = {}
+    if sec_user_agent and sec_user_agent.strip():
+        providers["fetch_filings"] = CachingProvider(EdgarProvider(sec_user_agent.strip(), today or date.today()), cache)
+    elif (root / "filings").is_dir():
+        providers["fetch_filings"] = cache
+    for tool, kind in (("fetch_esg", "esg"), ("fetch_fundamentals", "fundamentals"), ("fetch_news", "news"), ("fetch_etf_holdings", "etf_holdings")):
+        if (root / kind).is_dir():
+            providers[tool] = cache
+    return EnrichmentAgent(providers)
+
+
+def enrichment_coverage(sec_user_agent: Optional[str] = None, cache_dir: Optional[Path] = None) -> Dict[str, str]:
+    """Pour chaque outil de collecte : « live », « cache » ou « absent ». Affiché tel quel : ce qui n'est pas branché se voit."""
+    root = Path(cache_dir) if cache_dir else ENRICHMENT_CACHE_DIR
+    out: Dict[str, str] = {}
+    for tool, kind in (("fetch_filings", "filings"), ("fetch_esg", "esg"), ("fetch_fundamentals", "fundamentals"), ("fetch_news", "news"), ("fetch_etf_holdings", "etf_holdings")):
+        if tool == "fetch_filings" and sec_user_agent and sec_user_agent.strip():
+            out[tool] = "live"
+        elif (root / kind).is_dir():
+            out[tool] = "cache"
+        else:
+            out[tool] = "absent"
+    return out
+
+
 @dataclass
 class ProfileInfo:
     profile_id: str
@@ -70,6 +109,7 @@ class Analysis:
     result: RunResult
     verdict: Optional[Dict[str, Any]]
     explanation: Optional[Explanation]
+    enrichment_enabled: bool = False
 
 
 @dataclass
@@ -161,6 +201,8 @@ class AlphaForge:
         weights: Optional[Dict[str, float]] = None,
         rebalancing: Optional[str] = None,
         on_entry: Optional[Callable[[Any], None]] = None,
+        enrichment: bool = True,
+        sec_user_agent: Optional[str] = None,
     ) -> Analysis:
         """`base_currency` et `language` choisis dans l'interface s'appliquent à une copie du profil pour cette analyse :
         l'orchestrateur transmet la devise aux outils, l'explicabilité rédige dans la langue du profil."""
@@ -175,12 +217,14 @@ class AlphaForge:
             extra["parser"] = _ScenarioParser(RuleBasedParser(), weights or {}, rebalancing)
         if on_entry is not None:
             extra["on_entry"] = on_entry  # trace en direct : chaque entrée du registre est transmise à l'écriture
+        if enrichment:  # mode « Enrichi » (5 agents) ; sinon le noyau à 4 agents travaille seul
+            extra["enrichment"] = build_enrichment_agent(sec_user_agent or os.environ.get("ALPHAFORGE_SEC_USER_AGENT"))
         orch = Orchestrator(analyst, governance=Governance(self.assets), explainer=explainer, as_of=as_of_r, **extra)
         result = orch.run(request_text, p, self.assets)
         verdicts = result.ledger.entries("verdict")
         verdict = verdicts[-1].payload if verdicts else None
         expl = explainer.last
-        return Analysis(request_text, p, as_of_r, base, result, verdict, expl)
+        return Analysis(request_text, p, as_of_r, base, result, verdict, expl, enrichment_enabled=enrichment)
 
     def compare(self, request_text: str, left: Any, right: Any, as_of: Optional[date] = None, base_currency: Optional[str] = None,
                 language: Optional[str] = None) -> Comparison:

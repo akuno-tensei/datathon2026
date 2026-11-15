@@ -57,6 +57,7 @@ class QuantAnalyst:
 
     def __init__(self, store: DataStore):
         self._store = store
+        self.store = store  # lecture seule : l'agent d'enrichissement compare les besoins à ce que l'univers contient
         self.tools: Set[str] = set(TOOLS)
         self.window_aliases: Set[str] = set(store.config.window_aliases)
 
@@ -105,7 +106,11 @@ class Orchestrator:
         parser: Optional[Any] = None,
         as_of: Optional[date] = None,
         on_entry: Optional[Callable[[Any], None]] = None,
+        enrichment: Optional[Any] = None,
     ):
+        # Agent d'enrichissement (facultatif) : `detect_needs(profil, demande, store, as_of, registre)` puis `run(besoins, registre, as_of)`.
+        # Sans lui, le noyau à 4 agents fonctionne seul (mode dégradé, dit explicitement dans le registre).
+        self._enrichment = enrichment
         self._on_entry = on_entry  # observateur facultatif des écritures du registre (affichage en direct)
         self._analyst = analyst
         self._governance = governance
@@ -192,6 +197,42 @@ class Orchestrator:
             evidence_id=ev.evidence_id,
         )
 
+    def _enrich(self, ledger: Ledger, profile: InvestorProfile, request: ParsedRequest, relaunch: bool = False) -> bool:
+        """Détecte les besoins de données qui dépassent le jeu de départ et, s'il y en a de comblables, lance l'enrichissement.
+
+        Ne tourne pas à chaque requête : sans besoin détecté, rien n'est écrit. Une panne de l'agent est consignée et
+        n'arrête pas l'analyse. Retourne vrai si le registre a reçu des données ou des lacunes nouvelles.
+        """
+        store = getattr(self._analyst, "store", None)
+        if store is None:
+            ledger_write(ledger, "note", AGENT, {"code": "enrichment_failed", "message": "Enrichissement indisponible : l'analyste n'expose pas son magasin de données."})
+            return False
+        try:
+            needs = self._enrichment.detect_needs(profile, request, store, self._as_of, ledger)
+            if not needs.gaps:
+                return False
+            fillable = [g for g in needs.gaps if g.fillable]
+            label = ", ".join(f"{g.kind}:{g.ticker}" for g in fillable) or "aucun"
+            ledger_write(ledger, "note", AGENT, {
+                "code": "needs_relaunched" if relaunch else "needs_detected",
+                "message": f"Besoins de données détectés : {len(fillable)} comblable(s) ({label}), {len(needs.gaps) - len(fillable)} hors périmètre.",
+                "gaps": [g.model_dump(mode="json") for g in needs.gaps],
+            })
+            if not fillable:
+                return False
+            report = self._enrichment.run(needs, ledger, needs.as_of)
+        except Exception as e:  # noqa: BLE001  (l'enrichissement est facultatif : sa panne ne doit jamais arrêter l'analyse)
+            ledger_write(ledger, "note", AGENT, {"code": "enrichment_failed", "message": f"Enrichissement en échec ({type(e).__name__}) : le noyau poursuit sans lui."})
+            return False
+        ledger_write(ledger, "note", AGENT, {
+            "code": "enrichment_done",
+            "message": (f"Enrichissement : {len(report.written)} donnée(s) écrite(s), {len(report.gaps_written)} lacune(s) non comblée(s), "
+                        f"{report.excluded_after_as_of} élément(s) postérieur(s) à as_of écarté(s)."),
+            "written": len(report.written), "gaps": len(report.gaps_written), "excluded_after_as_of": report.excluded_after_as_of,
+            "rejected_facts": report.rejected_facts, "degraded": bool(report.degraded),
+        })
+        return bool(report.written or report.gaps_written)
+
     def run(self, request_text: str, profile_source: Union[str, Dict[str, Any], InvestorProfile], assets: List[Dict[str, str]]) -> RunResult:
         """`assets` : lignes de l'univers (au moins `ticker` et `name`), pour reconnaître les actifs cités."""
         ledger = Ledger(on_write=self._on_entry)
@@ -222,6 +263,9 @@ class Orchestrator:
         for tool in plan.unavailable_tools:
             ledger_write(ledger, "note", AGENT, {"code": "tool_unavailable", "message": f"Outil non disponible : {tool}. Lacune consignée, aucun substitut."})
 
+        # 3b. Enrichissement, à la demande : seulement si un besoin de donnée dépasse le jeu de départ
+        if self._enrichment is not None:
+            self._enrich(ledger, profile, request)
         # 4. Analyste
         for step in plan.steps:
             if step.agent == "analyste":
@@ -242,6 +286,13 @@ class Orchestrator:
                     self._run_analyst(ledger, call, f"fb{iteration}.{i}")
                 outcome = self._governance(profile, request, ledger)
                 ledger_write(ledger, "verdict", "gouvernance", outcome.verdict)
+            if self._enrichment is not None:  # relance unique (Agents.md 2.4) : les alternatives chiffrées n'ont pas encore leurs données
+                seen = set(request.tickers)
+                extra = [t for t in dict.fromkeys(e["params"].get("ticker") for e in ledger.evidence() if e["tool"] == "compute_metrics")
+                         if t and t not in seen]
+                if extra and self._enrich(ledger, profile, request.model_copy(update={"tickers": extra}), relaunch=True):
+                    outcome = self._governance(profile, request, ledger)
+                    ledger_write(ledger, "verdict", "gouvernance", outcome.verdict)
             if outcome.follow_up:
                 ledger_write(ledger, "note", AGENT, {"code": "feedback_limit_reached", "message": f"Limite de {MAX_FEEDBACK_ITERATIONS} itérations atteinte ; la tension reste non résolue."})
 

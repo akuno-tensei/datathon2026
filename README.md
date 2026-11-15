@@ -17,7 +17,7 @@ python3 -m pytest                                    # 405 tests
 L'interface se lance depuis n'importe quel dossier. Les données du jeu de départ sont déjà dans `alphaforge_starter/` (voir plus bas pour les régénérer).
 
 Utilisation en bref :
-1. Choisir un profil (Amira, Mateo, Robert, ou en créer un dans l'onglet « Profil »), la date d'analyse, la devise de base et la langue.
+1. Choisir un profil (Amira, Mateo, Robert, ou en créer un avec le bouton **➕ Nouveau profil**, sous la liste des profils), la date d'analyse, la devise de base et la langue.
 2. Écrire une demande (« Évalue NVDA », « Compare NVDA et BTC-USD »), ou construire un scénario de portefeuille en saisissant les poids, ou les écrire dans la demande (« 60 % SPY et 40 % AGG, sans rééquilibrage »).
 3. Lire le verdict, l'explication, la sensibilité à la période, les limites. Cliquer sur un `🔎 ev_…` ouvre la preuve, avec la commande qui la reproduit à l'identique.
 4. L'onglet « Comparer deux profils » met la même demande en face de deux profils. Le bouton d'export produit un rapport Markdown.
@@ -96,7 +96,7 @@ Points d'attention connus, signalés par `data_quality_check` : le « fractionne
 
 ## Profils
 
-Trois personas fictifs dans `alphaforge/orchestrator/profiles/` (`amira.json`, `mateo.json`, `robert.json`). Un nouveau profil se crée dans l'interface (onglet « Profil » : formulaire vierge ou copie du profil actif, préférences et exclusions ajoutées par boutons, limites de risque dérivées affichées en direct) ou en ajoutant un fichier JSON : aucun code à modifier. Le profil créé devient le profil actif.
+Trois personas fictifs dans `alphaforge/orchestrator/profiles/` (`amira.json`, `mateo.json`, `robert.json`). Un nouveau profil se crée dans l'interface (bouton « ➕ Nouveau profil », qui ouvre le panneau « Créer ou supprimer un profil » : formulaire vierge ou copie du profil actif, préférences et exclusions ajoutées par boutons, limites de risque dérivées affichées en direct) ou en ajoutant un fichier JSON : aucun code à modifier. Le profil créé devient le profil actif.
 
 Les profils créés dans l'interface sont enregistrés dans `alphaforge/app/profiles/user/` (ignoré par git). Garde-fous : un profil d'exemple ne peut ni être remplacé ni être supprimé ; remplacer ou supprimer un profil créé demande une confirmation explicite ; un profil incohérent (par exemple un secteur à la fois préféré et exclu) ne peut pas être enregistré.
 
@@ -112,7 +112,7 @@ Séries synthétiques à résultat connu (série constante, doublement en un an,
 
 ## Ce qui n'est pas couvert
 
-- **Enrichissement** (cotes ESG, controverses, fondamentaux, nouvelles) : non implémenté. Les préférences ESG de Mateo ne sont donc pas vérifiables par des données ; la gouvernance le signale et nomme le substitut déclaré (le FNB filtré ESGV).
+- **Enrichissement** (`alphaforge/enrichment/`, agent 2.1) : l'agent est appelé par l'orchestrateur quand le profil ou la demande crée un besoin (interrupteur « Enrichissement » dans l'interface ; une panne de l'agent n'arrête pas les quatre autres). Seul `EdgarProvider` (métadonnées des dépôts américains, identification SEC nom + courriel demandée dans l'onglet Sources, gardée en session seulement) est branché, avec un cache disque dans `alphaforge/app/cache/` (ignoré par git). Aucun fournisseur de cotes ESG, de fondamentaux, de nouvelles ou de composition de FNB n'est branché : ces besoins apparaissent comme des lacunes nommées. Les préférences ESG de Mateo ne sont donc pas encore vérifiables par des données ; la gouvernance le signale et nomme le substitut déclaré (le FNB filtré ESGV). Une controverse ne bloque que si elle vient d'une source de niveau A ou B ; un signal de niveau C (nouvelles) n'est qu'un avertissement. Les dépôts canadiens (SEDAR+) n'ont pas d'API publique documentée : ils restent une lacune.
 - **Hébergement AWS** : non fait. L'application est lancée localement. Un client Bedrock optionnel existe pour l'interprétation des demandes (`LLMParser`), avec repli sur les règles ; il demande `boto3` et un accès au modèle.
 - **Transparence des FNB** : sans la composition des fonds, un FNB est traité comme une position unique.
 - **Pas de projection** : tout est descriptif ou rétrospectif.
@@ -125,6 +125,7 @@ alphaforge/
   orchestrator/     profils, interprétation de la demande, plan, registre (ledger)
   governance/       contraintes dérivées du profil, contrôles, verdict
   explainability/   rédaction, vérificateur de chiffres, limites, étiquettes
+  enrichment/       agent 2.1 : besoins, collecte, filtre as_of, faits sourcés, fiches source, écriture au registre
   app/              pipeline des agents, vues, application Streamlit
 alphaforge_starter/ données de départ et script de régénération
 tests/              un dossier par agent, plus l'interface

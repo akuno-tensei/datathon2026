@@ -17,3 +17,6 @@ venv/
 
 # Profils créés depuis l'interface (données locales)
 alphaforge/app/profiles/user/
+
+# Données publiques mises en cache par l'agent d'enrichissement (conditions de réutilisation propres à chaque source)
+alphaforge/app/cache/

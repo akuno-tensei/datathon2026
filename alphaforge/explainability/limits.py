@@ -123,6 +123,40 @@ def limits_builder(
                     bb = b()
                     bb.ref(vref, *r.evidence_ids)
                     col.add("not_covered", T["nc_theme"].format(t=bb.lit(a.ticker), theme=bb.lit(theme)), bb)
+    # Agent d'enrichissement : lacunes non comblées (jamais remplacées par une supposition), limites et conditions des sources.
+    seen_gap = set()
+    for rec in view.enrichment:
+        if rec.get("status") != "lacune_non_comblee":
+            continue
+        key = (rec["ticker"], rec["kind"], rec.get("reason_code"))
+        if key in seen_gap:
+            continue
+        seen_gap.add(key)
+        bb = b()
+        bb.ref(rec["record_id"])
+        col.add("not_covered", T["nc_enrich_gap"].format(kind=bb.lit(rec["kind"]), t=bb.lit(rec["ticker"]), codes=bb.lit(rec.get("reason_code", ""))), bb)
+    for seq, note in view.notes:
+        if note.get("code") == "enrichment_failed":
+            bb = b()
+            bb.ref(seq_ref(seq))
+            col.add("not_covered", _verbatim(bb, note["message"]), bb)
+    has_facts = False
+    used_cards = {r.get("source_card_id") for r in view.enrichment if r.get("status") == "ok"}
+    for card_id in used_cards:
+        if card_id not in view.cards:
+            continue
+        seq, card = view.cards[card_id]
+        for text in card.get("limits", []):
+            bb = b()
+            bb.ref(seq_ref(seq))
+            col.add("limits", _verbatim(bb, text), bb)
+        bb = b()
+        bb.ref(seq_ref(seq))
+        col.add("limits", T["enr_card"].format(name=bb.lit(card["name"]), terms=_verbatim(bb, card["reuse_terms"])), bb)
+    for r in view.enrichment:
+        has_facts = has_facts or (r.get("status") == "ok" and bool(r.get("facts")))
+    if has_facts:
+        col.add("uncertainties", T["enr_c_note"], b(), basis="assumption")
     col.add("not_covered", T["sim"], b(), basis="assumption")
 
     skip = set(exclude)

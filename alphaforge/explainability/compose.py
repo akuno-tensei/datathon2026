@@ -16,6 +16,7 @@ from .formatting import format_number
 from .ledger_read import LedgerView, numeric_leaves, seq_ref
 from .models import Figure, Limits, Statement, Unit, VerificationReport
 
+MAX_ENRICHED_FACTS = 3  # faits de niveau C cités par enregistrement : l'explication reste lisible
 _WINDOW_NONE = {"fr": "analysée", "en": "analysed"}
 _QUOTES = {"fr": ("« ", " »"), "en": ('"', '"')}
 
@@ -244,6 +245,31 @@ class _Composer:
             b.ref(ref)
             self.add(section, T["pf_user"], b)  # fait : l'origine des poids est consignée dans les paramètres de la preuve
 
+    # -- données enrichies : chaque énoncé porte son niveau de confiance, sa date de publication et sa source ---------
+    def enrichment(self, section: str) -> None:
+        T = self.T
+        cards = self.view.cards
+        for rec in self.view.enrichment:
+            if rec.get("status") != "ok":
+                continue
+            card = cards.get(rec.get("source_card_id"), (None, {}))[1]
+            source = card.get("name", "source non documentée")
+            t = rec["ticker"]
+            if rec["kind"] == "filings" and rec.get("value"):
+                v = rec["value"]
+                b = self.b()
+                b.ref(rec["record_id"])
+                k = dict(form=b.lit(v.get("form", "")), t=b.lit(t), filed=b.lit(v.get("filing_date", "")), level=rec["confidence"], source=b.lit(source))
+                if v.get("report_date"):
+                    self.add(section, T["enr_filing_period"].format(period=b.lit(v["report_date"]), **k), b)
+                else:
+                    self.add(section, T["enr_filing"].format(**k), b)
+            for fact in rec.get("facts", [])[:MAX_ENRICHED_FACTS]:
+                b = self.b()
+                b.ref(rec["record_id"])
+                text = T["enr_fact"].format(t=b.lit(t), date=b.lit(rec["date_publication"]), source=b.lit(source), excerpt=b.lit(fact["excerpt"]))
+                self.add(section, text, b)
+
     # -- raisons de gouvernance ---------------------------------------------
     def reason(self, section: str, ticker: Optional[str], r: Reason) -> None:
         if r.code == "TOOL_UNAVAILABLE":
@@ -290,6 +316,11 @@ class _Composer:
                 k["t"] = b.lit(m["ticker"])
             if code == "PORTFOLIO_CLASS_CAP":
                 k["cls"] = b.lit(m["asset_class"])
+        elif code in ("ENRICHED_DATA", "ENRICHMENT_GAP", "EXCLUDED_THEME_CONTROVERSY", "PREFERENCE_CONTRADICTED", "THEME_VERIFIED",
+                      "CONTROVERSY_SIGNAL_LEVEL_C", "ESG_DATA_NO_THRESHOLD") and tpl:
+            k.update(kind=b.lit(m.get("kind", "")), level=m.get("confidence", ""), date=b.lit(m.get("date_publication", "")),
+                     source=b.lit(m.get("source", "")), themes=", ".join(b.lit(x) for x in m.get("themes", [])),
+                     codes=", ".join(b.lit(x) for x in m.get("reason_codes", [])))
         elif code == "AMBIGUOUS_ASSET" and tpl:
             k["candidates"] = ", ".join(b.lit(x) for x in m.get("candidates") or [])
         elif tpl and code in ("METRICS_UNAVAILABLE", "NO_METRICS"):
@@ -327,6 +358,7 @@ class _Composer:
             self.sensitivity("data", a.ticker)
         self.correlation("data")
         self.portfolio("data")
+        self.enrichment("data")
         for a in v.assets:
             b = self.b()
             b.ref(self.vref)

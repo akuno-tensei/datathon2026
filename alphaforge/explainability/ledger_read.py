@@ -28,7 +28,9 @@ class LedgerView:
     facts: Dict[str, AssetFacts] = field(default_factory=dict)
     evidence: List[Dict[str, Any]] = field(default_factory=list)
     notes: List[Tuple[int, Dict[str, Any]]] = field(default_factory=list)  # (seq, payload)
-    refs: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # evidence_id et `seq:N` -> payload
+    enrichment: List[Dict[str, Any]] = field(default_factory=list)  # enregistrements de l'agent d'enrichissement (données et lacunes)
+    cards: Dict[str, Tuple[int, Dict[str, Any]]] = field(default_factory=dict)  # card_id -> (seq, fiche source)
+    refs: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # evidence_id, record_id et `seq:N` -> payload
     corpus: str = ""  # toutes les chaînes du registre, pour vérifier tickers, dates et énoncés repris tels quels
 
     def has_ref(self, ref: str) -> bool:
@@ -70,6 +72,11 @@ def ledger_read(ledger: Ledger) -> LedgerView:
         if e.kind == "evidence":
             view.evidence.append(e.payload)
             view.refs[e.payload["evidence_id"]] = e.payload
+        elif e.kind == "enrichment":
+            view.enrichment.append(e.payload)
+            view.refs[e.payload["record_id"]] = e.payload  # citable comme une preuve, avec son niveau de confiance et sa date
+        elif e.kind == "source_card":
+            view.cards[e.payload["card_id"]] = (e.seq, e.payload)
         elif e.kind == "profile":
             view.profile, view.profile_seq = e.payload.get("profile", {}), e.seq
         elif e.kind == "request":

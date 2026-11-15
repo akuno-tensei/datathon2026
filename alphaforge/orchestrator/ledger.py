@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict
 
 from ..quant.models import Evidence
 
-EntryKind = Literal["profile", "request", "plan", "step", "evidence", "verdict", "note"]
+EntryKind = Literal["profile", "request", "plan", "step", "evidence", "verdict", "note", "enrichment", "source_card"]
 
 
 class LedgerEntry(BaseModel):

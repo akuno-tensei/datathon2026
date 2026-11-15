@@ -11,7 +11,7 @@ from ..orchestrator.profile import InvestorProfile
 from ..orchestrator.request import ParsedRequest
 from ..orchestrator.tools import validate_profile
 from .checks import (
-    ALTERNATIVE_TRIGGER_CODES, check_data_gaps, check_diversification, check_hard_constraints, check_horizon_fit, check_portfolio_limits,
+    ALTERNATIVE_TRIGGER_CODES, apply_enrichment, check_data_gaps, check_diversification, check_hard_constraints, check_horizon_fit, check_portfolio_limits,
     check_risk_limits,
     check_scope_limits, check_soft_preferences, derive_constraints, status_of, worst_status,
 )
@@ -30,13 +30,17 @@ class Governance:
         self._cfg = config or GovernanceConfig()
 
     # -- évaluation d'un actif --------------------------------------------
-    def assess(self, profile: InvestorProfile, constraints: Constraints, f: AssetFacts, alternative_for: Optional[List[str]] = None) -> AssetAssessment:
+    def assess(self, profile: InvestorProfile, constraints: Constraints, f: AssetFacts, alternative_for: Optional[List[str]] = None,
+               enrichment: Optional[tuple] = None) -> AssetAssessment:
+        """`enrichment` : (enregistrements, fiches source) lus au registre, ou None quand l'agent d'enrichissement n'a rien écrit."""
         reasons: List[Reason] = []
         reasons += check_data_gaps(f)
         reasons += check_hard_constraints(profile, constraints, f)
         reasons += check_soft_preferences(profile, self._cfg, f)
         reasons += check_risk_limits(constraints, f)
         reasons += check_horizon_fit(profile, f)
+        if enrichment is not None:
+            reasons = apply_enrichment(reasons, profile, f.ticker, enrichment[0], enrichment[1])
         return AssetAssessment(
             ticker=f.ticker, status=status_of(reasons), reasons=reasons, data_notes=list(f.note_codes), alternative_for=alternative_for or []
         )
@@ -91,17 +95,20 @@ class Governance:
     # -- point d'entrée ---------------------------------------------------
     def __call__(self, profile: InvestorProfile, request: ParsedRequest, ledger: Ledger) -> GovernanceOutcome:
         facts = build_facts(ledger.evidence())
+        records = [e.payload for e in ledger.entries("enrichment")]
+        cards = {e.payload["card_id"]: e.payload for e in ledger.entries("source_card")}
+        enrichment = (records, cards) if records else None
         constraints = derive_constraints(profile, self._cfg)
         primary_keys = list(dict.fromkeys(request.tickers + request.unknown_tickers))
 
-        primary = {t: self.assess(profile, constraints, facts.get(t, AssetFacts(ticker=t))) for t in primary_keys}
+        primary = {t: self.assess(profile, constraints, facts.get(t, AssetFacts(ticker=t)), enrichment=enrichment) for t in primary_keys}
 
         alternatives: List[AssetAssessment] = []
         for t, f in facts.items():
             if t in primary or not f.windows:
                 continue
             owners = [p for p in primary if p in facts and t in self._peers(p) and primary[p].status != "conforme"]
-            alternatives.append(self.assess(profile, constraints, f, alternative_for=owners))
+            alternatives.append(self.assess(profile, constraints, f, alternative_for=owners, enrichment=enrichment))
 
         global_reasons: List[Reason] = []
         for issue in validate_profile(profile).issues:

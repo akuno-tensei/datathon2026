@@ -30,7 +30,7 @@ def _texts(at):
 def test_initial_screen_shows_permanent_simulation_banner_and_profiles(app):
     assert any("SIMULATION" in w.value for w in app.warning)
     assert set(app.selectbox[0].options) >= {"Amira (exemple)", "Mateo (exemple)", "Robert (exemple)"}
-    assert "Noyau (4 agents)" in _texts(app)
+    assert "Enrichi (5 agents)" in _texts(app)  # l'enrichissement est actif par défaut, et ses sources branchées sont affichées
     assert "Limites dérivées du profil" in _texts(app)
 
 
@@ -364,3 +364,122 @@ def test_only_the_chosen_profile_is_deleted_and_an_analysis_survives_its_profile
     assert not app.exception, app.exception
     assert (app.user_dir / "premier.json").is_file() and not (app.user_dir / "second.json").exists()
     assert app.session_state["analysis"] is analysis and analysis.profile.profile_id == "second"  # le résultat déjà affiché reste lisible
+
+
+# ---- le bouton « Nouveau profil » doit se trouver sans chercher ---------------
+def _profile_panel(app):
+    (panel,) = [e for e in app.expander if "profil" in e.label.lower()]
+    return panel
+
+
+def test_a_new_profile_button_sits_right_under_the_profile_selector(app):
+    (btn,) = [b for b in app.button if b.key == "pf_open_btn"]
+    assert btn.label == "➕ Nouveau profil"
+    assert not btn.disabled  # toujours utilisable, sans condition préalable
+    assert _profile_panel(app).label == "👤 Créer ou supprimer un profil"
+    assert "Profil" not in [t.label for t in app.tabs]  # plus d'onglet à deviner : le panneau est sous le bandeau, sur toutes les vues
+
+
+def test_clicking_new_profile_opens_the_panel_with_a_blank_form(app):
+    assert _profile_panel(app).proto.expanded is False
+    _fill(app, "Brouillon", risk="eleve")  # un formulaire déjà rempli...
+    app.button(key="pf_open_btn").click().run()
+    assert not app.exception, app.exception
+    assert _profile_panel(app).proto.expanded is True
+    assert app.text_input(key="pf_name").value == "" and app.select_slider(key="pf_risk").value == "modere"  # ...repart de zéro
+
+
+def test_the_button_is_translated(app):
+    app.radio(key="lang").set_value("en").run()
+    assert [b.label for b in app.button if b.key == "pf_open_btn"] == ["➕ New profile"]
+    assert _profile_panel(app).label == "👤 Create or delete a profile"
+
+
+def test_after_saving_the_panel_folds_and_the_result_stays_visible(app):
+    app.button(key="pf_open_btn").click().run()
+    app.text_input(key="pf_name").set_value("Visible").run()
+    app.button(key="pf_save_btn").click().run()
+    assert _profile_panel(app).proto.expanded is False
+    assert any("Profil enregistré : visible" in s.value for s in app.success)  # message hors du panneau replié
+    assert app.selectbox(key="profile_sel").value == "visible"
+    app.run()  # l'action suivante n'affiche plus le message
+    assert not any("Profil enregistré" in s.value for s in app.success)
+
+
+def test_the_panel_is_outside_the_tabs_so_it_is_reachable_from_every_view(app):
+    kids = list(app.main.children.values())
+    names = [type(k).__name__ for k in kids]
+    panel_at = next(i for i, k in enumerate(kids) if type(k).__name__ == "Expander" and "profil" in k.label.lower())
+    tabs_at = max(i for i, n in enumerate(names) if n == "Block")  # le bloc des onglets vient après le panneau
+    assert panel_at < tabs_at  # sous le bandeau, avant les onglets : visible quelle que soit la vue
+    for tab in app.tabs:
+        assert not [e for e in tab.children.values() if type(e).__name__ == "Expander" and "profil" in e.label.lower()]
+    app.button(key="pf_open_btn").click().run()
+    assert not app.exception and {"pf_name", "pf_save_btn"} <= {w.key for w in list(app.text_input) + list(app.button)}
+
+
+# ---- agent d'enrichissement dans l'application ---------------------------------
+def test_toggle_switches_between_the_enriched_mode_and_the_four_agent_core(app):
+    assert app.toggle(key="enrich_on").value is True and "Enrichi (5 agents)" in _texts(app)
+    app.toggle(key="enrich_on").set_value(False).run()
+    assert not app.exception, app.exception
+    assert "Noyau (4 agents)" in _texts(app) and any("Enrichissement désactivé" in c.value for c in app.caption)
+
+
+def test_sources_actually_connected_are_shown_and_nothing_is_pretended(app):
+    line = next(c.value for c in app.caption if c.value.startswith("ℹ Sources d'enrichissement"))
+    assert "Cotes ESG et controverses : non branchée" in line and "Dépôts réglementaires (SEC EDGAR) : non branchée" in line
+    assert "jamais une valeur supposée" in line
+    app.text_input(key="sec_ua").set_value("Jeanne Test, jeanne@example.org").run()
+    line = next(c.value for c in app.caption if c.value.startswith("ℹ Sources d'enrichissement"))
+    assert "Dépôts réglementaires (SEC EDGAR) : en direct" in line and "Cotes ESG et controverses : non branchée" in line
+
+
+def test_a_request_with_no_data_need_does_not_call_enrichment(app):
+    app.text_area(key="req_box").set_value("Évalue NVDA")  # profil Robert : aucun thème, aucune demande de données
+    next(b for b in app.button if b.label == "Envoyer").click().run()
+    assert not app.exception, app.exception
+    a = app.session_state["analysis"]
+    assert a.enrichment_enabled and not a.result.ledger.entries("enrichment")
+    assert any("n'a pas été sollicité" in c.value for c in app.caption)
+
+
+def test_theme_preferences_trigger_enrichment_and_unconnected_sources_become_explicit_gaps(app):
+    app.selectbox(key="profile_sel").set_value("mateo").run()  # préférences ESG et « éviter les controverses »
+    app.text_area(key="req_box").set_value("Évalue ENB.TO")
+    next(b for b in app.button if b.label == "Envoyer").click().run()
+    assert not app.exception, app.exception
+    led = app.session_state["analysis"].result.ledger
+    gaps = [e.payload for e in led.entries("enrichment")]
+    assert gaps and all(g["status"] == "lacune_non_comblee" and g["reason_code"] == "no_provider" for g in gaps)  # rien n'est inventé
+    assert any("Enrichissement indisponible pour cette demande" in w.value for w in app.warning)
+    assert any("non comblée" in m.value for m in app.markdown)
+    steps = [s for s in views_agent_trace(app) if s.agent == "enrichissement"]
+    assert steps and all(s.icon == "⚠" for s in steps if "lacune" in s.text)
+
+
+def views_agent_trace(app):
+    from alphaforge.app import views
+
+    return views.agent_trace(app.session_state["analysis"], "fr")
+
+
+def test_with_enrichment_off_the_core_runs_alone_and_says_so(app):
+    app.toggle(key="enrich_on").set_value(False).run()
+    app.selectbox(key="profile_sel").set_value("mateo").run()
+    app.text_area(key="req_box").set_value("Évalue ENB.TO")
+    next(b for b in app.button if b.label == "Envoyer").click().run()
+    assert not app.exception, app.exception
+    a = app.session_state["analysis"]
+    assert not a.enrichment_enabled and not a.result.ledger.entries("enrichment")
+    assert any("Enrichissement désactivé" in i.value for i in app.info)
+
+
+def test_sec_identification_is_session_only_never_written_to_disk(app, tmp_path):
+    app.text_input(key="sec_ua").set_value("Jeanne Test, jeanne@example.org").run()
+    assert not any("jeanne@example.org" in f.read_text(errors="ignore") for f in app.user_dir.rglob("*") if f.is_file())
+    assert any("jamais écrit sur disque" in str(t.proto.help) for t in app.text_input if t.key == "sec_ua")
+
+
+def test_source_cards_listing_starts_empty(app):
+    assert any("Aucune fiche source" in c.value for c in app.caption)
