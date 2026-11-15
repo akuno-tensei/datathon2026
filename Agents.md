@@ -76,7 +76,7 @@ Le mandat encourage une approche agentique **simple, focalisée et vérifiable**
 | `compose_explanation` | Adapte le niveau de langage et la structure au profil (expérience, langue) |
 | `claim_verifier` | Contrôle que chaque nombre et chaque affirmation correspond à une entrée du registre. Une affirmation sans preuve est supprimée ou marquée comme hypothèse |
 | `limits_builder` | Compile hypothèses, limites, incertitudes et ce qui n'est pas couvert |
-| `label_content` | Étiquette chaque énoncé : fait, hypothèse ou scénario fictif |
+| `label_content` | Étiquette chaque énoncé : fait, hypothèse ou scénario fictif. *Implémenté avec une quatrième étiquette, « synthèse », pour les phrases qui relient le verdict à ses raisons (`synthesis.py`).* |
 
 ## 1.3 Liens entre les agents
 
@@ -129,6 +129,7 @@ Le mandat encourage une approche agentique **simple, focalisée et vérifiable**
 
 - **Pas plus de 4 agents** dans le noyau : le nombre d'agents n'est pas une fin en soi.
 - **Aucune règle propre à un persona.** Toute spécificité vient du profil.
+- **Bloquer seulement sur une règle explicite.** Le mandat demande de vérifier et de signaler, pas de bloquer : `bloqué` est réservé à un refus déclaré par l'investisseur, à une classe que son niveau de risque n'autorise pas et aux limites du défi ; un écart chiffré reste un avertissement. *Justification détaillée : `alphaforge/governance/README.md`, section 7.5.*
 - **Aucun chiffre produit par le modèle de langage.** Seulement les outils.
 - **Simulation uniquement :** aucune transaction réelle, aucun conseil personnalisé, aucune prédiction de rendements futurs.
 - **Sorties en fourchettes** et étiquetées « scénario simulé », plutôt qu'une allocation unique « optimale ».

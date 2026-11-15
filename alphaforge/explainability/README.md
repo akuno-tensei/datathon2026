@@ -47,13 +47,14 @@ L'orchestrateur appelle l'agent à l'étape 6 (`alphaforge/orchestrator/orchestr
 | `compose.py` | `compose_explanation` (énoncés du corps), `Builder` (chiffres, références, chaînes autorisées), `render` (mise en forme Markdown). |
 | `config.py` | `ExplainConfig`, `SECTIONS`, `LABELS`, `TEMPLATES` (gabarits français et anglais). |
 | `limits.py` | `limits_builder` : hypothèses, limites, incertitudes, non couvert. |
-| `label_content.py` | `label_content`, `label_all` : étiquette « fait », « hypothèse » ou « scénario fictif ». |
+| `label_content.py` | `label_content`, `label_all` : étiquette « fait », « hypothèse », « scénario fictif » ou « synthèse ». |
+| `synthesis.py` | `build_synthesis`, `verify_synthesis`, `insert_after_verdict` : la synthèse placée après le verdict (section 5.9). |
 | `formatting.py` | `shown_value`, `format_number`, `parse_shown` : même code pour écrire et pour contrôler un nombre. |
 | `verifier.py` | `claim_verifier`, `check_statement`, `advice_wording`, `ADVICE_PATTERNS` : les 7 contrôles. |
 | `provenance.py` | `Vocabulary`, `provenance_issues` : liste blanche de mots, enchaînements et citations (contrôle 7). |
 | `models.py` | Modèles Pydantic stricts (`extra="forbid"`) : `Statement`, `Figure`, `Issue`, `VerificationReport`, `Limits`, `Explanation`. |
 
-Un énoncé (`Statement`) porte : `sid` (identifiant du type `fit.3`), `section`, `text`, `basis` (`evidence`, `assumption` ou `scenario`), `label`, `refs` (identifiants de preuve ou `seq:N`), `figures` (chaque nombre affiché, avec sa valeur, son unité, son texte exact et sa référence), `literals` (chaînes contenant des chiffres, comme `LOW.TO` ou une date) et `note`.
+Un énoncé (`Statement`) porte : `sid` (identifiant du type `fit.3`), `section`, `text`, `basis` (`evidence`, `assumption`, `scenario` ou `synthesis`), `label`, `refs` (identifiants de preuve ou `seq:N`), `figures` (chaque nombre affiché, avec sa valeur, son unité, son texte exact et sa référence), `literals` (chaînes contenant des chiffres, comme `LOW.TO` ou une date) et `note`.
 
 ## 3. La boucle rédaction, vérification, rédaction
 
@@ -63,6 +64,7 @@ Le code est dans `Explainer.explain` (`explainer.py`).
 2. Si `ExplainConfig.provenance_check` est vrai, `Vocabulary.build(TEMPLATES[langue], view.vocab_strings)` construit la liste blanche (voir [section 10](#10-le-contrôle-de-provenance)). Sinon le vocabulaire vaut `None`.
 3. Une passe fait, dans l'ordre : `compose_explanation(view, profile, exclude)`, puis `limits_builder(view, profile, config, exclude)`, puis `label_all(corps + limites)`, puis `claim_verifier(view, énoncés, attempts=n, vocabulary=vocab)`.
 4. La boucle s'arrête si le rapport est approuvé, ou si rien n'a été retiré, ou si le nombre de passes atteint `max_attempts`. Sinon les identifiants retirés (`report.removed`) sont ajoutés à `exclude` et une nouvelle passe commence.
+5. Après la boucle, la synthèse est rédigée à partir des seuls énoncés du corps retenus, vérifiée par `verify_synthesis`, puis insérée juste après la phrase du verdict (section 5.9). Elle ne repasse pas par la boucle : un énoncé de synthèse rejeté est retiré, sans nouvelle rédaction.
 
 **Nombre de tentatives.** `ExplainConfig.max_attempts = 2` (`config.py`). Le commentaire du code l'explique : rédaction, vérification, rédaction ; le vérificateur peut rejeter une fois. Le `README.md` racine répète « 2 tentatives au plus ».
 
@@ -74,8 +76,8 @@ Le code est dans `Explainer.explain` (`explainer.py`).
 
 - `approved = report.approved and not removed_all` : vrai seulement si la dernière passe n'a aucune anomalie et si aucune passe n'a retiré d'énoncé ;
 - `attempts` : nombre de passes effectuées ;
-- `verified` et `downgraded` : ceux de la dernière passe ;
-- `removed` et `issues` : cumulés sur toutes les passes, sans doublon pour `removed`.
+- `verified` : ceux de la dernière passe, plus les énoncés de synthèse gardés ; `downgraded` : ceux de la dernière passe ;
+- `removed` et `issues` : cumulés sur toutes les passes, sans doublon pour `removed`, plus les énoncés de synthèse rejetés et leurs anomalies.
 
 Un énoncé simplement rétrogradé (voir section 9) laisse une anomalie `no_evidence` dans le rapport, donc `approved` est faux, mais la boucle s'arrête quand même après cette passe puisque rien n'a été retiré. C'est ce que donne la lecture du code. Aucun test ne couvre ce cas précis.
 
@@ -121,7 +123,7 @@ Les entrées de type `plan` et `step` ne remplissent aucun champ dédié. Elles 
 
 | Section | Contenu (méthode de `_Composer`) |
 |---|---|
-| `summary` | `summary()` : phrase d'introduction (débutant seulement), statut du verdict, demande examinée, profil appliqué, limites dérivées du profil, et la mention « limites resserrées d'un niveau » quand `constraints.adjustments` n'est pas vide. |
+| `summary` | `summary()` : phrase d'introduction (débutant seulement), statut du verdict, puis la synthèse (insérée après la vérification, section 5.9), demande examinée, profil appliqué, limites dérivées du profil, et la mention « limites resserrées d'un niveau » quand `constraints.adjustments` n'est pas vide. |
 | `data` | Pour chaque actif du verdict : `data()` (une phrase par fenêtre mesurée), `sensitivity()` (sensibilité à la période). Puis `correlation()`, `portfolio()`, `enrichment()`. |
 | `fit` | Pour chaque actif : « statut » puis une phrase par raison de gouvernance (`assessment`, `reason`). Puis les raisons globales. |
 | `alternatives` | Pour chaque alternative : statut, mesures (`data()`), raisons sans celles de gravité `info`. Aucune donnée enrichie pour les alternatives. |
@@ -205,6 +207,32 @@ Règles particulières :
 
 Chaque énoncé est une ligne `- [Étiquette] texte`. Pour un profil avancé, une seconde ligne ajoute `(sources : ref1, ref2)` (avec un espace avant les deux-points en français, sans espace en anglais). Le pied de page dit : nombre d'énoncés contrôlés (`verified` plus nombre de rétrogradés), nombre retirés, nombre rétrogradés en hypothèse.
 
+### 5.9 Synthèse
+
+`synthesis.py` écrit quelques phrases placées juste après la phrase du verdict. Elles relient ce verdict à ses raisons principales, pour que le lecteur n'ait pas à les chercher plus bas. Elles constatent un écart (« NVDA dépasse des limites de risque de votre profil »), elles ne prescrivent rien.
+
+**Rédaction** (`build_synthesis`, gabarits `TEMPLATES[langue]["synthesis"]`). Rien n'est écrit sans verdict. Puis, pour chaque actif du verdict, une seule phrase, choisie dans cet ordre :
+
+| Situation de l'actif | Gabarit | Exemple |
+|---|---|---|
+| au moins une raison de gravité `block` | `blocked`, avec les motifs de `why` (secteur exclu, classe non permise...) | « BTC-USD est bloqué par une contrainte de votre profil : classe non permise à votre niveau de risque. » |
+| `VOLATILITY_ABOVE_LIMIT` ou `DRAWDOWN_ABOVE_LIMIT` | `exceeds`, avec chaque valeur et sa limite | « NVDA dépasse des limites de risque de votre profil : volatilité annualisée de 61,3 % pour une limite de 15,0 % ; ... » |
+| aucune fenêtre mesurée (hors univers, métriques indisponibles) | `nodata` | « ZZZZ.TO n'a pas pu être évalué faute de données suffisantes. » |
+| statut `conforme` | `within` | « LOW.TO reste dans les limites de risque de votre profil sur les fenêtres analysées. » |
+| avertissement sans dépassement (donnée manquante, horizon, préférence) | `other` | « XBB.TO : statut avertissement, pour les raisons détaillées dans « Cohérence avec votre profil ». » |
+
+S'y ajoutent : les alternatives au statut conforme (`alt_ok`) ou leur absence (`alt_none`) quand des alternatives ont été évaluées ; un renvoi à la section « Périmètre » (`scope`) s'il y a un refus de périmètre ; et toujours une phrase de fin. Cette phrase dit « Ces mesures décrivent le passé et ne prédisent pas l'avenir. La décision revient à l'investisseur. » (`close`), ou seulement sa seconde partie (`close_nodata`) quand aucun actif n'a de mesure. Les éléments d'une liste sont séparés par `" ; "` en français et `"; "` en anglais (`sep`).
+
+Les gabarits n'utilisent pas le mot « vous » (ni « you » ou « yours » en anglais). Ce mot est absent de tous les gabarits, donc le contrôle de provenance continue de le signaler dans une phrase comme « AAPL est le placement idéal pour vous » (exemple 7). Une première version écrivait « La décision vous appartient » et affaiblissait ce contrôle.
+
+**Étiquette.** `basis = "synthesis"`, donc `label = "synthese"` : « Synthèse » en français, « Synthesis » en anglais. Jamais « fait ».
+
+**Vérification** (`verify_synthesis`). Chaque énoncé passe par `check_statement`, avec le vocabulaire de provenance : les 7 contrôles s'appliquent. Un énoncé « synthèse » doit citer une preuve, comme un « fait ». Une règle s'ajoute, **aucun fait nouveau** : chaque `Figure` doit déjà figurer, avec la même référence, la même valeur et la même unité, dans un énoncé du corps qui a passé la vérification. Sinon l'anomalie est `synthesis_new_fact`. Toute anomalie, y compris `no_evidence`, **retire** l'énoncé : une synthèse n'est jamais rétrogradée en hypothèse. Le reste de la synthèse est conservé.
+
+**Placement** (`insert_after_verdict`). Juste après l'énoncé dont le texte est la phrase `verdict` ; à défaut, en fin de section `summary`. L'interface affiche la section `summary` en mode résumé (`alphaforge/app/views.py`, `explanation_sections`), donc la synthèse y apparaît, avec ses liens vers les preuves, sans changement de l'interface.
+
+L'exemple 12 montre trois synthèses réelles.
+
 ## 6. Limites et incertitudes
 
 `limits_builder(view, profile, config, exclude)` (`limits.py`) compile quatre sections à partir du registre seul. Il suit le même principe que la rédaction : un énoncé = un texte, des références, des chiffres déclarés.
@@ -232,10 +260,11 @@ Précisions :
 | `evidence` | `fait` | Fait | Fact |
 | `assumption` | `hypothese` | Hypothèse | Assumption |
 | `scenario` | `scenario_fictif` | Scénario fictif | Fictional scenario |
+| `synthesis` | `synthese` | Synthèse | Synthesis |
 
 `label_all(statements)` l'applique à une liste. `Explainer` l'appelle avant la vérification : un énoncé sans étiquette est rejeté (anomalie `unlabeled`). L'étiquette est une propriété de l'origine de l'énoncé, jamais du contenu. Un `fait` reste soumis à une condition de preuve : le vérificateur le rétrograde en hypothèse s'il ne cite rien (section 9).
 
-Origines dans le code : `scenario` pour les trois énoncés de portefeuille et la phrase `scenario` de la section `scope` ; `assumption` pour `intro_debutant`, `no_verdict`, `pf_equal`, `enr_fund_note`, la raison `THEME_PROXY`, les hypothèses de méthode, `past`, `enr_c_note` et `sim` ; `evidence` pour le reste.
+Origines dans le code : `scenario` pour les trois énoncés de portefeuille et la phrase `scenario` de la section `scope` ; `assumption` pour `intro_debutant`, `no_verdict`, `pf_equal`, `enr_fund_note`, la raison `THEME_PROXY`, les hypothèses de méthode, `past`, `enr_c_note` et `sim` ; `synthesis` pour les phrases de `synthesis.py` ; `evidence` pour le reste.
 
 ## 8. Formatage des nombres
 
@@ -267,14 +296,14 @@ L'exemple 4 exécute ces règles.
 | # | Contrôle | Code d'anomalie |
 |---|---|---|
 | 1 | Toute référence de `refs` existe dans le registre (`view.has_ref`). | `unknown_ref` |
-| 2 | Un énoncé « fait » cite au moins une référence valide. | `no_evidence` |
+| 2 | Un énoncé « fait » ou « synthèse » cite au moins une référence valide. | `no_evidence` |
 | 3 | Chaque `Figure` : sa référence existe (`unknown_ref`) ; sa valeur figure, en valeur absolue, parmi les nombres du payload cité, avec une tolérance relative de 1e-9 (`figure_mismatch`) ; son texte affiché est l'arrondi de cette valeur selon `shown_value` (`figure_format`) ; son texte affiché apparaît bien dans le texte (`figure_format`). | `unknown_ref`, `figure_mismatch`, `figure_format` |
 | 4 | Aucun autre nombre dans le texte. Après retrait des dates ISO, des chaînes déclarées et des chiffres déclarés, il ne reste aucun chiffre. | `unsupported_number` |
 | 5 | Chaque chaîne déclarée (`literals`) et chaque date ISO `AAAA-MM-JJ` du texte figure dans `view.corpus`. | `unknown_literal` |
 | 6 | Aucune tournure de conseil, de prédiction ou de promesse (liste `ADVICE_PATTERNS`). | `advice_wording` |
 | 7 | Provenance : chaque mot, chaque enchaînement et chaque citation vient d'un gabarit ou du registre. Actif seulement si un `Vocabulary` est fourni. | `unsourced_wording` |
 
-Le code `unlabeled` s'ajoute avant ces contrôles : il se produit si `label` vaut `None`. Les codes de `Issue.code` listés dans `models.py` sont : `unknown_ref`, `no_evidence`, `figure_mismatch`, `figure_format`, `unsupported_number`, `unknown_literal`, `unlabeled`, `advice_wording`, `unsourced_wording`.
+Le code `unlabeled` s'ajoute avant ces contrôles : il se produit si `label` vaut `None`. Les codes de `Issue.code` listés dans `models.py` sont : `unknown_ref`, `no_evidence`, `figure_mismatch`, `figure_format`, `unsupported_number`, `unknown_literal`, `unlabeled`, `advice_wording`, `unsourced_wording`. `verify_synthesis` ajoute `synthesis_new_fact`, propre à la synthèse (section 5.9).
 
 Détails du contrôle 4 (`_residual`) : les dates ISO sont retirées du texte en premier, pour qu'une fenêtre « 2022 » ne ronge pas `2022-01-03`. Puis les chaînes déclarées, de la plus longue à la plus courte. Puis chaque texte affiché d'une `Figure`, uniquement quand il n'est pas collé à d'autres chiffres (expressions régulières avec garde-fous `(?<![\d.,])` et `(?!\d|[.,]\d)`).
 
@@ -285,6 +314,7 @@ Règle de `claim_verifier` :
 - Toute anomalie autre que `no_evidence` : l'énoncé est **retiré** (son `sid` va dans `removed`).
 - `no_evidence` seul : si l'énoncé a des chiffres (une `Figure`, ou un chiffre dans le texte), il est **retiré**. Sinon il est **rétrogradé** : gardé avec `label = "hypothese"` et `note = "downgraded_no_evidence"`, et son `sid` va dans `downgraded`.
 - Un énoncé sans anomalie est gardé tel quel.
+- Exception, la synthèse : `verify_synthesis` retire un énoncé de synthèse pour toute anomalie, `no_evidence` comprise. Il n'est jamais rétrogradé.
 
 `VerificationReport.approved` vaut `not issues` : la moindre anomalie, même résolue par une rétrogradation, rend le rapport non approuvé. `verified = len(gardés) - len(rétrogradés)`.
 
@@ -385,21 +415,23 @@ print(r.approved, r.attempts, r.verified, r.removed, r.downgraded, len(r.issues)
 
 ```text
 # Explication AlphaForge (simulation, aucune transaction réelle)
+
 ## Résumé
 - [Fait] Verdict de la gouvernance : avertissement.
   (sources : seq:29)
-- [Fait] Demande examinée : évaluer un actif, actifs : NVDA.
-  (sources : seq:2)
-- [Fait] Profil appliqué : horizon de 3 à 5 ans, tolérance au risque « faible_modere ».
-  (sources : seq:1)
-- [Fait] Limites dérivées du profil (niveau « faible_modere ») : volatilité annualisée maximale 15,0 %, perte maximale depuis un sommet 20,0 %.
+- [Synthèse] NVDA dépasse des limites de risque de votre profil : volatilité annualisée de 61,3 % pour une limite de 15,0 % ; perte maximale de 63,5 % pour une limite de 20,0 %.
+  (sources : seq:29, ev_36ff0fa765107029, ev_99262d44b5b14abd)
+- [Synthèse] Aucune des alternatives évaluées n'obtient le statut conforme.
   (sources : seq:29)
+- [Synthèse] Ces mesures décrivent le passé et ne prédisent pas l'avenir. La décision revient à l'investisseur.
+  (sources : seq:29)
+- [Fait] Demande examinée : évaluer un actif, actifs : NVDA.
 ...
-Vérification : 56 énoncé(s) contrôlé(s) contre le registre de preuves, 0 retiré(s), 0 rétrogradé(s) en hypothèse.
-True 1 56 [] [] 0
+Vérification : 59 énoncé(s) contrôlé(s) contre le registre de preuves, 0 retiré(s), 0 rétrogradé(s) en hypothèse.
+True 1 59 [] [] 0
 ```
 
-Robert est un profil avancé : chaque ligne porte ses sources (`seq:29` est le verdict). Le rapport dit : approuvé, 1 tentative, 56 énoncés vérifiés, aucun retiré, aucun rétrogradé, aucune anomalie.
+Robert est un profil avancé : chaque ligne porte ses sources (`seq:29` est le verdict). Les trois lignes « Synthèse » suivent le verdict (section 5.9). Le rapport dit : approuvé, 1 tentative, 59 énoncés vérifiés (dont les 3 de synthèse), aucun retiré, aucun rétrogradé, aucune anomalie.
 
 ### Exemple 2 : même registre, trois niveaux d'expérience
 
@@ -423,7 +455,7 @@ debutant | hypothèses : 2 | limites : 5 | sources affichées : False
 intermediaire | hypothèses : 5 | limites : 5 | sources affichées : False
     NVDA, fenêtre « complet » (du 2021-11-12 au 2026-11-12) : volatilité annualisée 51,1 %, perte maximale depuis un sommet 63,5 %.
 avance | hypothèses : 10 | limites : 5 | sources affichées : True
-    NVDA, fenêtre « complet » (du 2021-11-12 au 2026-11-12) : volatilité annualisée 51,1 % (base 252 jours de bourse par an), perte maximale depuis un sommet 63,5 %.
+    NVDA, fenêtre « complet » (du 2021-11-12 au 2026-11-12) : volatilité annualisée 51,1 % (base 252 jours de bourse par an), perte maximale depuis un som
 ```
 
 Les plafonds 2 et 5 viennent de `assumptions_cap`. Les 5 limites sont identiques pour les trois niveaux. Chaque appel à `explain` écrit une note dans le registre de `a`.
@@ -549,11 +581,11 @@ print(a.result.ledger.entries("note")[-1].payload)
 
 ```text
 exclusions passées à la rédaction : [[], ['fit.99']]
-approuvé False | tentatives 2 | vérifiés 56 | retirés ['fit.99']
+approuvé False | tentatives 2 | vérifiés 59 | retirés ['fit.99']
   fit.99 advice_wording | Tournure de conseil ou de prédiction hors périmètre : 'Vous devriez'.
   fit.99 unsourced_wording | Formulation sans provenance (ni gabarit, ni registre) : mot hors gabarit et hors registre : 'vous' ; mot hors 
 conseil dans le texte final : False
-Vérification : 56 énoncé(s) contrôlé(s) contre le registre de preuves, 1 retiré(s), 0 rétrogradé(s) en hypothèse.
+Vérification : 59 énoncé(s) contrôlé(s) contre le registre de preuves, 1 retiré(s), 0 rétrogradé(s) en hypothèse.
 {'code': 'explanation_repaired', 'message': 'Explication vérifiée contre le registre.', 'removed': ['fit.99'], 'downgraded': []}
 ```
 
@@ -695,6 +727,48 @@ for t in ["sommet limite", "limite sommet", "conforme bloqué"]:
 'conforme bloqué' -> ["enchaînement absent des gabarits et du registre : 'conforme' 'bloqué'"]
 ```
 
+### Exemple 12 : la synthèse, dans trois situations
+
+```python
+from alphaforge.app.pipeline import AlphaForge
+af = AlphaForge.from_directory()
+for q, pid in (("Évalue NVDA", "robert"), ("Dois-je acheter BTC-USD ?", "robert"), ("Évalue ZZZZ.TO", "mateo")):
+    e = af.analyze(q, pid, enrichment=False).explanation
+    print(f"{pid} | {q}")
+    for s in e.statements:
+        if s.label == "synthese":
+            print(f"   [{s.sid}] {s.text}")
+            print(f"      refs={s.refs} chiffres={[f.shown for f in s.figures]}")
+    print("   approuvé :", e.report.approved)
+```
+
+```text
+robert | Évalue NVDA
+   [summary.syn1] NVDA dépasse des limites de risque de votre profil : volatilité annualisée de 61,3 % pour une limite de 15,0 % ; perte maximale de 63,5 % pour une limite de 20,0 %.
+      refs=['seq:29', 'ev_36ff0fa765107029', 'ev_99262d44b5b14abd'] chiffres=['61,3 %', '15,0 %', '63,5 %', '20,0 %']
+   [summary.syn2] Aucune des alternatives évaluées n'obtient le statut conforme.
+      refs=['seq:29'] chiffres=[]
+   [summary.syn3] Ces mesures décrivent le passé et ne prédisent pas l'avenir. La décision revient à l'investisseur.
+      refs=['seq:29'] chiffres=[]
+   approuvé : True
+robert | Dois-je acheter BTC-USD ?
+   [summary.syn1] BTC-USD est bloqué par une contrainte de votre profil : classe non permise à votre niveau de risque.
+      refs=['seq:12', 'ev_b129ecd0f8ef0768', 'ev_a3975675e323531d', 'ev_0b4a568b0652f5a7'] chiffres=[]
+   [summary.syn2] Une partie de la demande est hors périmètre : voir « Périmètre ».
+      refs=['seq:12'] chiffres=[]
+   [summary.syn3] Ces mesures décrivent le passé et ne prédisent pas l'avenir. La décision revient à l'investisseur.
+      refs=['seq:12'] chiffres=[]
+   approuvé : True
+mateo | Évalue ZZZZ.TO
+   [summary.syn1] ZZZZ.TO n'a pas pu être évalué faute de données suffisantes.
+      refs=['seq:6', 'ev_a039f929802c22b5'] chiffres=[]
+   [summary.syn2] La décision revient à l'investisseur.
+      refs=['seq:6'] chiffres=[]
+   approuvé : True
+```
+
+Chaque chiffre de la première synthèse (`61,3 %`, `15,0 %`, `63,5 %`, `20,0 %`) figure déjà, avec la même preuve, dans la section « Cohérence avec votre profil ». Sans aucune mesure (ZZZZ.TO), la phrase de fin ne parle pas de « ces mesures ».
+
 ## 13. Tests associés
 
 Les tests sont dans `tests/explainability/` (`python3 -m pytest tests/explainability -q`).
@@ -706,8 +780,9 @@ Les tests sont dans `tests/explainability/` (`python3 -m pytest tests/explainabi
 | `test_expl_run.py` | 35 | Bout en bout : 10 demandes représentatives (actif conforme, dépassement, krach, hors univers, exclusion, préférence ESG, prédiction, comparaison, portefeuille) passent sans retrait en 1 tentative et toutes les lignes sont étiquetées ; note au registre ; déterminisme ; chiffres identiques aux mesures du verdict ; statut dit ; hors univers ; refus de prédiction ; scénario étiqueté fictif ; alternatives ; bascule français et anglais ; débutant (définitions, pas de sources) et avancé (sources, base 252) ; hypothèses 2 contre plus ; l'identifiant de profil n'a aucun effet ; limites toujours présentes ; exclusion à valeur inconnue dans les deux langues. |
 | `test_expl_verifier.py` | 16 | `label_content` suit `basis` ; chiffre juste gardé ; valeur inventée, mauvais arrondi, nombre non déclaré (même dans une hypothèse), référence inconnue, date absente du registre, énoncé non étiqueté : retirés ; fait sans preuve rétrogradé, ou retiré s'il contient un chiffre ; brouillon rejeté renvoyé à la rédaction et réparé (appels `[set(), {"data.99"}]`) ; tentatives bornées à 2 ; texte repris tel quel avec date et fenêtre « 2022 ». |
 | `test_expl_tone.py` | 25 | 12 tournures de conseil détectées ; 7 textes neutres ou cités non signalés ; énoncé de conseil retiré quel que soit `basis` ; mention citée gardée ; refus de périmètre qui cite « achète » conservé ; conseil injecté dans un brouillon absent du texte final. |
-| `test_expl_provenance.py` | 32 | 5 phrases déguisées (sans mot interdit) retirées par `unsourced_wording` ; le texte de la demande n'entre pas dans le vocabulaire ; toutes les phrases des gabarits passent (4 demandes × 2 langues × 3 expériences) ; règle des citations ; appel direct sans vocabulaire = contrôles 1 à 6. |
+| `test_expl_provenance.py` | 33 | 5 phrases déguisées (sans mot interdit) retirées par `unsourced_wording` ; le texte de la demande n'entre pas dans le vocabulaire ; toutes les phrases des gabarits passent (4 demandes × 2 langues × 3 expériences) ; règle des citations ; appel direct sans vocabulaire = contrôles 1 à 6. |
 | `test_expl_sensitivity.py` | 10 | Sensibilité citée depuis `stress_window` (références, étiquette, chiffres vérifiés) ; version anglaise et phrase pour débutant ; corrélation vérifiée avec signe conservé ; format de l'unité `corr` ; scénario de portefeuille fictif, poids égaux annoncés comme hypothèse ; version anglaise et phrase pour débutant ; aucun énoncé de portefeuille sans outil ; phrase de plancher ; poids de l'utilisateur jamais décrits comme hypothèse, y compris un 50/50 saisi. |
+| `test_expl_synthesis.py` | 14 | Synthèse juste après le verdict, étiquetée et sourcée ; chaque chiffre déjà présent dans le corps ; une phrase par situation (dans les limites, bloqué, dépassement, alternative conforme, hors univers sans « ces mesures », renvoi au périmètre) ; version anglaise ; pas de synthèse sans verdict ; fait nouveau, synthèse sans preuve et tournure de conseil retirés (jamais rétrogradés) ; synthèse rejetée signalée dans le rapport et absente du texte ; affichée par l'interface en mode résumé. |
 | `test_expl_limits.py` | 7 | `ledger_read` prend le dernier verdict et indexe les références ; registre vide lisible ; hypothèses et limites des outils reprises mot pour mot ; repli non récupéré en incertitude ; outil indisponible en non couvert ; thème sans données en non couvert (substitut étiqueté hypothèse) ; fourchette de fenêtres affichée seulement quand elle est visible. |
 
 Les chemins `filings` et signaux de niveau C ne sont pas couverts par ce dossier. Voir `tests/integration/test_enrichment_integration.py` (section 5.5).
@@ -725,5 +800,7 @@ Chaque point est établi par le code ou par une exécution décrite plus haut.
 7. **Les refus de périmètre qui contiennent un chiffre sont omis** de la section `scope` (`compose.py`), car un chiffre non rattaché serait retiré.
 8. **Montants arrondis à une décimale** : deux montants proches (1,23 et 1,24 milliard) s'affichent pareil ; la valeur exacte reste dans le registre.
 9. **Les fondamentaux ne sont écrits que pour les enregistrements d'enrichissement de statut `ok`** et jamais pour les alternatives (`enrichment("data")` n'est appelée que pour la section `data` des actifs du verdict).
-10. **Chaque appel à `explain` écrit une note au registre.** Rejouer l'explicabilité sur le même registre (exemples 2 et 3) ajoute des notes. La lecture suivante les voit dans `notes`, mais `limits_builder` n'utilise que les codes `feedback_limit_reached`, `tool_unavailable` et `enrichment_failed`.
+11. **La synthèse reste générale pour un avertissement sans dépassement de limite.** Elle renvoie à « Cohérence avec votre profil » au lieu de nommer la raison (donnée manquante, horizon, préférence). Elle ne cite pas non plus les limites de portefeuille ni les corrélations (section 5.9).
+12. **Une synthèse rejetée n'est pas réécrite.** Elle ne repasse pas par la boucle : l'énoncé manque, et le rapport le dit (`removed`, `approved = False`).
+13. **Le texte produit n'est pas relu par un modèle de langage.**uer l'explicabilité sur le même registre (exemples 2 et 3) ajoute des notes. La lecture suivante les voit dans `notes`, mais `limits_builder` n'utilise que les codes `feedback_limit_reached`, `tool_unavailable` et `enrichment_failed`.
 11. **Le texte produit n'est pas relu par un modèle de langage.** L'explication est entièrement déterministe : deux exécutions sur le même registre donnent le même texte (test `test_deterministic`).

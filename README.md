@@ -67,6 +67,7 @@ Principes tenus partout :
 - **Le profil est une donnée, pas du code.** Aucune règle propre à un persona : les limites (volatilité, perte maximale, plafonds par actif et par classe) sont dérivées du niveau de risque et de l'horizon.
 - **Aucun nombre n'est produit par un modèle de langage.** Bedrock ne fait qu'interpréter la demande ; tous les chiffres viennent d'outils déterministes ou de sources officielles, et l'explicabilité les relie à une preuve ou les retire.
 - **Contraintes dures et préférences souples sont distinguées** : une exclusion bloque, une préférence oriente.
+- **Bloquer seulement sur une règle explicite, avertir sur un écart chiffré.** Le mandat demande de vérifier, de signaler les conflits et de rendre les contrôles visibles, sans exiger de blocage. Le statut `bloqué` est réservé à un refus déclaré par l'investisseur (exclusion, controverse documentée sur un thème exclu), à une classe d'actifs que son niveau de risque n'autorise pas (la crypto pour un profil prudent) et à une limite du défi (aucune transaction réelle). Un dépassement de volatilité ou de perte maximale reste un avertissement, chiffré, avec des alternatives. Sauf pour un profil contradictoire, l'analyse complète est toujours affichée. Justification et tests : [`alphaforge/governance/README.md`](alphaforge/governance/README.md), section 7.5.
 - **L'incertitude fait partie du résultat** : limites et incertitudes sont toujours affichées ; les hypothèses de calcul sont dans un panneau repliable, toujours accessible.
 - **Aucune prédiction** : un scénario de portefeuille est un rejeu historique, étiqueté « scénario rétrospectif fictif ».
 
@@ -103,6 +104,8 @@ Avant affichage, chaque énoncé passe par `claim_verifier` (`alphaforge/explain
 4. **provenance** (`provenance.py`) : chaque mot, chaque enchaînement et chaque citation vient d'un gabarit de rédaction ou du registre, sans le texte libre de la demande. C'est une liste blanche : elle attrape une recommandation déguisée, une faute de frappe ou un caractère d'apparence identique, que la liste de mots interdits laisse passer.
 
 Un énoncé fautif est retiré et l'explication est rédigée à nouveau sans lui (2 tentatives au plus). La bannière dit si tout a été vérifié.
+
+**Synthèse** (`alphaforge/explainability/synthesis.py`). Juste après le verdict, quelques phrases étiquetées « Synthèse » relient ce verdict à ses raisons, par exemple : « NVDA dépasse des limites de risque de votre profil : volatilité annualisée de 61,3 % pour une limite de 15,0 % ; perte maximale de 63,5 % pour une limite de 20,0 %. », puis « Ces mesures décrivent le passé et ne prédisent pas l'avenir. La décision revient à l'investisseur. » (Robert, « Évalue NVDA »). Elle constate, elle ne prescrit rien. Elle est rédigée par gabarits après la vérification du corps, puis passe les mêmes contrôles, avec une règle de plus : **aucun fait nouveau**, chaque chiffre doit déjà figurer, avec la même preuve, dans un énoncé vérifié du corps. Un énoncé de synthèse fautif ou sans preuve est retiré, jamais rétrogradé ; sans verdict, il n'y a pas de synthèse. Détail : [`alphaforge/explainability/README.md`](alphaforge/explainability/README.md), section 5.9.
 
 ## Agent d'enrichissement
 

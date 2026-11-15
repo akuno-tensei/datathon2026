@@ -344,6 +344,28 @@ Il n'y a pas de classement par performance ou par risque : le critère est l'app
 
 Le **dernier** verdict du registre fait foi. Dans l'exemple 3, deux verdicts sont écrits : celui sans alternatives, puis celui qui les contient. Les verdicts écrits sont des `GovernanceVerdict.model_dump(mode="json")` : des dictionnaires JSON, lisibles avec `ledger.entries("verdict")[-1].payload`.
 
+### 7.5 Pourquoi bloquer dans certains cas, et avertir dans les autres
+
+Le mandat ne demande pas de bloquer. Il demande à la gouvernance de vérifier que les résultats proposés « respectent les contraintes de l'investisseur et les limites du défi en simulation », de « signaler les conflits ou les informations manquantes » et de « rendre les contrôles visibles » (énoncé du cas, piste « Un agent de gouvernance »). Pour Robert, il demande de relever la tension et d'« éviter d'acquiescer automatiquement ». Le statut `bloqué` est donc un choix de conception de l'équipe, pris dans `Agents.md` (principe 2 : « Une exclusion éthique bloque, alors qu'un intérêt pour l'IA oriente »).
+
+**La règle.** Le système ne bloque que sur une règle explicite, jamais sur un écart chiffré :
+
+| Cas | Statut | Ce qui le justifie |
+|---|---|---|
+| Exclusion stricte du profil (classe, secteur, actif) : `EXCLUDED_*` | `bloqué` | C'est l'investisseur qui a déclaré le refus. « Respecter les contraintes de l'investisseur » veut dire ne pas présenter comme acceptable ce qu'il a exclu. |
+| Controverse documentée par une source de niveau A ou B sur un thème exclu : `EXCLUDED_THEME_CONTROVERSY` | `bloqué` | Même raison, avec une preuve sourcée. Un signal de niveau C n'est qu'un avertissement. |
+| Classe d'actifs dont le plafond est nul au niveau de risque appliqué : `CLASS_NOT_PERMITTED` (la crypto aux niveaux `faible` et `faible_modere`) | `bloqué` | Une limite explicite du profil, dérivée de son niveau de risque, identique pour tous les profils de ce niveau (section 3.3). C'est le cas le plus éloigné du texte du mandat : aucune exclusion de l'utilisateur ne l'impose. Le choix est assumé parce qu'il répond au test de Robert (ne pas acquiescer à une demande incohérente avec le profil), et il reste lisible : le message nomme la classe, le niveau appliqué et le plafond nul. |
+| Demande de transaction réelle : refus de périmètre `transaction` | `bloqué` | Une limite du défi : aucune transaction réelle n'est permise. |
+| Profil contradictoire (même critère préféré et exclu) : `EXCLUSION_PREFERENCE_CONTRADICTION` | arrêt de l'analyse (`profile_invalid`) | Juger avec un profil incohérent n'aurait pas de sens ; l'incohérence est nommée. |
+| Dépassement de volatilité, de perte maximale ou d'un plafond de portefeuille | `avertissement` | Un écart chiffré : la gouvernance le mesure (valeur, limite, rapport, période) et propose des alternatives ; l'investisseur décide. `test_risk_limits_never_block` le vérifie avec une volatilité de 500 %. |
+| Préférence non vérifiable, donnée manquante, signal de niveau C, demande de prédiction ou de conseil | `avertissement` | Une incertitude ou une limite du périmètre, dite explicitement. |
+
+**Ce que `bloqué` ne veut pas dire.** Hors profil contradictoire, l'analyse n'est jamais refusée : les chiffres, les preuves, l'explication et les alternatives sont affichés comme pour un avertissement. `bloqué` dit seulement que, selon une règle explicite, l'idée ne cadre pas avec le profil ou avec les limites du défi. Le système ne recommande rien dans un cas comme dans l'autre.
+
+**Tests qui fixent ce choix** : `test_class_not_permitted_blocks_low_risk_profile` et `test_transaction_request_blocks_even_if_asset_is_conforme` (`tests/governance/test_gov_run.py`), `test_matching_exclusion_blocks` et `test_risk_limits_never_block` (`tests/governance/test_gov_checks.py`), `test_contradictory_profile_stops` (`tests/orchestrator/test_orch_run.py`), `test_documented_controversy_in_a_level_b_source_blocks_a_hard_exclusion` et `test_level_c_signal_never_blocks_on_its_own` (`tests/integration/test_enrichment_integration.py`).
+
+**Pour changer de politique** (par exemple faire de `CLASS_NOT_PERMITTED` un avertissement) : changer la sévérité dans `check_hard_constraints` (`checks.py`) et mettre à jour les tests ci-dessus.
+
 ## 8. Règles liées à l'enrichissement
 
 `apply_enrichment(reasons, profile, ticker, records, cards)` n'est appelé que si le registre contient au moins un enregistrement d'enrichissement (`Governance.__call__`). Pour un actif sans enregistrement, les raisons restent inchangées. Les alternatives sont traitées de la même façon que les actifs demandés.
@@ -673,7 +695,7 @@ Lancer `python3 -m pytest tests/governance -q`, puis `python3 -m pytest tests/in
 
 ## 12. Limites connues
 
-- **Un dépassement de limite est un avertissement, jamais un blocage.** `VOLATILITY_ABOVE_LIMIT`, `DRAWDOWN_ABOVE_LIMIT` et les quatre codes `PORTFOLIO_*` ont la sévérité `warn` dans le code (`check_risk_limits`, `check_portfolio_limits`), et `test_risk_limits_never_block` le vérifie avec une volatilité de 5 (500 %). L'exemple 3 le montre : NVDA à 61,3 % de volatilité pour une limite de 15,0 % reste `avertissement`. Seuls bloquent les exclusions du profil, une classe à plafond nul et, avec enrichissement, une controverse de niveau A ou B sur un thème exclu. C'est un choix de politique : la gouvernance signale l'écart chiffré, l'investisseur décide. Si l'équipe veut bloquer, il faut changer la sévérité dans `checks.py` et les tests qui l'attendent.
+- **Un dépassement de limite est un avertissement, jamais un blocage.** `VOLATILITY_ABOVE_LIMIT`, `DRAWDOWN_ABOVE_LIMIT` et les quatre codes `PORTFOLIO_*` ont la sévérité `warn` dans le code (`check_risk_limits`, `check_portfolio_limits`), et `test_risk_limits_never_block` le vérifie avec une volatilité de 5 (500 %). L'exemple 3 le montre : NVDA à 61,3 % de volatilité pour une limite de 15,0 % reste `avertissement`. Seuls bloquent les exclusions du profil, une classe à plafond nul et, avec enrichissement, une controverse de niveau A ou B sur un thème exclu. C'est un choix de politique, justifié à la section 7.5 : la gouvernance signale l'écart chiffré, l'investisseur décide.
 - **Les limites sont des choix de politique.** Les tables de `config.py` ne sont pas des faits de marché. Elles sont justifiables, pas démontrables.
 - **Le niveau de risque est le seul pilier, l'horizon un seul resserrement.** L'expérience, les objectifs et la devise n'influencent pas les limites. Le resserrement ne fait perdre qu'un niveau, jamais deux, et n'agit pas sur `faible`.
 - **Le temps de récupération se mesure contre `horizon_years_min`.** `horizon_years_max` ne sert qu'au resserrement des limites. L'analyse du repli porte sur la fenêtre la plus longue, pas sur la pire.
