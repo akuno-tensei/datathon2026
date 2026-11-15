@@ -140,7 +140,7 @@ Le script ajoute la racine du projet à `sys.path`, appelle `refresh` (section 1
 
 ### Bandeau supérieur
 
-- Titre, choix de la langue (`fr` ou `en`), sélection du profil, boutons « Ajouter » et « Supprimer », date d'analyse (bornée par `store.first_date` et `store.last_date`) et devise de base (CAD ou USD).
+- Titre, choix de la langue (`fr` ou `en`), sélection du profil, boutons « Ajouter », « Modifier » et « Supprimer », date d'analyse (bornée par `store.first_date` et `store.last_date`) et devise de base (CAD ou USD).
 - Un avertissement de simulation, `st.warning`, toujours visible.
 - Un interrupteur du mode : « Enrichi » (cinq agents) ou « Noyau » (quatre agents). En mode enrichi, la ligne de couverture montre ce que `enrichment_coverage` renvoie.
 - Le panneau « Lexique ».
@@ -151,6 +151,7 @@ Le script ajoute la racine du projet à `sys.path`, appelle `refresh` (section 1
 Il s'ouvre sous le bandeau, hors des onglets, donc il est accessible depuis chaque vue.
 
 - **Ajouter** : formulaire vierge ou copie du profil actif (identifiant et nom vidés). Il permet de choisir langue, expérience, devise, tolérance au risque, horizon, objectifs, préférences pondérées et exclusions. Un aperçu en direct montre la fiche, les incohérences et les limites dérivées. L'enregistrement est désactivé si le profil est invalide, si l'identifiant est vide ou différent de son `slugify`, si l'identifiant est celui d'un exemple, ou si un profil créé existe déjà sans confirmation de remplacement. Après l'enregistrement, le panneau se ferme et le nouveau profil devient actif.
+- **Modifier** : actif seulement si le profil sélectionné est un profil créé (sinon désactivé, avec une info-bulle qui le dit). Il ouvre le même formulaire, rempli par `forms.form_state_for_edit` (nom, identifiant, préférences et exclusions conservés, motifs écrits compris). L'identifiant est figé ; enregistrer remplace le profil (`save_profile(..., overwrite=True)`) sans case de confirmation, puisque « Modifier » est déjà une demande explicite. Le profil reste actif et le message rappelle de relancer l'analyse.
 - **Supprimer** : liste seulement les profils créés, exige une case de confirmation, puis appelle `delete_profile`. Si le profil actif disparaît, la sélection retombe sur `robert` ou sur le premier profil.
 
 ### Onglets

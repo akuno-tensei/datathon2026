@@ -621,3 +621,46 @@ def test_the_profile_comparison_ends_with_a_plain_language_conclusion(app):
     last = max(i for i, m in enumerate(md) if m.startswith("### 🧭 En résumé"))
     assert md[last + 1] == "- Même demande, mêmes données : seul le profil change."
     assert any(m.startswith("- La différence vient des limites") or m.startswith("- Les deux profils aboutissent") for m in md[last:])
+
+
+# ---- modifier un profil créé -------------------------------------------------
+def test_edit_is_disabled_for_example_profiles(app):
+    btn = app.button(key="pf_edit_btn")
+    assert btn.label == "✏️ Modifier" and btn.disabled and "profils d'exemple sont protégés" in btn.help  # Robert est actif
+
+
+def test_a_created_profile_can_be_edited_keeps_its_id_and_drives_the_next_verdict(app):
+    _create(app, "Modifiable")  # risque « modéré » par défaut : la crypto est permise
+    assert app.selectbox(key="profile_sel").value == "modifiable" and not app.button(key="pf_edit_btn").disabled
+    app.text_area(key="req_box").set_value("Évalue BTC-USD")
+    next(b for b in app.button if b.label == "Envoyer").click().run()
+    assert app.session_state["analysis"].verdict["status"] != "bloqué"
+    app.button(key="pf_edit_btn").click().run()
+    assert not app.exception, app.exception
+    assert app.text_input(key="pf_name").value == "Modifiable" and app.text_input(key="pf_id").value == "modifiable"
+    assert app.text_input(key="pf_id").disabled and app.select_slider(key="pf_risk").value == "modere"  # le formulaire reprend le profil
+    assert not [c for c in app.checkbox if c.key == "pf_overwrite"]  # « Modifier » vaut confirmation
+    app.select_slider(key="pf_risk").set_value("faible").run()
+    app.button(key="pf_save_btn").click().run()
+    assert not app.exception, app.exception
+    assert any("Profil modifié : modifiable" in s.value for s in app.success)
+    assert '"faible"' in (app.user_dir / "modifiable.json").read_text(encoding="utf-8")
+    assert [f.name for f in app.user_dir.glob("*.json")] == ["modifiable.json"]  # remplacé, pas dupliqué
+    assert app.selectbox(key="profile_sel").value == "modifiable" and "pf_name" not in _keys(app)  # actif, panneau fermé
+    next(b for b in app.button if b.label == "Envoyer").click().run()
+    assert app.session_state["analysis"].verdict["status"] == "bloqué"  # la crypto n'est plus permise au niveau « faible »
+
+
+def test_editing_keeps_preferences_and_exclusions(app):
+    _fill(app, "Avec critères")
+    _add_pref(app, "sector", "Energy", 0.7)
+    app.button(key="pf_save_btn").click().run()
+    app.button(key="pf_edit_btn").click().run()
+    assert app.session_state["pf_prefs"] == [{"kind": "sector", "value": "Energy", "weight": 0.7}]
+    app.button(key="pf_close_btn").click().run()
+    assert "pf_name" not in _keys(app) and '"Energy"' in (app.user_dir / "avec_criteres.json").read_text(encoding="utf-8")
+
+
+def test_edit_button_is_translated(app):
+    app.radio(key="lang").set_value("en").run()
+    assert app.button(key="pf_edit_btn").label == "✏️ Edit"

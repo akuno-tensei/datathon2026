@@ -68,6 +68,16 @@ def _open_add() -> None:
     S.pf_mode = "add"
 
 
+def _open_edit() -> None:
+    """Rappel du bouton « Modifier » : ouvre le formulaire rempli avec le profil sélectionné (profil créé seulement)."""
+    pid = S.get("profile_sel")
+    if F.profile_origin(pid) != "créé":
+        return
+    _fill_form(forms.form_state_for_edit(F.get_profile(pid).model_dump(mode="json")))
+    S.pf_edit_id = pid
+    S.pf_mode = "edit"
+
+
 def _open_delete() -> None:
     S.pf_del_ok = False
     S.pf_mode = "delete"
@@ -81,9 +91,11 @@ def _close_panel() -> None:
 profiles = F.list_profiles()
 ids = [p.profile_id for p in profiles]
 created = [p for p in profiles if F.profile_origin(p.profile_id) == "créé"]  # seuls ceux-ci se suppriment ; les exemples sont protégés
-S.setdefault("pf_mode", None)  # None | "add" | "delete" : le panneau de gestion n'apparaît que sur demande
+S.setdefault("pf_mode", None)  # None | "add" | "edit" | "delete" : le panneau de gestion n'apparaît que sur demande
 if S.pf_mode == "delete" and not created:
     S.pf_mode = None
+if S.pf_mode == "edit" and S.get("pf_edit_id") not in {p.profile_id for p in created}:
+    S.pf_mode = None  # le profil en cours de modification n'existe plus
 top = st.columns([2.2, 2.6, 1.6, 1.1, 1.4])
 with top[0]:
     st.markdown("### ⚖ AlphaForge AI")
@@ -96,8 +108,11 @@ if S.get("profile_sel") not in ids:
 with top[1]:
     pid = st.selectbox(t("profile", lang), ids, key="profile_sel",
                        format_func=lambda i: next(p.display_name for p in profiles if p.profile_id == i))
-    pb1, pb2 = st.columns(2)
+    pb1, pb3, pb2 = st.columns(3)
     pb1.button(t("np_add_btn", lang), key="pf_add_btn", on_click=_open_add, help=t("np_add_help", lang), width="stretch")
+    editable = F.profile_origin(pid) == "créé"
+    pb3.button(t("np_edit_btn", lang), key="pf_edit_btn", on_click=_open_edit, disabled=not editable, width="stretch",
+               help=t("np_edit_help" if editable else "np_edit_none", lang))
     pb2.button(t("np_del_open_btn", lang), key="pf_del_open_btn", on_click=_open_delete, disabled=not created, width="stretch",
                help=t("np_del_open_help" if created else "np_delete_none", lang))
 profile = F.get_profile(pid)
@@ -628,16 +643,23 @@ def _delete_profile(profile_id: str) -> None:
 if "pf_name" not in S:
     _fill_form(dict(forms.BLANK_PROFILE, language=lang))  # départ : formulaire vierge, pas une copie du profil actif
 
-def render_add_panel() -> None:
-    st.markdown(f"### {t('profile_editor', lang)}")
-    st.caption(t("np_intro", lang))
-    b1, b2 = st.columns(2)
-    b1.button(t("np_blank", lang), key="pf_blank_btn", on_click=_fill_form, args=(dict(forms.BLANK_PROFILE, language=lang),))
-    b2.button(t("np_copy", lang), key="pf_copy_btn", on_click=_fill_form,
-              args=(forms.form_state_from_profile(profile.model_dump(mode="json")),))
+def render_add_panel(editing: bool = False) -> None:
+    edit_id = S.get("pf_edit_id") if editing else None
+    if editing:
+        name = next((p.display_name for p in created if p.profile_id == edit_id), edit_id)
+        st.markdown(f"### {t('np_edit_title', lang, name=name)}")
+        st.caption(t("np_edit_intro", lang))
+        S.pf_id = edit_id  # identifiant figé : modifier remplace ce profil, rien d'autre
+    else:
+        st.markdown(f"### {t('profile_editor', lang)}")
+        st.caption(t("np_intro", lang))
+        b1, b2 = st.columns(2)
+        b1.button(t("np_blank", lang), key="pf_blank_btn", on_click=_fill_form, args=(dict(forms.BLANK_PROFILE, language=lang),))
+        b2.button(t("np_copy", lang), key="pf_copy_btn", on_click=_fill_form,
+                  args=(forms.form_state_from_profile(profile.model_dump(mode="json")),))
     c1, c2 = st.columns(2)
     c1.text_input(t("np_name", lang), key="pf_name")
-    c2.text_input(t("np_id", lang), key="pf_id", help=t("np_id_help", lang))
+    c2.text_input(t("np_id", lang), key="pf_id", disabled=editing, help=t("np_edit_id_locked" if editing else "np_id_help", lang))
     c3, c4, c5 = st.columns(3)
     c3.selectbox(t("language", lang), ["fr", "en"], key="pf_lang")
     c4.selectbox(t("experience", lang), ["debutant", "intermediaire", "avance"], key="pf_exp", format_func=lambda x: human(x, lang))
@@ -692,6 +714,8 @@ def render_add_panel() -> None:
         origin = F.profile_origin(new_id) if new_id else None
         if origin == "exemple":
             can_save, problem = False, t("np_exists_example", lang, id=new_id)
+        elif origin == "créé" and editing and new_id == edit_id:
+            pass  # modification demandée explicitement avec « Modifier » : pas de seconde confirmation
         elif origin == "créé":
             S.setdefault("pf_overwrite", False)
             st.checkbox(t("np_overwrite", lang, id=new_id), key="pf_overwrite")
@@ -704,10 +728,10 @@ def render_add_panel() -> None:
     if problem:
         st.warning("⚠ " + problem)
     if st.button(t("save", lang), type="primary", key="pf_save_btn", disabled=not can_save):
-        saved = F.save_profile(data, overwrite=bool(S.get("pf_overwrite")))
+        saved = F.save_profile(data, overwrite=editing or bool(S.get("pf_overwrite")))
         S.pending_profile = saved.profile_id  # il devient le profil actif
-        S.pf_mode = None  # le panneau se ferme : le profil est créé et actif
-        S.pf_flash = t("saved", lang, id=saved.profile_id)
+        S.pf_mode = None  # le panneau se ferme : le profil est créé (ou modifié) et actif
+        S.pf_flash = t("edited" if editing else "saved", lang, id=saved.profile_id)
         st.rerun()
     if p_new is not None:
         st.markdown(f"#### {t('np_preview', lang)}")  # aperçu en direct : fiche, incohérences et limites dérivées
@@ -729,7 +753,10 @@ if profile_box is not None:
         head, close = st.columns([8, 1.2], vertical_alignment="center")
         head.markdown(f"**👤 {t('np_manage', lang)}**")
         close.button(t("np_close", lang), key="pf_close_btn", on_click=_close_panel, width="stretch")
-        render_add_panel() if S.pf_mode == "add" else render_delete_panel()
+        if S.pf_mode == "delete":
+            render_delete_panel()
+        else:
+            render_add_panel(editing=S.pf_mode == "edit")
 
 with tab_src:
     a = S.analysis

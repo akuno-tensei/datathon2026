@@ -394,3 +394,19 @@ def test_comparison_follows_the_enrichment_switch(forge, prof):
     off = forge.compare("Évalue HIGH", "un", "deux", enrichment=False)
     assert not off.left.enrichment_enabled and not off.right.enrichment_enabled
     assert forge.compare("Évalue HIGH", "un", "deux").left.enrichment_enabled
+
+
+def test_edit_form_keeps_name_id_and_written_reasons(forge, prof):
+    from alphaforge.app.forms import build_profile_dict, form_state_for_edit
+
+    p = forge.save_profile(prof(profile_id="motive", display_name="Motivé",
+                                soft_preferences=[{"kind": "sector", "value": "Tech", "weight": 0.6, "reason": "intérêt déclaré"}]))
+    st = form_state_for_edit(p.model_dump(mode="json"))
+    assert st["profile_id"] == "motive" and st["display_name"] == "Motivé"
+    assert st["soft_preferences"] == [{"kind": "sector", "value": "Tech", "weight": 0.6, "reason": "intérêt déclaré"}]
+    d = build_profile_dict(profile_id=st["profile_id"], display_name=st["display_name"], language=st["language"],
+                           experience=st["experience"], risk_tolerance="eleve", base_currency=st["base_currency"],
+                           horizon_years_min=st["horizon_years_min"], horizon_years_max=st["horizon_years_max"],
+                           objectives=st["objectives"], preferences=st["soft_preferences"], exclusions=st["hard_exclusions"])
+    saved = forge.save_profile(d, overwrite=True)
+    assert saved.risk_tolerance == "eleve" and saved.soft_preferences[0].reason == "intérêt déclaré"

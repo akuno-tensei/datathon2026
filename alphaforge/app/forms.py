@@ -128,6 +128,15 @@ def form_state_from_profile(profile: Dict[str, Any]) -> Dict[str, Any]:
     return st
 
 
+def form_state_for_edit(profile: Dict[str, Any]) -> Dict[str, Any]:
+    """Valeurs du formulaire pour modifier un profil créé : comme une copie, mais le nom et l'identifiant sont conservés."""
+    st = form_state_from_profile(profile)
+    st.update(display_name=profile.get("display_name") or "", profile_id=profile["profile_id"])
+    # Un motif (`reason`) écrit dans le profil est conservé ; un motif vide n'encombre pas les lignes du formulaire.
+    st["soft_preferences"] = [{k: v for k, v in x.items() if not (k == "reason" and v is None)} for x in st["soft_preferences"]]
+    return st
+
+
 def criterion_options(assets: List[Dict[str, Any]], themes: List[str]) -> Dict[str, List[str]]:
     """Valeurs que les données savent vérifier, par type de critère. Un thème libre reste possible : il sera signalé non vérifiable."""
     return {
