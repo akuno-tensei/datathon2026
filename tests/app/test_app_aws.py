@@ -107,3 +107,11 @@ def test_the_snapshot_never_contains_the_sec_identification():
     for path in pipeline.ENRICHMENT_SNAPSHOT_DIR.rglob("*.json"):
         text = path.read_text(encoding="utf-8")
         assert "@" not in text.replace("sec.gov", ""), path  # aucun courriel : seulement des données publiques de la SEC
+
+
+def test_root_requirements_pin_the_same_versions_as_the_deployed_image():
+    from pathlib import Path
+
+    root = Path(pipeline.__file__).resolve().parents[2]
+    pins = lambda p: sorted(l.strip() for l in p.read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#"))
+    assert pins(root / "requirements.txt") == pins(root / "deploy" / "requirements.lock.txt")

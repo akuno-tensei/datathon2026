@@ -6,12 +6,14 @@ Analyste agentique d'aide à la décision d'investissement, **en simulation**. E
 
 Projet du Datathon 2026 (PolyFinances), cas AlphaForge AI. Les documents de référence sont `Datathon - Case Officiel 2026 FR.pdf` et `Agents.md` (architecture, avec l'état de l'implémentation en fin de document).
 
-**Démo hébergée** (compte AWS de l'événement, actif pendant l'évaluation) : https://d3rh9mi9cqh6mn.cloudfront.net/
+**Démo hébergée** (compte AWS de l'événement, actif jusqu'au lundi 16 novembre 2026 à 13 h 59) : https://d3rh9mi9cqh6mn.cloudfront.net/
+
+Après la fermeture du compte, l'application reste utilisable en local et sur un hébergement sans AWS : voir [Après l'événement](#après-lévénement).
 
 ## Démarrage rapide
 
 ```bash
-pip install -r alphaforge/requirements.txt          # Python 3.9 ou plus
+pip install -r requirements.txt pytest              # versions exactes, testées sous Python 3.9 et 3.12
 streamlit run alphaforge/app/streamlit_app.py       # interface, http://localhost:8501
 python3 -m pytest                                    # toute la suite de tests (aussi lancée à chaque envoi par la CI)
 ```
@@ -205,6 +207,14 @@ Le compte AWS de l'événement sera supprimé, avec la démo hébergée, Bedrock
 | Archive des registres | Absente ; l'export Markdown de l'interface reste disponible. |
 | SEC EDGAR (dépôts, fondamentaux) | Gratuit et indépendant d'AWS : en direct avec une identification SEC, sinon l'instantané versionné. |
 | Tests et CI | Inchangés : ils n'utilisent jamais AWS. |
+
+**Héberger sans AWS (Streamlit Community Cloud, gratuit)** : l'application tourne telle quelle, avec l'interprétation par règles et l'instantané SEC.
+1. Sur https://share.streamlit.io, se connecter avec le compte GitHub qui a accès au dépôt, puis « Create app ».
+2. Dépôt `akuno-tensei/datathon2026`, branche `main`, fichier `alphaforge/app/streamlit_app.py`.
+3. « Advanced settings » : Python 3.12 (suite complète vérifiée sous 3.12). Les dépendances viennent de `requirements.txt` à la racine.
+4. Facultatif, pour la SEC en direct : dans « Secrets », ajouter `ALPHAFORGE_SEC_USER_AGENT = "Nom de l'équipe contact@exemple.org"`.
+
+Différence connue sans Bedrock : une question comme « je devrais en acheter ? » est refusée comme demande de conseil personnalisé (avertissement), et non comme demande de transaction (bloqué) ; les deux refusent de conseiller.
 
 **Redéployer sur un autre compte AWS** : `python3 deploy/deploy.py --bucket <bucket>` recrée tout (modèles CloudFormation dans `deploy/`) ; ajouter `ALPHAFORGE_SEC_USER_AGENT="Nom contact@exemple.org"` devant la commande pour brancher la SEC. Coût indicatif, non vérifié sur la grille tarifaire : quelques dollars par jour pour Fargate et l'équilibreur de charge, plus une fraction de cent par demande Bedrock. `--delete` supprime les deux piles.
 
