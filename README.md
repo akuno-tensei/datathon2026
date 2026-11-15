@@ -41,8 +41,17 @@ Ce README donne la vue d'ensemble. Chaque partie a sa propre documentation, écr
 | Interface et assemblage (pipeline, vues, Streamlit, libellés, archive S3) | [`alphaforge/app/README.md`](alphaforge/app/README.md) |
 | Déploiement AWS, image, banc d'essai Bedrock, CI | [`deploy/README.md`](deploy/README.md) |
 | Intégration AWS : schémas, justification, bonnes pratiques, preuves observables | [`docs/architecture-aws.md`](docs/architecture-aws.md) |
+| Validation des résultats et des explications : recalcul indépendant, reproductibilité, banc d'essai, limites | [`docs/validation.md`](docs/validation.md) |
 | Suite de tests (lancement, doublures, contenu de chaque dossier) | [`tests/README.md`](tests/README.md) |
 | Données de départ et instantané SEC | [`alphaforge_starter/README.md`](alphaforge_starter/README.md), [`alphaforge_starter/enrichment_snapshot/SOURCE.md`](alphaforge_starter/enrichment_snapshot/SOURCE.md) |
+
+## Valeur pour une institution financière
+
+L'argument central est la **traçabilité** : chaque conclusion se rejoue à l'identique et se rattache à ses preuves.
+- **Auditabilité.** Chaque chiffre affiché porte un identifiant de preuve, l'empreinte des données lues et la commande qui le recalcule. Le registre complet d'une analyse a une empreinte SHA-256 stable : la même analyse redonne la même empreinte ([`docs/validation.md`](docs/validation.md)). Un contrôleur peut donc vérifier après coup ce qui a été dit, sur quelles données et selon quelles règles.
+- **Conformité.** Les refus sont explicites et codés (transaction, prédiction, conseil personnalisé, exclusion déclarée) ; aucun nombre n'est produit par un modèle de langage ; aucune donnée postérieure à la date d'analyse n'est lue. Les seuils de risque sont des paramètres de politique nommés, regroupés dans un seul fichier (`alphaforge/governance/config.py`) que la conformité peut relire, sans règle propre à un client.
+- **Confiance du client.** Le client voit pourquoi une idée est jugée cohérente ou non avec son profil, avec les limites et les incertitudes, dans sa langue et en termes simples. La décision lui revient, et l'outil le dit.
+- **Usage visé.** Préparer ou documenter une conversation entre un conseiller et un client, ou servir de premier filtre dans un parcours en libre-service, en simulation. L'outil n'exécute rien.
 
 ## Architecture : un noyau de quatre agents, un agent d'enrichissement, un registre de preuves
 
@@ -126,6 +135,20 @@ Il s'active quand un **besoin de donnée** dépasse le jeu de départ : un thèm
 
 **Règles de blocage.** Une controverse ne bloque une exclusion stricte que si elle vient d'une source de niveau A ou B ; un signal de niveau C n'est qu'un avertissement.
 
+**À quoi servent les fondamentaux s'ils ne changent pas le verdict ?** Ils donnent le contexte que les prix ne montrent pas, pour que l'investisseur juge lui-même. Pour Robert (objectif de préservation du capital), la dette à long terme d'une entreprise se lit à côté de son flux de trésorerie d'exploitation ; pour un profil de croissance, le chiffre d'affaires et le bénéfice net. Aucun seuil n'est défini sur ces montants, et en inventer un serait un conseil déguisé : c'est pourquoi ils n'entrent pas dans le verdict. Ils sont datés, sourcés au niveau A et reproductibles comme les autres preuves.
+
+### Critères non financiers (Mateo)
+
+Mateo tient à l'ESG et veut éviter les controverses. Le jeu de départ ne contient aucune cote ESG, et aucune source publique gratuite et documentée n'a été branchée. L'outil traite ce cas en disant ce qu'il ne sait pas, plutôt qu'en devinant :
+
+| Critère | Ce que fait l'outil | Effet |
+|---|---|---|
+| Exclusion d'un secteur, d'une classe d'actifs ou d'un titre | Comparée à la colonne `sector` ou `asset_class` du jeu de départ, ou au symbole | **Bloqué** (`EXCLUDED_SECTOR`, `EXCLUDED_ASSET_CLASS`, `EXCLUDED_TICKER`) : calculable, donc bloquant légitime |
+| Préférence ESG | Aucune donnée : « l'alignement n'est pas vérifié » (`THEME_DATA_MISSING`) ; le FNB ESGV est le substitut déclaré, avec sa limite : c'est un fonds filtré par son émetteur, pas une cote | Avertissement, jamais une conclusion |
+| Éviter les controverses | Aucune source : lacune nommée dans l'enrichissement et dans les limites | Avertissement ; le blocage n'existe que pour une controverse de niveau A ou B |
+
+Exemple vérifié : Mateo tel que livré n'exclut aucun secteur, donc XOM sort en avertissement (volatilité au-dessus de sa limite, données ESG absentes). Un profil créé par copie de Mateo avec l'exclusion du secteur « Energy » bloque XOM et CNQ.TO (`EXCLUDED_SECTOR`). Le profil livré n'est pas modifié : le cas ne lui attribue pas cette exclusion.
+
 ## Décisions de calcul
 
 | Sujet | Règle |
@@ -162,7 +185,8 @@ Les profils créés dans l'interface sont enregistrés dans `alphaforge/app/prof
 - **Bilingue** (français, anglais) : chaque texte visible a sa version dans les deux langues, vérifiée par un test.
 - **Lisible par un débutant** : les codes internes sont traduits à l'affichage seulement (« faible_modere » devient « Faible à modéré », « fenêtre « 2022 » » devient « en 2022 », les dates sont écrites « 12 nov. 2021 »). Les valeurs enregistrées et les messages des agents ne changent pas, et un test vérifie que les nombres restent identiques. Le panneau **📖 Lexique** explique 16 termes avec un exemple.
 - **Trace en direct** : chaque étape des agents s'affiche pendant l'analyse, puis reste consultable.
-- **Aucune couleur seule** : chaque statut est aussi écrit, et chaque barre dit la part de la limite utilisée.
+- **Décisions des agents** : en tête de la trace, les choix faits pendant l'analyse et leur raison. Exemple réel (Robert, « Évalue NVDA ») : « besoin de données détecté (fondamentaux · NVDA) → l'enrichissement est sollicité » ; « NVDA (avertissement) → demande à l'analyste de chiffrer des alternatives cohérentes avec le profil, à titre de scénario : AAPL, CSU.TO, MSFT, SHOP.TO (itération 1/2) » ; « 69 énoncé(s) vérifié(s), aucun retiré ». Le bloc dit aussi quand l'enrichissement n'est pas sollicité, quand un signal hors périmètre est transmis à la gouvernance, et quand le vérificateur retire des énoncés et fait rédiger à nouveau l'explication.
+- **Aucune couleur seule** : chaque statut est aussi écrit, et chaque barre dit la part de la limite utilisée et la marge en points (« marge : 3,7 points sous la limite »). Une note sous le verdict rappelle que les limites sont des choix de politique documentés, donc des hypothèses.
 
 ## Tests
 
@@ -232,8 +256,8 @@ Différence connue sans Bedrock : une question comme « je devrais en acheter ? 
 
 ## Ce qui n'est pas couvert
 
-- **Cotes ESG, controverses, nouvelles, composition des FNB** : aucune source branchée. Ces besoins apparaissent comme des lacunes nommées. Les préférences ESG de Mateo ne sont donc pas vérifiables par des données ; la gouvernance le signale et nomme le substitut déclaré (le FNB filtré ESGV).
-- **Titres canadiens** : pas de dépôts ni de fondamentaux (SEDAR+ n'a pas d'API publique documentée).
+- **Cotes ESG, controverses, nouvelles, composition des FNB** : aucune source branchée. Ces besoins apparaissent comme des lacunes nommées. Les préférences ESG de Mateo ne sont donc pas vérifiables par des données ; la gouvernance le signale et nomme le substitut déclaré (le FNB filtré ESGV). Conséquence : la règle qui bloque sur une controverse documentée (niveau A ou B) est en place et testée, mais ne peut pas se déclencher tant qu'aucune source de controverses n'est branchée. Voir [Critères non financiers (Mateo)](#critères-non-financiers-mateo).
+- **Titres canadiens** : pas de dépôts ni de fondamentaux (SEDAR+ n'a pas d'API publique documentée). Extension prévue : un fournisseur SEDAR+ s'ajouterait comme une source de plus, sans changer les agents (même contrat de fournisseur que SEC EDGAR).
 - **Fondamentaux dans les calculs** : l'analyste ne les utilise pas (aucun ratio, aucun seuil) ; ils restent un contexte affiché.
 - **Transparence des FNB** : sans la composition des fonds, un FNB est traité comme une position unique.
 - **Actifs hors univers** : signalés comme tels, sans collecte de leurs prix.

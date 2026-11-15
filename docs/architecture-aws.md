@@ -83,8 +83,14 @@ désigne toujours le même code.
   Ce qui est perdu : l'adresse CloudFront, l'interprétation par Bedrock (remplacée par les règles, 30/36 au banc d'essai
   contre 108/108), l'archive S3 et les archives déjà écrites, et la console comme preuve. Ce qui reste : tous les agents,
   calculs, verdicts, explications et profils. Détail et vérification sans AWS : [README, « Après l'événement »](../README.md#après-lévénement).
-- **Pas de limite de requêtes.** L'adresse est publique, sans AWS WAF. Amélioration : une règle de limitation de débit WAF
-  devant CloudFront.
+- **Pas de limite de requêtes ni d'accès protégé.** L'adresse est publique, sans AWS WAF ni authentification : n'importe
+  quel visiteur peut déclencher un appel Bedrock. Chaque analyse fait un appel au modèle, limité à 400 jetons de
+  réponse, et une seule tâche Fargate traite les demandes ; mais aucun plafond global n'est fixé. Améliorations : une règle de limitation
+  de débit WAF devant CloudFront, une authentification (Amazon Cognito) pour un usage réel, et une alerte AWS Budgets sur
+  le compte.
+- **Données des profils dans l'archive.** Le registre archivé dans S3 contient le profil utilisé, y compris le nom affiché
+  et les raisons saisies en texte libre pour un profil créé dans l'interface. Les profils doivent rester fictifs : n'y
+  saisir aucune donnée personnelle réelle. Le bucket est privé, chiffré, et les archives expirent après 60 jours.
 - **Pas d'alarme.** Les journaux et les métriques du conteneur existent (CloudWatch, Container Insights), mais aucune alarme
   n'est définie. Amélioration : une alarme sur l'état de santé de la cible et sur les erreurs Bedrock.
 - **HTTP entre CloudFront et l'équilibreur.** Le visiteur est toujours en HTTPS ; le dernier tronçon, interne à AWS, est en

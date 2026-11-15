@@ -212,6 +212,8 @@ def render_verdict(a: Analysis, key: str) -> None:
     b = views.status_badge(v["status"], lang)
     st.markdown(f"## {b.icon} {b.label}")
     measures = views.verdict_measures(a, lang)
+    if measures:
+        st.caption("ℹ " + t("limits_policy", lang))
     for asset in v["assets"] + v.get("alternatives", []):
         ab = views.status_badge(asset["status"], lang)
         alt = f" — {t('alternative_for', lang)} {', '.join(asset['alternative_for'])}" if asset.get("alternative_for") else ""
@@ -222,7 +224,8 @@ def render_verdict(a: Analysis, key: str) -> None:
                 c1.markdown(f"{m.icon} **{m.label}** : {pct(m.value, lang)} — {t('limit', lang)} {pct(m.limit, lang)}"
                             f" ({t('ok', lang) if m.ok else t('ko', lang)})")
                 used = m.value / m.limit if m.limit else None
-                c2.progress(m.ratio, text=t("of_limit", lang, p=pct(used, lang)) if m.ok or used is None else t("over_limit", lang, p=pct(used, lang)))
+                bar = t("of_limit", lang, p=pct(used, lang)) if m.ok or used is None else t("over_limit", lang, p=pct(used, lang))
+                c2.progress(m.ratio, text=bar + (f" · {views.margin_points(m.value, m.limit, lang)}" if m.limit else ""))
                 with c3:
                     evidence_button(m.evidence_id, f"{key}-m-{asset['ticker']}-{i}")
                 st.caption(humanize_text(f"{t('worst_window', lang)} : {window_name(m.window, lang)} · {m.basis} · {m.origin}", lang))
@@ -424,9 +427,12 @@ def render_limits(a: Analysis, key: str) -> None:
 
 def render_trace(a: Analysis, key: str) -> None:
     st.markdown(f"### {t('trace_title', lang)}")
-    n = views.feedback_iterations(a)
-    for k in range(1, n + 1):
-        st.caption("🔁 " + t("loop", lang, k=k, n=2))
+    decisions = views.agent_decisions(a, lang)
+    if decisions:  # les choix des agents d'abord, puis la chronologie complète
+        with st.container(border=True):
+            st.markdown(f"**🧠 {t('decisions_title', lang)}**")
+            for d in decisions:
+                st.markdown(f"- {humanize_text(d, lang)}")
     for i, s in enumerate(views.agent_trace(a, lang)):
         label = f"{s.icon} {s.agent_label} · {humanize_text(s.text, lang)}" + ("  🔁" if s.detail.get("feedback") else "")
         with st.expander(label, expanded=False):

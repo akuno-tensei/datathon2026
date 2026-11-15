@@ -106,6 +106,77 @@ def feedback_iterations(analysis: Analysis) -> int:
                 if str(e.payload.get("step_id", "")).startswith("fb")})
 
 
+def agent_decisions(analysis: Analysis, lang: str) -> List[str]:
+    """Les choix faits par les agents pendant l'analyse, lus dans le registre et le rapport de vérification.
+
+    Ne montre que ce qui a été décidé et pourquoi : solliciter ou non l'enrichissement, transmettre un signal hors
+    périmètre, demander des alternatives, rédiger à nouveau l'explication. Rien n'est déduit au-delà du registre.
+    """
+    from ..explainability.config import ExplainConfig
+    from ..orchestrator.orchestrator import MAX_FEEDBACK_ITERATIONS
+
+    def need(kind: str) -> str:
+        label = t("need_" + kind, lang)
+        return kind if label == "need_" + kind else label
+
+    ledger = analysis.result.ledger
+    out: List[str] = []
+    req = analysis.result.request
+    flags = list(getattr(req, "scope_flags", []) or []) if req else []
+    if flags:
+        out.append(t("dec_scope", lang, flags=", ".join(t("flag_" + f, lang) for f in flags)))
+    notes = [e.payload for e in ledger.entries("note")]
+    detected = [n for n in notes if n.get("code") == "needs_detected"]
+    if not analysis.enrichment_enabled:
+        out.append(t("dec_enr_off", lang))
+    elif req is not None and analysis.verdict is not None:
+        if not detected:
+            out.append(t("dec_enr_idle", lang))
+        for n in detected:
+            gaps = n.get("gaps", [])
+            fill = [g for g in gaps if g.get("fillable")]
+            if fill:
+                out.append(t("dec_enr_on", lang, needs=", ".join(f"{need(g['kind'])} · {g['ticker']}" for g in fill)))
+    verdicts = [e.payload for e in ledger.entries("verdict")]
+    steps = [e.payload for e in ledger.entries("step")]
+    n_iter = feedback_iterations(analysis)
+    for k in range(1, n_iter + 1):
+        before = verdicts[k - 1] if len(verdicts) >= k else {}
+        trig = [f"{a['ticker']} ({t('status_' + a['status'], lang).lower()})" for a in before.get("assets", []) if a.get("status") != "conforme"]
+        alts = list(dict.fromkeys(s["arguments"].get("ticker") for s in steps
+                                  if str(s.get("step_id", "")).startswith(f"fb{k}.") and s.get("arguments", {}).get("ticker")))
+        out.append(t("dec_alt", lang, trig=", ".join(trig) or "—", alts=", ".join(alts) or "—", k=k, n=MAX_FEEDBACK_ITERATIONS))
+    if verdicts and not n_iter:
+        out.append(t("dec_alt_none_ok" if verdicts[-1].get("status") == "conforme" else "dec_alt_none", lang))
+    if analysis.enrichment_enabled:  # après la gouvernance : relance pour les alternatives, puis bilan des lacunes
+        if any(n.get("code") == "needs_relaunched" for n in notes):
+            out.append(t("dec_enr_relaunch", lang))
+        # lacunes : entrées d'enrichissement écrites au registre sans donnée (source absente ou sans réponse)
+        n_gaps = len([e for e in ledger.entries("enrichment") if e.payload.get("status") != "ok"])
+        if n_gaps:
+            out.append(t("dec_enr_gaps", lang, n=n_gaps))
+    if analysis.explanation is not None:
+        rep = analysis.explanation.report
+        if rep.removed:
+            out.append(t("dec_expl_removed", lang, n=len(rep.removed)) + (
+                t("dec_expl_redraft", lang, k=rep.attempts, n=ExplainConfig().max_attempts) if rep.attempts > 1 else "") + ".")
+        else:
+            out.append(t("dec_expl_clean", lang, n=rep.verified))
+    return out
+
+
+def margin_points(value: float, limit: float, lang: str) -> str:
+    """Distance entre une mesure et sa limite, en points de pourcentage, avec le sens écrit. Affichage seulement."""
+    d = abs(limit - value) * 100
+    s = f"{d:.1f}"
+    if lang == "fr":
+        s = s.replace(".", ",")
+        unit = "point" if d < 2 else "points"
+    else:
+        unit = "point" if s == "1.0" else "points"
+    return t("margin_under" if value <= limit else "margin_over", lang, d=s, unit=unit)
+
+
 @dataclass
 class MeasureBar:
     label: str
