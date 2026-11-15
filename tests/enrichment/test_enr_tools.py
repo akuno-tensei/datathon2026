@@ -18,14 +18,40 @@ from helpers_enr import AS_OF, FakeProvider, esg_item, failing, news_item, raw
 
 
 def test_profile_themes_trigger_needs_without_persona_logic(store, mateo, parse):
-    report = detect_needs(mateo, parse("Évalue NVDA"), store, AS_OF)
+    report = detect_needs(mateo, parse("Évalue NVDA"), store, AS_OF, auto_context=False)  # thèmes du profil seuls
     kinds = {(g.kind, g.ticker) for g in report.fillable}
     assert kinds == {("esg", "NVDA"), ("controversies", "NVDA")}
     assert all(g.triggered_by for g in report.gaps)
 
 
 def test_neutral_profile_and_plain_request_need_nothing(store, neutral_profile, parse):
-    assert detect_needs(neutral_profile, parse("Évalue NVDA"), store, AS_OF).gaps == []
+    assert detect_needs(neutral_profile, parse("Évalue NVDA"), store, AS_OF, auto_context=False).gaps == []
+
+
+def test_a_us_stock_gets_context_fundamentals_without_any_keyword(store, neutral_profile, parse):
+    (g,) = detect_needs(neutral_profile, parse("Évalue NVDA"), store, AS_OF).gaps
+    assert (g.kind, g.ticker, g.triggered_by, g.tools) == ("fundamentals", "NVDA", ["auto:action_americaine"], ["fetch_fundamentals"])
+    assert detect_needs(neutral_profile, parse("Évalue RY.TO"), store, AS_OF).gaps == []  # pas de source au Canada : aucun besoin
+    assert detect_needs(neutral_profile, parse("Évalue BTC-USD"), store, AS_OF).gaps == []  # ni pour la crypto
+
+
+def test_a_context_need_without_a_connected_source_is_dropped_silently(store, neutral_profile, parse):
+    from alphaforge.enrichment import EnrichmentAgent
+
+    assert EnrichmentAgent({}).detect_needs(neutral_profile, parse("Évalue NVDA"), store, AS_OF).gaps == []
+    with_sec = EnrichmentAgent({"fetch_fundamentals": FakeProvider(lambda k, t, a: [])})
+    assert [g.kind for g in with_sec.detect_needs(neutral_profile, parse("Évalue NVDA"), store, AS_OF).gaps] == ["fundamentals"]
+
+
+def test_a_failed_context_fetch_writes_no_gap_and_is_only_counted(store, neutral_profile, parse):
+    from alphaforge.enrichment import EnrichmentAgent
+    from alphaforge.orchestrator import Ledger
+
+    agent = EnrichmentAgent({"fetch_fundamentals": FakeProvider(failing("unavailable"))})
+    ledger = Ledger()
+    report = agent.run(agent.detect_needs(neutral_profile, parse("Évalue NVDA"), store, AS_OF), ledger, AS_OF)
+    assert not ledger.entries("enrichment") and not report.degraded  # personne ne l'a demandé : ni lacune, ni avertissement
+    assert report.context_unavailable == ["fundamentals:NVDA (unavailable)"]
 
 
 def test_request_text_triggers_needs(store, neutral_profile, parse):
@@ -50,10 +76,10 @@ def test_gap_disappears_once_ledger_has_ok_data(store, mateo, parse, registry):
     from alphaforge.orchestrator import Ledger
 
     ledger = Ledger()
-    needs = detect_needs(mateo, parse("Évalue NVDA"), store, AS_OF, ledger)
+    needs = detect_needs(mateo, parse("Évalue NVDA"), store, AS_OF, ledger, auto_context=False)
     EnrichmentAgent({"fetch_esg": FakeProvider(lambda k, t, a: [esg_item()]), "fetch_news": FakeProvider(lambda k, t, a: [news_item()])},
                     sources=registry).run(needs, ledger)
-    assert detect_needs(mateo, parse("Évalue NVDA"), store, AS_OF, ledger).gaps == []
+    assert detect_needs(mateo, parse("Évalue NVDA"), store, AS_OF, ledger, auto_context=False).gaps == []
 
 
 # ---- point_in_time_filter -------------------------------------------------------

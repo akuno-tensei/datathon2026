@@ -12,6 +12,8 @@ jamais AWS.
 - Moindre privilège : le rôle de la tâche ne fait que `bedrock:InvokeModel` sur un seul modèle et `s3:PutObject` sous `runs/`.
   Aucune action ni ressource générique, aucune entrée `0.0.0.0/0` (l'équilibreur n'accepte que CloudFront).
 - Aucun identifiant ni secret dans le code, les modèles ou les journaux : boto3 utilise le rôle de la machine ou de la tâche.
+- L'identification SEC de la version hébergée passe par le paramètre `SecUserAgent`, lu dans `ALPHAFORGE_SEC_USER_AGENT` au
+  déploiement ; sans cette variable, une mise à jour conserve la valeur déjà déployée.
 - Tout appel AWS a un délai court et un nombre de tentatives borné ; une panne devient un repli affiché (règles, note
   « archive indisponible »), jamais un arrêt de l'analyse.
 - Valider avec `cfn-lint deploy/build-stack.yaml deploy/app-stack.yaml` avant tout déploiement (aussi lancé par la CI).

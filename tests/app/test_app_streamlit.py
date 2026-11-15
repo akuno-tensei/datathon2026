@@ -453,7 +453,7 @@ def test_sources_actually_connected_are_shown_and_nothing_is_pretended(app):
 
 
 def test_a_request_with_no_data_need_does_not_call_enrichment(app):
-    app.text_area(key="req_box").set_value("Évalue NVDA")  # profil Robert : aucun thème, aucune demande de données
+    app.text_area(key="req_box").set_value("Évalue RY.TO")  # profil Robert, action canadienne : aucun thème, aucune source de contexte
     next(b for b in app.button if b.label == "Envoyer").click().run()
     assert not app.exception, app.exception
     a = app.session_state["analysis"]
@@ -589,3 +589,15 @@ def test_fundamentals_show_as_a_table_and_in_the_verified_explanation(tmp_path, 
     assert list(table["Montant"]) == ["130,5 milliards $ US", "72,9 milliards $ US"]
     assert any("Fondamentaux de NVDA" in m.value and "niveau A" in m.value for m in app.markdown)
     assert any("Explication vérifiée" in s.value for s in app.success)
+
+
+def test_a_plain_request_on_a_us_stock_shows_its_fundamentals_from_the_snapshot(app):
+    app.text_area(key="req_box").set_value("Évalue AAPL")  # aucun mot-clé : les fondamentaux viennent comme contexte
+    next(b for b in app.button if b.label == "Envoyer").click().run()
+    assert not app.exception, app.exception
+    a = app.session_state["analysis"]
+    (rec,) = [e.payload for e in a.result.ledger.entries("enrichment")]
+    assert rec["kind"] == "fundamentals" and rec["confidence"] == "A" and rec["ticker"] == "AAPL"
+    assert not [e for e in a.result.ledger.entries("enrichment") if e.payload["kind"] == "filings"]  # pas la liste des dépôts
+    assert a.verdict["assets"][0]["status"] == a.verdict["status"]
+    assert any("ne modifient pas le verdict" in m.value for m in app.markdown)

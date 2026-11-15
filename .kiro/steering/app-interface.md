@@ -11,7 +11,8 @@ S'applique à l'interface Streamlit. Ne s'applique pas aux agents (`quant/`, `go
 - Reformuler pour un lecteur débutant se fait à l'affichage seulement (`labels.py` : `human`, `humanize_text`, `window_name`).
   Les valeurs enregistrées, les codes et les messages des agents ne changent jamais ; un test vérifie que les nombres restent
   identiques après reformulation. Incident : un `.replace(".", ",")` sur un message entier a produit « SHOP,TO ».
-- Toute chaîne visible passe par `i18n.t()` avec une clé en français ET en anglais (test de parité des clés).
+- Toute chaîne visible a sa version française ET anglaise : `i18n.t()` (test de parité des clés), ou les tables bilingues
+  de `labels.py` (lexique, libellés) et des gabarits de l'explicabilité (libellés des fondamentaux).
 - Un widget avec `key=` ne reçoit pas `value=` : on change sa valeur dans un rappel `on_click` (exécuté avant le rendu).
   Incident : les boutons de raccourci ne faisaient rien.
 - Le rechargement à chaud (`_reload.py`) est désactivé sous pytest (`ALPHAFORGE_HOT_RELOAD=0`).

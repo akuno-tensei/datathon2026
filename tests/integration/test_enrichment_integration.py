@@ -225,5 +225,8 @@ def test_fundamentals_from_the_sec_reach_the_verified_explanation_at_level_a(run
     e = Explainer().explain(load_profile(profile(hard_exclusions=[])), r.ledger)
     assert e.report.approved, e.report.issues  # chaque montant vérifié contre le registre, chaque mot de provenance connue
     line = next(s.text for s in e.statements if s.text.startswith("Fondamentaux de NVDA"))
-    assert "chiffre d'affaires 130,5 milliards $ US" in line and "perte nette 1,2 milliards $ US" in line and "niveau A" in line
-    assert "actif total 111,6 milliards $ US" in line and "2026-01-25" in line
+    assert "chiffre d'affaires 130,5 milliards $ US" in line and "perte nette 1,2 milliard $ US" in line and "niveau A" in line
+    assert "actif total" not in line and "2026-01-25" in line  # profil débutant : trois montants ; le tableau complet reste à l'écran
+    e2 = Explainer().explain(load_profile(profile(hard_exclusions=[], experience="avance")), r.ledger)
+    line2 = next(s.text for s in e2.statements if s.text.startswith("Fondamentaux de NVDA"))
+    assert "actif total 111,6 milliards $ US" in line2 and e2.report.approved

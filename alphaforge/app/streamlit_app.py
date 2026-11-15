@@ -551,7 +551,8 @@ with tab_cmp:
     S.setdefault("cmp_req", S.request or t("tpl_evaluate", lang, a="NVDA"))
     creq = c3.text_input(t("request", lang), key="cmp_req")
     if st.button(t("compare_run", lang), type="primary", key="cmp_go"):
-        S.comparison = F.compare(creq, lp, rp, as_of=as_of, base_currency=base, language=lang)  # noyau seul : comparaison de limites
+        S.comparison = F.compare(creq, lp, rp, as_of=as_of, base_currency=base, language=lang,  # même interrupteur que l'analyse
+                                 enrichment=enrich_on, sec_user_agent=S.get("sec_ua") or None)
     cmp = S.comparison
     if cmp is not None:
         st.success("ℹ " + t("same_data", lang, m=cmp.left.result.ledger.evidence()[0]["data_fingerprint"][:12] if cmp.left.result.ledger.evidence() else "—"))

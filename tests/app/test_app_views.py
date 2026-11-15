@@ -15,7 +15,7 @@ def test_pipeline_runs_all_four_agents_and_keeps_structured_explanation(forge, p
     assert a.result.status == "complete" and a.verdict["status"] == "avertissement"
     assert a.explanation is not None and a.explanation.text == a.result.answer
     agents = {s.agent for s in views.agent_trace(a, "fr")}
-    assert agents == {"orchestrateur", "analyste", "gouvernance", "explicabilite"}
+    assert agents >= {"orchestrateur", "analyste", "gouvernance", "explicabilite"}  # + enrichissement pour une action américaine
 
 
 def test_base_currency_choice_reaches_every_metric_call_including_feedback(forge, prof):
@@ -233,7 +233,7 @@ def test_live_trace_receives_every_ledger_entry_in_order(forge, prof):
     ledger = a.result.ledger.entries()
     assert seen == [(e.seq, e.kind) for e in ledger] and [s for s, _ in seen] == list(range(1, len(ledger) + 1))
     steps = [views.entry_to_step(e, "fr") for e in ledger]
-    assert {s.agent for s in steps if s} == {"orchestrateur", "analyste", "gouvernance", "explicabilite"}
+    assert {s.agent for s in steps if s} >= {"orchestrateur", "analyste", "gouvernance", "explicabilite"}
     final = [s.text for s in views.agent_trace(a, "fr")]
     assert len([x for x in final if "Explication rédigée" in x]) == 1  # une seule ligne d'explicabilité dans la trace finale
 
@@ -386,3 +386,11 @@ def test_deleting_one_profile_leaves_the_others_untouched(forge, prof):
     forge.save_profile(prof(profile_id="deux"))
     forge.delete_profile("un")
     assert forge.profile_origin("deux") == "créé" and {"amira", "mateo", "robert", "deux"} <= {i.profile_id for i in forge.list_profiles()}
+
+
+def test_comparison_follows_the_enrichment_switch(forge, prof):
+    forge.save_profile(prof(profile_id="un"))
+    forge.save_profile(prof(profile_id="deux", risk_tolerance="eleve"))
+    off = forge.compare("Évalue HIGH", "un", "deux", enrichment=False)
+    assert not off.left.enrichment_enabled and not off.right.enrichment_enabled
+    assert forge.compare("Évalue HIGH", "un", "deux").left.enrichment_enabled

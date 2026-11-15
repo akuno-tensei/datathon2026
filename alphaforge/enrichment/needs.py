@@ -1,6 +1,7 @@
 """detect_needs : compare les besoins (profil + demande) aux données disponibles et liste les lacunes comblables.
 
-Les déclencheurs viennent des champs du profil (thèmes préférés ou exclus) et du texte de la demande : aucune règle
+Les déclencheurs viennent des champs du profil (thèmes préférés ou exclus), du texte de la demande et, pour une action
+américaine demandée, d'un besoin de contexte automatique (ses fondamentaux, sans effet sur le verdict) : aucune règle
 par persona. Le jeu de départ ne contient ni ESG, ni controverses, ni fondamentaux, ni nouvelles ; une lacune disparaît
 seulement si le registre contient déjà une donnée `ok` pour le même actif et le même besoin.
 """
@@ -15,6 +16,9 @@ from ..quant.datastore import DataStore
 from ..quant.windows import resolve_as_of
 from .config import APPLICABLE_CLASSES, CONTROVERSY_THEMES, ESG_THEMES, NEED_TOOLS, REQUEST_TRIGGERS
 from .models import Gap, NeedKind, NeedsReport
+
+
+AUTO_FUNDAMENTALS = "auto:action_americaine"  # déclencheur des fondamentaux de contexte (sans mot-clé dans la demande)
 
 
 def _profile_triggers(profile: InvestorProfile) -> Dict[str, List[str]]:
@@ -53,7 +57,10 @@ def detect_needs(
     store: DataStore,
     as_of: Optional[date] = None,
     ledger: Optional[Ledger] = None,
+    auto_context: bool = True,
 ) -> NeedsReport:
+    """`auto_context` : les fondamentaux d'une action américaine demandée sont recherchés même si la demande ne les évoque pas
+    (contexte de l'analyse, sans effet sur le verdict). Faux pour la relance des alternatives : seuls les actifs demandés en ont."""
     as_of_r = resolve_as_of(store, as_of)
     triggers: Dict[str, List[str]] = {}
     for source in (_profile_triggers(profile), _request_triggers(request)):
@@ -63,7 +70,7 @@ def detect_needs(
     covered = _covered(ledger)
     gaps: List[Gap] = []
 
-    def add(kind: NeedKind, ticker: str, why: List[str], asset: Optional[dict]) -> None:
+    def add(kind: NeedKind, ticker: str, why: List[str], asset: Optional[dict], tools: Optional[List[str]] = None) -> None:
         if (kind, ticker) in covered:
             return
         reason: Optional[str] = None
@@ -73,7 +80,7 @@ def detect_needs(
             reason = f"non_applicable_{asset['asset_class']}"
         gaps.append(Gap(
             need_id=_need_id(kind, ticker, as_of_r), kind=kind, ticker=ticker, triggered_by=sorted(set(why)),
-            fillable=reason is None, reason=reason, tools=list(NEED_TOOLS[kind]) if reason is None else [],
+            fillable=reason is None, reason=reason, tools=(list(tools or NEED_TOOLS[kind]) if reason is None else []),
         ))
 
     for ticker in list(dict.fromkeys(request.tickers)):
@@ -81,6 +88,9 @@ def detect_needs(
         for kind in ("esg", "controversies", "fundamentals", "news"):
             if kind in triggers:
                 add(kind, ticker, triggers[kind], asset)  # type: ignore[arg-type]
+        if (auto_context and "fundamentals" not in triggers and asset is not None and asset["asset_class"] in APPLICABLE_CLASSES["fundamentals"]
+                and asset.get("currency") == "USD"):  # seulement là où une source existe : aucune lacune ajoutée pour rien
+            add("fundamentals", ticker, [AUTO_FUNDAMENTALS], asset, tools=["fetch_fundamentals"])  # chiffres seulement, pas la liste des dépôts
         # ESG « par transparence » : pour un FNB, la composition renseigne l'ESG et les controverses de ses titres.
         if asset is not None and asset["asset_class"].startswith("etf") and ("esg" in triggers or "controversies" in triggers):
             add("etf_holdings", ticker, triggers.get("esg", []) + triggers.get("controversies", []), asset)

@@ -139,7 +139,7 @@ Le mandat encourage une approche agentique **simple, focalisée et vérifiable**
 |---|---|
 | Nouveau persona (ex. retraité de 70 ans voulant des cryptos) | La gouvernance bloque ou avertit via les règles dérivées du profil |
 | Profil incohérent (risque élevé, horizon d'un an) | `validate_profile` signale le conflit interne |
-| Actif hors univers | Le système dit qu'il n'a pas les données et propose d'en ajouter avec documentation |
+| Actif hors univers | Le système dit qu'il n'a pas les données et propose d'en ajouter avec documentation. *Implémenté : il le dit ; l'ajout d'une série de prix n'est pas encore possible (aucune source de prix branchée).* |
 | « Prédis NVDA l'an prochain » | `check_scope_limits` refuse la prédiction et offre un descriptif historique et des scénarios |
 | Préférence ESG sans donnée ESG | Avertissement explicite du substitut utilisé (ex. FNB filtré ESG du jeu de départ) |
 
@@ -147,7 +147,7 @@ Le mandat encourage une approche agentique **simple, focalisée et vérifiable**
 
 # Section 2 : Extension avec l'agent d'enrichissement (architecture à 5 agents)
 
-L'agent d'enrichissement ne tourne pas à chaque requête. Il s'active quand un **besoin de donnée** dépasse le jeu de départ (ESG, controverses, fondamentaux, événements récents). Le noyau à 4 agents reste donc fonctionnel seul, ce qui offre une **version de repli** pour la démo.
+L'agent d'enrichissement ne tourne pas à chaque requête. Il s'active quand un **besoin de donnée** dépasse le jeu de départ (ESG, controverses, fondamentaux, événements récents). Dans l'implémentation, une demande sur une action américaine crée toujours un besoin de contexte (ses fondamentaux SEC, sans effet sur le verdict) ; pour les autres actifs, seuls le profil et le texte de la demande en créent. Le noyau à 4 agents reste donc fonctionnel seul, ce qui offre une **version de repli** pour la démo.
 
 ## 2.1 L'agent d'enrichissement
 
@@ -227,11 +227,11 @@ C'est l'agent le plus risqué (texte non structuré, hallucination possible) : i
 |---|---|---|
 | Sources de données | Jeu de départ uniquement | Jeu de départ + données publiques enrichies |
 | Orchestrateur | Planifie analyste, gouvernance, explicabilité | Ajoute l'appel à `detect_needs` après `parse_request` et `validate_profile` |
-| Analyste | Utilise prix, macro, devises | Peut aussi utiliser les fondamentaux de niveau A ou B (ex. dette sur flux de trésorerie). **Jamais le niveau C** |
+| Analyste | Utilise prix, macro, devises | Peut aussi utiliser les fondamentaux de niveau A ou B (ex. dette sur flux de trésorerie). **Jamais le niveau C**. *Pas encore implémenté : les fondamentaux sont affichés comme contexte, aucun outil de l'analyste ne les calcule.* |
 | Registre | `{valeur, source, fenêtre, paramètres}` | Ajoute `date_publication`, `as_of`, `confiance A/B/C` et le lien vers la `source_card` |
 | Gouvernance | Signale les lacunes de données | `check_data_gaps` indique ce qui a été comblé, avec quelle confiance, et ce qui reste manquant |
 | Explicabilité | Étiquette fait, hypothèse, scénario | Ajoute niveau de confiance et date de publication à chaque énoncé enrichi, et limites propres aux sources |
-| Boucles de retour | Gouvernance → Orchestrateur → Analyste | + Gouvernance → Orchestrateur → Enrichissement (une seule relance) |
+| Boucles de retour | Gouvernance → Orchestrateur → Analyste | + Gouvernance → Orchestrateur → Enrichissement (une seule relance). *Implémenté pour les alternatives chiffrées par l'analyste : elles reçoivent les données que la demande ou le profil exigent, pas les fondamentaux de contexte.* |
 
 **Détail des nouveaux échanges :**
 
@@ -245,6 +245,8 @@ C'est l'agent le plus risqué (texte non structuré, hallucination possible) : i
 
 ## 2.5 Exemple de trace : Mateo (préférences ESG)
 
+> *Scénario cible.* Aucune source de cotes ESG ni de nouvelles n'est branchée à ce jour : pour Mateo, ces besoins deviennent des lacunes nommées, et la gouvernance signale que ses préférences ESG ne sont pas vérifiables (substitut déclaré : le FNB filtré ESGV). Les étapes ci-dessous décrivent le comportement attendu une fois une source branchée ; les règles de blocage (A ou B seulement) sont implémentées et testées avec des sources simulées.
+
 1. L'orchestrateur charge le profil (modéré, horizon de 8 à 12 ans, ESG important, éviter les controverses). `detect_needs` signale : cotes ESG et controverses absentes du jeu de départ.
 2. L'enrichissement récupère l'information ESG et les documents publics pour les actifs candidats, applique le filtre `as_of` et crée les fiches sources. Résultat : cotes de niveau B pour 6 actifs sur 8, et pour 2 actifs une seule nouvelle de niveau C.
 3. L'analyste calcule volatilité, drawdown et corrélations sur deux fenêtres, puis écrit au registre.
@@ -253,8 +255,8 @@ C'est l'agent le plus risqué (texte non structuré, hallucination possible) : i
 
 ## 2.6 Impacts à anticiper
 
-- **Intégration AWS (15 % de la grille) :** les appels de collecte et d'extraction se prêtent à des fonctions serverless, avec un cache des données déjà récupérées dans le stockage objet. L'enrichissement devient reproductible et évite de refaire les appels externes en démo. Vérifier les services et conditions d'accès officiels avant de s'engager.
-- **Démo fiable :** pré-charger en cache les données d'enrichissement des actifs de la démo. Un appel réseau qui échoue en direct est le risque le plus évident de cette extension.
+- **Intégration AWS (15 % de la grille) :** les appels de collecte et d'extraction se prêtent à des fonctions serverless, avec un cache des données déjà récupérées dans le stockage objet. L'enrichissement devient reproductible et évite de refaire les appels externes en démo. Vérifier les services et conditions d'accès officiels avant de s'engager. *Choix retenu : AWS sert à l'interprétation des demandes (Bedrock), à l'archive des registres (S3) et à l'hébergement (ECS Fargate, CloudFront) ; la collecte SEC tourne dans l'application, avec un cache local et un instantané versionné dans le dépôt, pour que la démo hors ligne survive au compte de l'événement.*
+- **Démo fiable :** pré-charger en cache les données d'enrichissement des actifs de la démo. Un appel réseau qui échoue en direct est le risque le plus évident de cette extension. *Fait : `alphaforge_starter/enrichment_snapshot/` (données SEC arrêtées au 12 novembre 2026).*
 - **Mode dégradé :** si l'enrichissement est désactivé ou échoue, le système revient au noyau à 4 agents et le dit explicitement. C'est un argument fort pour le jury : le système sait ce qu'il ne sait pas.
 - **Licences et conformité :** documenter pour chaque source la pertinence, l'origine, la date, les traitements, les limites et les conditions de réutilisation, comme l'exige le mandat.
 
@@ -270,9 +272,18 @@ C'est l'agent le plus risqué (texte non structuré, hallucination possible) : i
 
 ---
 
-## Prochaines étapes suggérées
+## État de l'implémentation (15 novembre 2026)
 
-1. Définir le **schéma du profil** (champs et règles de `derive_constraints`), composant clé de l'adaptation aux cas non entraînés.
-2. Définir le **schéma du registre de preuves** (champs d'une entrée, dont `confiance`, `as_of` et `source_card`), qui relie les agents.
-3. Choisir la **pile technique** et les services AWS selon la taille de l'équipe et le temps disponible.
-4. Préparer la **démo** : deux profils contrastés, plus un profil inconnu ajouté en direct pour montrer l'adaptation sans modification de code.
+Les étapes suggérées à l'origine (schéma du profil, schéma du registre, pile technique, démo à profils contrastés) sont faites. Ce qui est implémenté, par rapport à cette architecture :
+
+| Élément | État | Écart avec la conception |
+|---|---|---|
+| Orchestrateur | Implémenté. `parse_request` (`LLMParser`, `RuleBasedParser`) passe par Amazon Bedrock (Claude Haiku 4.5), revérifié par des règles : actifs contre l'univers, poids lus dans le texte, signaux de périmètre jamais retirés. Règles seules sans accès AWS. | — |
+| Analyste quantitatif | Les 8 outils de 1.2 sont implémentés, déterministes et reproductibles (même appel, même `evidence_id`). | N'utilise pas encore les fondamentaux (voir 2.4). |
+| Gouvernance | Implémentée, avec `derive_constraints`, les contrôles de 1.2 (le verdict est rendu par `Governance.assess`), la boucle de retour (2 itérations au plus) et les règles de blocage de 2.4. | — |
+| Explicabilité | Implémentée. `claim_verifier` contrôle chaque chiffre contre le registre, les tournures de conseil (liste de mots interdits) et la **provenance** de chaque mot (liste blanche : gabarits de rédaction et registre, sans le texte de la demande). | Contrôle de provenance ajouté à la conception. |
+| Enrichissement | Implémenté avec les 10 outils de 2.1 et les garde-fous de 2.2. Source branchée : SEC EDGAR (niveau A) pour les dépôts et les fondamentaux des actions américaines. Chaîne : SEC en direct (identification exigée), cache local, instantané versionné. | Aucune source pour l'ESG, les nouvelles, la composition des FNB ni SEDAR+ : lacunes nommées. Les fondamentaux d'une action américaine sont recherchés à chaque demande (contexte, sans effet sur le verdict). |
+| Registre de preuves | Implémenté : entrées de l'analyste (`evidence_id`, paramètres, empreinte des données), de l'enrichissement (`date_publication`, `as_of`, confiance, fiche source), notes et verdicts. Archivé dans S3 en version hébergée. | — |
+| Interface | Streamlit, bilingue, trace des agents en direct, preuve ouvrable pour chaque chiffre, lexique pour débutant, comparaison de deux profils, export Markdown. | — |
+
+Les limites connues et le mode d'emploi sont dans `README.md` (sections « Agent d'enrichissement », « Ce qui n'est pas couvert », « Après l'événement »).

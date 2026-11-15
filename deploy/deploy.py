@@ -29,8 +29,8 @@ BUILD_STACK, APP_STACK = "alphaforge-build", "alphaforge-app"
 
 
 def source_zip() -> bytes:
-    files = subprocess.run(["git", "ls-files", "-co", "--exclude-standard"], cwd=ROOT, check=True,
-                           capture_output=True, text=True).stdout.split()
+    files = [f for f in subprocess.run(["git", "ls-files", "-z", "-co", "--exclude-standard"], cwd=ROOT, check=True,
+                                       capture_output=True, text=True).stdout.split("\0") if f]  # -z : noms avec espaces intacts
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         for f in sorted(files):

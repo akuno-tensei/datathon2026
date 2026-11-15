@@ -1,6 +1,7 @@
-"""Assemblage des quatre agents sur les données réelles, sans logique d'interface.
+"""Assemblage des agents sur les données réelles, sans logique d'interface : le noyau à quatre agents, plus l'agent
+d'enrichissement en mode « Enrichi » (cinq agents).
 
-`AlphaForge.analyze` exécute orchestrateur -> analyste -> gouvernance -> explicabilité et renvoie une `Analysis`.
+`AlphaForge.analyze` exécute orchestrateur -> (enrichissement) -> analyste -> gouvernance -> explicabilité et renvoie une `Analysis`.
 Aucune règle propre à un persona : les profils sont des données (JSON), y compris ceux créés depuis l'interface.
 """
 import json
@@ -299,7 +300,9 @@ class AlphaForge:
         return an
 
     def compare(self, request_text: str, left: Any, right: Any, as_of: Optional[date] = None, base_currency: Optional[str] = None,
-                language: Optional[str] = None) -> Comparison:
-        """Même demande, deux profils : les données sont identiques, seules les limites dérivées changent."""
-        return Comparison(request_text, self.analyze(request_text, left, as_of, base_currency, language),
-                          self.analyze(request_text, right, as_of, base_currency, language))
+                language: Optional[str] = None, enrichment: bool = True, sec_user_agent: Optional[str] = None) -> Comparison:
+        """Même demande, deux profils : les données sont identiques, seules les limites dérivées changent.
+        `enrichment` suit l'interrupteur de l'interface, comme pour une analyse simple."""
+        kw = dict(enrichment=enrichment, sec_user_agent=sec_user_agent)
+        return Comparison(request_text, self.analyze(request_text, left, as_of, base_currency, language, **kw),
+                          self.analyze(request_text, right, as_of, base_currency, language, **kw))

@@ -18,6 +18,7 @@ from .models import Figure, Limits, Statement, Unit, VerificationReport
 
 # Ordre de lecture des fondamentaux : résultats, puis bilan.
 FUND_ORDER = ("revenue", "net_income", "operating_cash_flow", "cash", "long_term_debt", "equity", "total_assets")
+FUND_BEGINNER = ("revenue", "net_income", "long_term_debt")  # profil débutant : trois montants ; le tableau complet reste à l'écran
 MAX_ENRICHED_FACTS = 3  # faits de niveau C cités par enregistrement : l'explication reste lisible
 _WINDOW_NONE = {"fr": "analysée", "en": "analysed"}
 _QUOTES = {"fr": ("« ", " »"), "en": ('"', '"')}
@@ -271,8 +272,9 @@ class _Composer:
                 b = self.b()
                 b.ref(rec["record_id"])
                 labels, parts = T["fund_labels"], []
-                ordered = [(n, v["metrics"][n]) for n in FUND_ORDER if n in v["metrics"]] + [
-                    (n, x) for n, x in v["metrics"].items() if n not in FUND_ORDER]
+                order = FUND_BEGINNER if self.exp == "debutant" else FUND_ORDER
+                ordered = [(n, v["metrics"][n]) for n in order if n in v["metrics"]] + (
+                    [] if self.exp == "debutant" else [(n, x) for n, x in v["metrics"].items() if n not in FUND_ORDER])
                 for name, amount in ordered:  # ordre de lecture d'un rapport ; le signe se dit par le libellé, jamais par le chiffre
                     key = {"net_income": "net_loss", "operating_cash_flow": "negative_operating_cash_flow",
                            "equity": "negative_equity"}.get(name, name) if amount < 0 else name

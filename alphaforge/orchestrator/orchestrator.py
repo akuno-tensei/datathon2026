@@ -208,7 +208,9 @@ class Orchestrator:
             ledger_write(ledger, "note", AGENT, {"code": "enrichment_failed", "message": "Enrichissement indisponible : l'analyste n'expose pas son magasin de données."})
             return False
         try:
-            needs = self._enrichment.detect_needs(profile, request, store, self._as_of, ledger)
+            # Relance : les alternatives ne reçoivent pas les données de contexte automatiques (seulement ce que la demande évoque).
+            extra_kw = {"auto_context": False} if relaunch else {}
+            needs = self._enrichment.detect_needs(profile, request, store, self._as_of, ledger, **extra_kw)
             if not needs.gaps:
                 return False
             fillable = [g for g in needs.gaps if g.fillable]
@@ -227,7 +229,9 @@ class Orchestrator:
         ledger_write(ledger, "note", AGENT, {
             "code": "enrichment_done",
             "message": (f"Enrichissement : {len(report.written)} donnée(s) écrite(s), {len(report.gaps_written)} lacune(s) non comblée(s), "
-                        f"{report.excluded_after_as_of} élément(s) postérieur(s) à as_of écarté(s)."),
+                        f"{report.excluded_after_as_of} élément(s) postérieur(s) à as_of écarté(s)."
+                        + (f" Données de contexte indisponibles, sans effet sur le verdict : {', '.join(getattr(report, 'context_unavailable', []))}."
+                           if getattr(report, "context_unavailable", None) else "")),
             "written": len(report.written), "gaps": len(report.gaps_written), "excluded_after_as_of": report.excluded_after_as_of,
             "rejected_facts": report.rejected_facts, "degraded": bool(report.degraded),
         })

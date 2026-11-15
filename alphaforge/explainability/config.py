@@ -59,7 +59,7 @@ TEMPLATES: Dict[str, Dict] = {
         "enr_filing_period": "Dépôt {form} de {t} déclaré le {filed}, période close le {period} (niveau {level}, source {source}) ; seules les métadonnées sont lues, pas les états financiers.",
         "enr_fact": "Signal qualitatif de niveau C sur {t} (publié le {date}, {source}) : « {excerpt} »",
         "enr_fundamentals": "Fondamentaux de {t}, exercice clos le {period} (rapport {form} déposé le {filed}, niveau {level}, source {source}) : {metrics}.",
-        "enr_fund_note": "Chiffres tirés tels quels du rapport annuel, en dollars US ; ils décrivent l'exercice passé et ne prédisent rien.",
+        "enr_fund_note": "Chiffres tirés tels quels du rapport annuel, en dollars US : ils décrivent l'exercice passé, ne modifient pas le verdict et ne prédisent rien.",
         "fund_labels": {
             "revenue": "chiffre d'affaires {amount}", "net_income": "bénéfice net {amount}", "net_loss": "perte nette {amount}",
             "operating_cash_flow": "flux de trésorerie d'exploitation {amount}", "negative_operating_cash_flow": "flux de trésorerie d'exploitation négatif {amount}",
@@ -169,7 +169,7 @@ TEMPLATES: Dict[str, Dict] = {
         "enr_filing_period": "{form} filing for {t} dated {filed}, period ending {period} (level {level}, source {source}); only metadata is read, not the financial statements.",
         "enr_fact": "Level C qualitative signal on {t} (published on {date}, {source}): \"{excerpt}\"",
         "enr_fundamentals": "Fundamentals of {t}, fiscal year ended {period} ({form} report filed on {filed}, level {level}, source {source}): {metrics}.",
-        "enr_fund_note": "Figures taken as is from the annual report, in U.S. dollars; they describe the past fiscal year and predict nothing.",
+        "enr_fund_note": "Figures taken as is from the annual report, in U.S. dollars: they describe the past fiscal year, do not change the verdict and predict nothing.",
         "fund_labels": {
             "revenue": "revenue {amount}", "net_income": "net income {amount}", "net_loss": "net loss {amount}",
             "operating_cash_flow": "operating cash flow {amount}", "negative_operating_cash_flow": "negative operating cash flow {amount}",

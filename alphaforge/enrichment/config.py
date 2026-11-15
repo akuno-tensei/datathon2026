@@ -1,7 +1,8 @@
 """Paramètres de l'agent d'enrichissement : vocabulaire des besoins, bornes de texte, mots-clés d'extraction.
 
 Choix de politique et de vocabulaire, regroupés ici pour être revus sans toucher à la logique. Rien ne dépend d'un persona :
-les déclencheurs viennent des champs du profil (thèmes) et du texte de la demande.
+les déclencheurs viennent des champs du profil (thèmes), du texte de la demande et de la classe de l'actif demandé
+(fondamentaux de contexte pour une action américaine, voir `needs.AUTO_FUNDAMENTALS`).
 """
 import re
 from typing import Dict, List, Set

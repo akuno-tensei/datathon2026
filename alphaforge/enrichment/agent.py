@@ -20,7 +20,7 @@ from .facts import FactExtractor, extract_facts
 from .fetchers import FETCH_TOOLS
 from .ledger_write import ledger_write
 from .models import EnrichmentRecord, FetchResult, Gap, NeedsReport, RawItem, SourceCard
-from .needs import detect_needs
+from .needs import AUTO_FUNDAMENTALS, detect_needs
 from .pit import point_in_time_filter
 from .providers import Provider
 from .records import gap_record, structured_record, text_record
@@ -36,6 +36,9 @@ class EnrichmentReport(BaseModel):
     written: List[str] = []  # record_id des données `ok` écrites
     gaps_written: List[str] = []  # record_id des lacunes non comblées écrites
     excluded_after_as_of: int = 0  # éléments postérieurs à as_of, écartés par le filtre temporel
+    # Données de contexte automatiques (fondamentaux sans mot-clé dans la demande) restées sans réponse : comptées, sans lacune
+    # écrite. Personne ne les a demandées : leur absence ne doit ni avertir ni changer un verdict.
+    context_unavailable: List[str] = []
     rejected_facts: int = 0
     unfillable: List[str] = []  # besoins hors périmètre (« esg:BTC-USD : non_applicable_crypto »)
 
@@ -55,13 +58,17 @@ class EnrichmentAgent:
         """`providers` : outil de collecte -> fournisseur (« fetch_esg », « fetch_news », ...). Un outil sans fournisseur
         produit une lacune `no_provider`."""
         self._providers = dict(providers)
+        self._quiet = False  # vrai pendant un besoin de contexte automatique : ses échecs ne deviennent pas des lacunes
         self._sources = sources
         self._extractor = extractor
 
     # -- outils exposés à l'orchestrateur -----------------------------------
     def detect_needs(self, profile: InvestorProfile, request: ParsedRequest, store: DataStore,
-                     as_of: Optional[date] = None, ledger: Optional[Ledger] = None) -> NeedsReport:
-        return detect_needs(profile, request, store, as_of, ledger)
+                     as_of: Optional[date] = None, ledger: Optional[Ledger] = None, auto_context: bool = True) -> NeedsReport:
+        report = detect_needs(profile, request, store, as_of, ledger, auto_context=auto_context)
+        # Un besoin de contexte automatique sans source branchée n'est pas une lacune utile : il est retiré, sans bruit.
+        keep = [g for g in report.gaps if g.triggered_by != [AUTO_FUNDAMENTALS] or any(t in self._providers for t in g.tools)]
+        return report.model_copy(update={"gaps": keep})
 
     def run(self, needs: Union[NeedsReport, List[Gap]], ledger: Ledger, as_of: Optional[date] = None) -> EnrichmentReport:
         gaps = needs.gaps if isinstance(needs, NeedsReport) else needs
@@ -75,6 +82,7 @@ class EnrichmentAgent:
             if not gap.fillable:
                 report.unfillable.append(f"{gap.kind}:{gap.ticker} : {gap.reason}")
                 continue
+            self._quiet = gap.triggered_by == [AUTO_FUNDAMENTALS]
             produced = 0
             silent: List[str] = []  # outils qui ont répondu sans rien produire d'utilisable (ni erreur, ni lacune déjà écrite)
             for tool in gap.tools:
@@ -89,11 +97,14 @@ class EnrichmentAgent:
                         "Aucune donnée utilisable trouvée avant as_of. Ce n'est pas la preuve d'une absence de problème : "
                         "la lacune reste ouverte.",
                     ))
+            self._quiet = False
         return report
 
     # -- interne --------------------------------------------------------------
-    @staticmethod
-    def _gap(report: EnrichmentReport, ledger: Ledger, record: EnrichmentRecord) -> None:
+    def _gap(self, report: EnrichmentReport, ledger: Ledger, record: EnrichmentRecord) -> None:
+        if self._quiet:
+            report.context_unavailable.append(f"{record.kind}:{record.ticker} ({record.reason_code})")
+            return
         if ledger_write(ledger, record) is not None:
             report.gaps_written.append(record.record_id)
 

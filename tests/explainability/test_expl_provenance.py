@@ -72,3 +72,14 @@ def test_direct_calls_without_vocabulary_keep_the_six_original_checks(run):
     s = label_content(Statement(sid="t.1", section="fit", text="Texte libre de test.", refs=[view.evidence[0]["evidence_id"]]))
     kept, rep = claim_verifier(view, [s])
     assert rep.approved and len(kept) == 1  # sans vocabulaire, le contrôle 7 ne s'applique pas
+
+
+def test_money_scale_is_chosen_after_rounding_and_french_plural_follows_the_number():
+    from alphaforge.explainability.formatting import format_number, parse_shown, shown_value
+
+    assert format_number(999_960_000, "money", "fr") == "1,0 milliard $ US"  # pas « 1000,0 millions »
+    assert format_number(999_940_000, "money", "fr") == "999,9 millions $ US"
+    assert format_number(2_400_000_000, "money", "fr") == "2,4 milliards $ US" and format_number(1_500_000, "money", "fr") == "1,5 million $ US"
+    assert format_number(999_960_000, "money", "en") == "USD 1.0 billion"
+    for v in (999_960_000, 999_940_000, 130_497_000_000):
+        assert parse_shown(format_number(v, "money", "fr")) == shown_value(v, "money")

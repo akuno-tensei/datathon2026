@@ -114,6 +114,8 @@ L'univers compte 10 actions canadiennes, 10 actions américaines, 9 FNB (actions
 - **Biais du survivant.** L'univers a été choisi en 2026 parmi des titres aujourd'hui importants.
 - **Aucune cote ESG, nouvelle ou donnée fondamentale n'est incluse.** Les équipes qui en ont besoin peuvent utiliser les rapports de durabilité des sociétés, les pages méthodologiques ESG des émetteurs de FNB, SEDAR+ et EDGAR, en documentant leurs sources.
 
+> **Ajout de l'équipe AlphaForge** (hors jeu de départ) : `enrichment_snapshot/` contient un instantané SEC EDGAR (dépôts et fondamentaux des 10 actions américaines, données arrêtées au 12 novembre 2026), documenté dans `enrichment_snapshot/SOURCE.md` et régénéré par `build_sec_snapshot.py`. Les fichiers fournis par les organisateurs ne sont pas modifiés.
+
 ## Sources et conditions
 
 Yahoo Finance (via la bibliothèque `yfinance`) pour les prix. Banque du Canada (API Valet) pour le change, les taux et l'IPC canadien. FRED pour les données américaines. Voir `sources_metadata.csv` pour le détail.
