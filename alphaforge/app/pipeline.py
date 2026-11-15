@@ -22,8 +22,8 @@ from .archive import archive_notes, build_archive
 
 ENRICHMENT_CACHE_DIR = Path(__file__).resolve().parent / "cache" / "enrichment"  # données publiques déjà collectées (hors git)
 USER_PROFILES_DIR = Path(__file__).resolve().parent / "profiles" / "user"  # profils créés depuis l'interface (données locales)
-# Interprétation des demandes par Amazon Bedrock. Modèle retenu après banc d'essai (12 demandes réalistes, 3 passages) :
-# Claude Haiku 4.5, 35/36 bonnes réponses, signaux de périmètre (prédiction, transaction, conseil) tous détectés, ~0,9 s.
+# Interprétation des demandes par Amazon Bedrock. Modèle retenu par le banc d'essai deploy/bench_llm.py
+# (scores dans deploy/bench_results.json, jamais recopiés ici) : aucun signal de périmètre manqué.
 DEFAULT_LLM_MODEL = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
 
 

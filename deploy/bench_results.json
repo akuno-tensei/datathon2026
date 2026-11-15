@@ -1,0 +1,206 @@
+{
+  "run_at_utc": "2026-11-15T05:11:08Z",
+  "n_requests": 12,
+  "results": [
+    {
+      "interpreter": "rules",
+      "repeats": 1,
+      "scores": [
+        30
+      ],
+      "max": 36,
+      "fallbacks": 0,
+      "latency_median_s": 0.0,
+      "passes": [
+        {
+          "score": 30,
+          "max": 36,
+          "intent": 10,
+          "assets": 9,
+          "scope": 11,
+          "fallbacks": 0,
+          "latency_median_s": 0.0,
+          "latency_max_s": 0.0,
+          "misses": [
+            {
+              "request": "Compare la Banque Royale et TD",
+              "intent": "evaluate_asset",
+              "tickers": [
+                "TD.TO"
+              ],
+              "scope_flags": [],
+              "parser": "rules"
+            },
+            {
+              "request": "Lequel est le moins risqué entre l'or et les obligations américaines à long terme ?",
+              "intent": "compare_assets",
+              "tickers": [],
+              "scope_flags": [],
+              "parser": "rules"
+            },
+            {
+              "request": "Pourquoi Shopify est-il risqué pour moi ?",
+              "intent": "evaluate_asset",
+              "tickers": [
+                "SHOP.TO"
+              ],
+              "scope_flags": [],
+              "parser": "rules"
+            },
+            {
+              "request": "Tout le monde parle de Tesla, je devrais en acheter ?",
+              "intent": "evaluate_asset",
+              "tickers": [
+                "TSLA"
+              ],
+              "scope_flags": [
+                "asks_personal_advice"
+              ],
+              "parser": "rules"
+            },
+            {
+              "request": "Je veux comparer Enbridge, Fortis et le FNB obligataire canadien",
+              "intent": "compare_assets",
+              "tickers": [
+                "ENB.TO",
+                "FTS.TO"
+              ],
+              "scope_flags": [],
+              "parser": "rules"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "interpreter": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "repeats": 3,
+      "scores": [
+        36,
+        36,
+        36
+      ],
+      "max": 36,
+      "fallbacks": 0,
+      "latency_median_s": 0.891,
+      "passes": [
+        {
+          "score": 36,
+          "max": 36,
+          "intent": 12,
+          "assets": 12,
+          "scope": 12,
+          "fallbacks": 0,
+          "latency_median_s": 0.885,
+          "latency_max_s": 1.001,
+          "misses": []
+        },
+        {
+          "score": 36,
+          "max": 36,
+          "intent": 12,
+          "assets": 12,
+          "scope": 12,
+          "fallbacks": 0,
+          "latency_median_s": 0.898,
+          "latency_max_s": 0.976,
+          "misses": []
+        },
+        {
+          "score": 36,
+          "max": 36,
+          "intent": 12,
+          "assets": 12,
+          "scope": 12,
+          "fallbacks": 0,
+          "latency_median_s": 0.891,
+          "latency_max_s": 0.911,
+          "misses": []
+        }
+      ]
+    },
+    {
+      "interpreter": "us.amazon.nova-2-lite-v1:0",
+      "repeats": 3,
+      "scores": [
+        35,
+        35,
+        35
+      ],
+      "max": 36,
+      "fallbacks": 0,
+      "latency_median_s": 0.519,
+      "passes": [
+        {
+          "score": 35,
+          "max": 36,
+          "intent": 12,
+          "assets": 12,
+          "scope": 11,
+          "fallbacks": 0,
+          "latency_median_s": 0.538,
+          "latency_max_s": 0.683,
+          "misses": [
+            {
+              "request": "Tout le monde parle de Tesla, je devrais en acheter ?",
+              "intent": "evaluate_asset",
+              "tickers": [
+                "TSLA"
+              ],
+              "scope_flags": [
+                "asks_personal_advice"
+              ],
+              "parser": "llm"
+            }
+          ]
+        },
+        {
+          "score": 35,
+          "max": 36,
+          "intent": 12,
+          "assets": 12,
+          "scope": 11,
+          "fallbacks": 0,
+          "latency_median_s": 0.51,
+          "latency_max_s": 0.571,
+          "misses": [
+            {
+              "request": "Tout le monde parle de Tesla, je devrais en acheter ?",
+              "intent": "evaluate_asset",
+              "tickers": [
+                "TSLA"
+              ],
+              "scope_flags": [
+                "asks_personal_advice"
+              ],
+              "parser": "llm"
+            }
+          ]
+        },
+        {
+          "score": 35,
+          "max": 36,
+          "intent": 12,
+          "assets": 12,
+          "scope": 11,
+          "fallbacks": 0,
+          "latency_median_s": 0.519,
+          "latency_max_s": 0.693,
+          "misses": [
+            {
+              "request": "Tout le monde parle de Tesla, je devrais en acheter ?",
+              "intent": "evaluate_asset",
+              "tickers": [
+                "TSLA"
+              ],
+              "scope_flags": [
+                "asks_personal_advice"
+              ],
+              "parser": "llm"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

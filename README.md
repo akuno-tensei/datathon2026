@@ -11,7 +11,7 @@ Projet du Datathon 2026 (PolyFinances), cas AlphaForge AI. Les documents de réf
 ```bash
 pip install -r alphaforge/requirements.txt          # Python 3.9 ou plus
 streamlit run alphaforge/app/streamlit_app.py       # interface, http://localhost:8501
-python3 -m pytest                                    # 551 tests
+python3 -m pytest                                    # toute la suite de tests (aussi lancée à chaque envoi par la CI)
 ```
 
 L'interface se lance depuis n'importe quel dossier. Les données du jeu de départ sont déjà dans `alphaforge_starter/` (voir plus bas pour les régénérer).
@@ -122,7 +122,7 @@ AWS intervient à trois endroits du flux, chacun avec un rôle précis :
 | **Amazon S3** | Chaque analyse archive son registre complet (`ledger.jsonl`) et un résumé (`summary.json`) sous `runs/AAAA-MM-JJ/<heure>-<empreinte>/`. L'empreinte SHA-256 du registre figure dans le chemin : une analyse rejouée doit donner la même. Bucket privé, chiffré, HTTPS seulement, expiration à 60 jours. | Note « archive indisponible » ; l'analyse est quand même affichée. |
 | **Amazon ECS Fargate, ALB, CloudFront, ECR, CodeBuild** | Hébergement de l'interface : CloudFront (HTTPS) → équilibreur de charge joignable seulement depuis CloudFront, avec un en-tête d'origine → une tâche Fargate. L'image est construite par CodeBuild (pas de Docker requis sur le poste) et scannée à l'envoi dans ECR. | — |
 
-**Choix du modèle.** Banc d'essai sur 12 demandes réalistes (FR et EN, noms d'entreprises, descriptions comme « l'or », demandes de prédiction, d'achat et de conseil), répété 3 fois : Claude Haiku 4.5 obtient 35/36 bonnes réponses, détecte tous les signaux de périmètre, en environ 0,9 s par demande. Amazon Nova 2 Lite est plus rapide (0,5 s) avec le même score, mais il a manqué le signal « transaction » de « Tout le monde parle de Tesla, je devrais en acheter ? » : un signal de périmètre manqué est l'erreur la plus coûteuse ici, d'où Haiku 4.5. L'interprétation par règles seule obtient 30/36.
+**Choix du modèle.** Banc d'essai `deploy/bench_llm.py` : 12 demandes réalistes (FR et EN, noms d'entreprises, descriptions comme « l'or », demandes de prédiction, d'achat et de conseil), 3 points par demande (intention, actifs, signaux de périmètre), 3 passages par modèle. Résultats dans `deploy/bench_results.json` (relevé du 15 novembre 2026) : Claude Haiku 4.5 obtient 108/108 en environ 0,9 s par demande ; Amazon Nova 2 Lite obtient 105/108 en 0,5 s, car il manque à chaque passage le signal « transaction » de « Tout le monde parle de Tesla, je devrais en acheter ? ». Un signal de périmètre manqué est l'erreur la plus coûteuse ici, d'où Haiku 4.5. L'interprétation par règles seule obtient 30/36 (un passage : elle est déterministe). Un test vérifie que ces chiffres sont ceux du fichier de résultats et que le score des règles se recalcule à l'identique ; relancer `python3 deploy/bench_llm.py` remet le fichier à jour.
 
 **Droits (moindre privilège).** Le rôle de la tâche ne peut qu'appeler ce seul modèle (`bedrock:InvokeModel`) et écrire sous `runs/` (`s3:PutObject`) : aucune lecture S3, aucun autre service. Aucun identifiant AWS dans le code : boto3 utilise le rôle de la machine ou de la tâche.
 

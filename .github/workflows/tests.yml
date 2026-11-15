@@ -1,0 +1,42 @@
+# Rejoue toute la suite de tests à chaque envoi et à chaque demande de fusion : un correctif ne doit pas en casser un autre.
+# Aucun accès AWS : Bedrock et S3 sont désactivés (les tests utilisent des doublures), aucun secret n'est fourni.
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ALPHAFORGE_LLM: "0"
+      ALPHAFORGE_S3_BUCKET: ""
+      ALPHAFORGE_HOT_RELOAD: "0"
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"  # même version que le poste de développement et l'image déployée
+          cache: pip
+          cache-dependency-path: deploy/requirements.lock.txt
+      - name: Dépendances (versions exactes de l'image déployée)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r deploy/requirements.lock.txt pytest==8.4.2
+      - name: Suite de tests
+        run: python -m pytest -q
+      - name: Modèles CloudFormation
+        run: |
+          pip install cfn-lint
+          cfn-lint deploy/build-stack.yaml deploy/app-stack.yaml
