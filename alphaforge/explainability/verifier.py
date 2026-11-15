@@ -2,7 +2,7 @@
 
 Contrôles par énoncé :
 1. toute référence existe dans le registre ;
-2. un énoncé « fait » cite au moins une référence valide ;
+2. un énoncé « fait » ou « synthèse » cite au moins une référence valide ;
 3. chaque `Figure` se retrouve (en valeur absolue) parmi les nombres de l'entrée citée, et son texte affiché est l'arrondi de cette valeur ;
 4. le texte ne contient aucun autre nombre : après retrait des chiffres déclarés, des chaînes autorisées et des dates, il ne reste aucun chiffre ;
 5. les chaînes autorisées et les dates du texte figurent dans le registre ;
@@ -76,8 +76,8 @@ def check_statement(view: LedgerView, s: Statement, vocabulary: Optional[Vocabul
     unknown = [r for r in s.refs if not view.has_ref(r)]
     for r in unknown:
         bad("unknown_ref", f"Référence absente du registre : {r}.")
-    if s.label == "fait" and not unknown and not s.refs:
-        bad("no_evidence", "Énoncé étiqueté « fait » sans preuve citée.")
+    if s.label in ("fait", "synthese") and not unknown and not s.refs:
+        bad("no_evidence", f"Énoncé étiqueté « {s.label} » sans preuve citée.")
 
     for f in s.figures:
         payload = view.refs.get(f.ref)

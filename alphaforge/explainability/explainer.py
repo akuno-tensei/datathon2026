@@ -15,6 +15,7 @@ from .ledger_read import ledger_read
 from .limits import limits_builder
 from .models import Explanation, Issue, Limits, VerificationReport
 from .provenance import Vocabulary
+from .synthesis import build_synthesis, insert_after_verdict, verify_synthesis
 from .verifier import claim_verifier
 
 AGENT = "explicabilite"
@@ -46,9 +47,17 @@ class Explainer:
         limit_keys = {"assumptions", "limits", "uncertainties", "not_covered"}
         body_ok = [s for s in cleaned if s.section not in limit_keys]
         limits = Limits.from_statements([s for s in cleaned if s.section in limit_keys])
+
+        # Synthèse : rédigée après la vérification du corps, à partir de ses seuls énoncés retenus, puis vérifiée à son tour.
+        syn_kept, syn_removed, syn_issues = verify_synthesis(view, label_all(build_synthesis(view, profile)), body_ok, vocab)
+        body_ok = insert_after_verdict(body_ok, syn_kept, view, profile)
+        removed_all += syn_removed
+        issues_all += syn_issues
+
         final = VerificationReport(
             approved=report.approved and not removed_all,
-            attempts=attempt, verified=report.verified, removed=removed_all, downgraded=report.downgraded, issues=issues_all,
+            attempts=attempt, verified=report.verified + len(syn_kept), removed=removed_all, downgraded=report.downgraded,
+            issues=issues_all,
         )
         text = render(body_ok, limits, profile, final)
         ledger.write(

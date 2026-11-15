@@ -16,8 +16,8 @@ class ExplainConfig(BaseModel):
 SECTIONS = ("summary", "data", "fit", "alternatives", "scope")
 
 LABELS = {
-    "fr": {"fait": "Fait", "hypothese": "Hypothèse", "scenario_fictif": "Scénario fictif"},
-    "en": {"fait": "Fact", "hypothese": "Assumption", "scenario_fictif": "Fictional scenario"},
+    "fr": {"fait": "Fait", "hypothese": "Hypothèse", "scenario_fictif": "Scénario fictif", "synthese": "Synthèse"},
+    "en": {"fait": "Fact", "hypothese": "Assumption", "scenario_fictif": "Fictional scenario", "synthese": "Synthesis"},
 }
 
 TEMPLATES: Dict[str, Dict] = {
@@ -83,6 +83,27 @@ TEMPLATES: Dict[str, Dict] = {
         "alt_status_no_owner": "{t} a été évalué comme alternative : statut {status}.",
         "no_verdict": "Aucun verdict de gouvernance n'est consigné au registre : l'explication se limite aux données brutes.",
         "scope": "Hors périmètre : {message} À la place : {offered}",
+        # Synthèse (synthesis.py) : constate, ne prescrit rien. Les éléments d'une liste sont séparés par « ; ».
+        "synthesis": {
+            "blocked": "{t} est bloqué par une contrainte de votre profil : {why}.",
+            "why": {
+                "EXCLUDED_ASSET_CLASS": "classe d'actifs exclue", "EXCLUDED_SECTOR": "secteur exclu", "EXCLUDED_TICKER": "actif exclu",
+                "CLASS_NOT_PERMITTED": "classe non permise à votre niveau de risque",
+                "EXCLUDED_THEME_CONTROVERSY": "thème exclu, controverse documentée", "_other": "contrainte du profil",
+            },
+            "exceeds": "{t} dépasse des limites de risque de votre profil : {items}.",
+            "item_vol": "volatilité annualisée de {value} pour une limite de {limit}",
+            "item_dd": "perte maximale de {value} pour une limite de {limit}",
+            "within": "{t} reste dans les limites de risque de votre profil sur les fenêtres analysées.",
+            "nodata": "{t} n'a pas pu être évalué faute de données suffisantes.",
+            "other": "{t} : statut {status}, pour les raisons détaillées dans « Cohérence avec votre profil ».",
+            "alt_ok": "Alternatives évaluées au statut conforme : {lst}.",
+            "alt_none": "Aucune des alternatives évaluées n'obtient le statut conforme.",
+            "scope": "Une partie de la demande est hors périmètre : voir « Périmètre ».",
+            "close": "Ces mesures décrivent le passé et ne prédisent pas l'avenir. La décision vous appartient.",
+            "close_nodata": "La décision vous appartient.",
+            "sep": " ; ",
+        },
         "scenario": "Tout résultat présenté ici est un scénario simulé et fictif, pas une prévision.",
         "where": " (fenêtre « {w} »)",
         "ratio": ", soit {r} fois la limite",
@@ -193,6 +214,26 @@ TEMPLATES: Dict[str, Dict] = {
         "alt_status_no_owner": "{t} was assessed as an alternative: status {status}.",
         "no_verdict": "No governance verdict is recorded in the ledger: the explanation is limited to raw data.",
         "scope": "Out of scope: {message} Instead: {offered}",
+        "synthesis": {
+            "blocked": "{t} is blocked by a constraint of your profile: {why}.",
+            "why": {
+                "EXCLUDED_ASSET_CLASS": "excluded asset class", "EXCLUDED_SECTOR": "excluded sector", "EXCLUDED_TICKER": "excluded asset",
+                "CLASS_NOT_PERMITTED": "class not permitted at your risk level",
+                "EXCLUDED_THEME_CONTROVERSY": "excluded theme, documented controversy", "_other": "profile constraint",
+            },
+            "exceeds": "{t} exceeds risk limits of your profile: {items}.",
+            "item_vol": "annualised volatility of {value} against a limit of {limit}",
+            "item_dd": "maximum drawdown of {value} against a limit of {limit}",
+            "within": "{t} stays within the risk limits of your profile over the windows analysed.",
+            "nodata": "{t} could not be assessed for lack of sufficient data.",
+            "other": "{t}: status {status}, for the reasons detailed in \"Fit with your profile\".",
+            "alt_ok": "Assessed alternatives with a compliant status: {lst}.",
+            "alt_none": "None of the assessed alternatives has a compliant status.",
+            "scope": "Part of the request is out of scope: see \"Scope\".",
+            "close": "These measures describe the past and do not predict the future. The decision is yours.",
+            "close_nodata": "The decision is yours.",
+            "sep": "; ",
+        },
         "scenario": "Any result shown here is a simulated, fictional scenario, not a forecast.",
         "where": " (window \"{w}\")",
         "ratio": ", i.e. {r} times the limit",
