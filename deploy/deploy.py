@@ -2,12 +2,17 @@
 
     python3 deploy/deploy.py --bucket <bucket-des-archives>          # construit l'image puis déploie l'app
     python3 deploy/deploy.py --bucket <bucket> --delete              # supprime les deux piles (le bucket reste)
+    ALPHAFORGE_SEC_USER_AGENT="Equipe X x@exemple.org" python3 deploy/deploy.py --bucket <bucket>   # branche SEC EDGAR
+
+Identification SEC : lue dans ALPHAFORGE_SEC_USER_AGENT (jamais dans un fichier du dépôt). Absente lors d'une mise à jour :
+la valeur déjà déployée est conservée.
 
 Étapes : archive du code (fichiers suivis par git et non ignorés) -> S3 build/ -> pile `alphaforge-build` (ECR, CodeBuild)
 -> construction de l'image (balise = empreinte de l'archive) -> pile `alphaforge-app` (ECS Fargate, ALB, CloudFront).
 Identifiants : ceux de l'environnement (rôle de la machine) ; aucun secret dans le code ni dans les modèles.
 """
 import argparse
+import os
 import hashlib
 import io
 import subprocess
@@ -38,9 +43,16 @@ def source_zip() -> bytes:
     return buf.getvalue()
 
 
-def deploy_stack(cfn, name: str, template: str, params: dict) -> dict:
+def deploy_stack(cfn, name: str, template: str, params: dict, keep: tuple = ()) -> dict:
+    """`keep` : paramètres à conserver tels quels lors d'une mise à jour (UsePreviousValue) s'ils ne sont pas fournis."""
+    try:
+        current = {x["ParameterKey"] for x in cfn.describe_stacks(StackName=name)["Stacks"][0].get("Parameters", [])}
+    except ClientError:
+        current = set()
+    plist = [{"ParameterKey": k, "ParameterValue": v} for k, v in params.items()]
+    plist += [{"ParameterKey": k, "UsePreviousValue": True} for k in keep if k not in params and k in current]  # sinon : défaut du modèle
     kw = dict(StackName=name, TemplateBody=(ROOT / "deploy" / template).read_text(encoding="utf-8"),
-              Parameters=[{"ParameterKey": k, "ParameterValue": v} for k, v in params.items()],
+              Parameters=plist,
               Capabilities=["CAPABILITY_IAM"], Tags=[{"Key": "project", "Value": "alphaforge"}])
     try:
         cfn.describe_stacks(StackName=name)
@@ -114,8 +126,11 @@ def main() -> None:
     image = build_image(s.client("codebuild"), s.client("ecr"), b["BuildProjectName"], b["RepositoryUri"], tag)
     print(f"✓ image {image}")
     vpc, subnets = default_network(s.client("ec2"))
-    out = deploy_stack(cfn, APP_STACK, "app-stack.yaml", {
-        "ImageUri": image, "ArtifactBucket": a.bucket, "VpcId": vpc, "SubnetIds": ",".join(subnets)})
+    params = {"ImageUri": image, "ArtifactBucket": a.bucket, "VpcId": vpc, "SubnetIds": ",".join(subnets)}
+    ua = os.environ.get("ALPHAFORGE_SEC_USER_AGENT", "").strip()
+    if ua:
+        params["SecUserAgent"] = ua
+    out = deploy_stack(cfn, APP_STACK, "app-stack.yaml", params, keep=("SecUserAgent",))
     print(f"✓ application : {out['AppUrl']}")
 
 

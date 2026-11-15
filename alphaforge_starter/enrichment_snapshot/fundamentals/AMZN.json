@@ -1,0 +1,40 @@
+[
+  {
+    "date_observation": "2025-12-31",
+    "date_publication": "2026-02-06",
+    "kind": "fundamentals",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001018724-26-000004",
+      "cik": 1018724,
+      "currency": "USD",
+      "filing_date": "2026-02-06",
+      "form": "10-K",
+      "metrics": {
+        "cash": 86810000000,
+        "equity": 411065000000,
+        "long_term_debt": 65648000000,
+        "net_income": 77670000000,
+        "operating_cash_flow": 139514000000,
+        "revenue": 716924000000,
+        "total_assets": 818042000000
+      },
+      "period_end": "2025-12-31",
+      "xbrl_concepts": {
+        "cash": "CashAndCashEquivalentsAtCarryingValue",
+        "equity": "StockholdersEquity",
+        "long_term_debt": "LongTermDebtNoncurrent",
+        "net_income": "NetIncomeLoss",
+        "operating_cash_flow": "NetCashProvidedByUsedInOperatingActivities",
+        "revenue": "RevenueFromContractWithCustomerExcludingAssessedTax",
+        "total_assets": "Assets"
+      }
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "10-K déposé le 2026-02-06, exercice clos le 2025-12-31",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000004/"
+  }
+]

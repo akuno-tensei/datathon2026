@@ -84,3 +84,26 @@ def test_an_s3_failure_is_said_and_never_breaks_the_analysis(tmp_path):
 
 def test_no_archive_configured_means_no_note(forge):
     assert archive_notes(None, None, "fr") == [] and forge.analyze("Évalue NVDA", "robert", enrichment=False).archive_notes == []
+
+
+def test_without_aws_credentials_the_rules_are_used_directly(monkeypatch):
+    monkeypatch.setenv("ALPHAFORGE_LLM", "1")
+    monkeypatch.setattr(pipeline, "aws_credentials_available", lambda: False)  # poste sans compte AWS, par exemple après l'événement
+    assert isinstance(pipeline.build_parser(), RuleBasedParser)
+
+
+def test_offline_snapshot_serves_sec_data_without_network_or_identification(tmp_path):
+    f = AlphaForge.from_directory(user_profiles_dir=tmp_path, parser=RuleBasedParser(), archive=None)
+    a = f.analyze("Évalue AAPL et ses résultats", "robert", sec_user_agent=None)
+    recs = [e.payload for e in a.result.ledger.entries("enrichment") if e.payload["ticker"] == "AAPL" and e.payload["status"] == "ok"]
+    fund = next(r for r in recs if r["kind"] == "fundamentals")
+    assert fund["confidence"] == "A" and fund["date_publication"] <= "2026-11-12" and fund["value"]["metrics"]["revenue"] > 0
+    assert any(r["kind"] == "filings" for r in recs)
+    assert a.explanation.report.approved
+    assert pipeline.enrichment_coverage(None)["fetch_fundamentals"] == "snapshot"
+
+
+def test_the_snapshot_never_contains_the_sec_identification():
+    for path in pipeline.ENRICHMENT_SNAPSHOT_DIR.rglob("*.json"):
+        text = path.read_text(encoding="utf-8")
+        assert "@" not in text.replace("sec.gov", ""), path  # aucun courriel : seulement des données publiques de la SEC

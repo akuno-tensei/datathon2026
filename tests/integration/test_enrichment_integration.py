@@ -200,3 +200,30 @@ def test_ledger_orders_needs_then_enrichment_then_analyst_then_verdict(run, prof
     seq = lambda kind, code=None: [e.seq for e in r.ledger.entries(kind) if code is None or e.payload.get("code") == code]
     assert seq("note", "needs_detected")[0] < min(seq("enrichment")) < min(seq("evidence")) < min(seq("verdict"))
     assert {e.payload["card_id"] for e in r.ledger.entries("source_card")} >= {e.payload["source_card_id"] for e in r.ledger.entries("enrichment") if e.payload["status"] == "ok"}
+
+
+# ---- fondamentaux SEC EDGAR, de la demande à l'explication vérifiée -------------------------------------------
+def _sec(url, headers):
+    import json
+    if "company_tickers" in url:
+        return json.dumps({"0": {"cik_str": 1045810, "ticker": "NVDA"}}).encode()
+    f = lambda v, start=None: {**({"start": start} if start else {}), "val": v, "end": "2026-01-25", "filed": "2026-02-25", "form": "10-K", "accn": "0001045810-26-000010"}
+    return json.dumps({"facts": {"us-gaap": {
+        "Revenues": {"units": {"USD": [f(130_497_000_000, "2025-01-27")]}},
+        "NetIncomeLoss": {"units": {"USD": [f(-1_250_000_000, "2025-01-27")]}},  # perte : dite par le libellé, jamais par un signe
+        "Assets": {"units": {"USD": [f(111_601_000_000)]}},
+    }}}).encode()
+
+
+def test_fundamentals_from_the_sec_reach_the_verified_explanation_at_level_a(run, profile):
+    from alphaforge.enrichment import EdgarProvider
+
+    edgar = EdgarProvider("Equipe test test@example.com", date(2026, 11, 13), _sec)
+    r, _ = run("Évalue NVDA et ses résultats", profile(hard_exclusions=[]), {"fetch_fundamentals": edgar, "fetch_filings": edgar})
+    rec = next(e.payload for e in r.ledger.entries("enrichment") if e.payload["kind"] == "fundamentals" and e.payload["status"] == "ok")
+    assert rec["confidence"] == "A" and rec["usable_for_calculation"] is True and rec["date_publication"] == "2026-02-25"
+    e = Explainer().explain(load_profile(profile(hard_exclusions=[])), r.ledger)
+    assert e.report.approved, e.report.issues  # chaque montant vérifié contre le registre, chaque mot de provenance connue
+    line = next(s.text for s in e.statements if s.text.startswith("Fondamentaux de NVDA"))
+    assert "chiffre d'affaires 130,5 milliards $ US" in line and "perte nette 1,2 milliards $ US" in line and "niveau A" in line
+    assert "actif total 111,6 milliards $ US" in line and "2026-01-25" in line

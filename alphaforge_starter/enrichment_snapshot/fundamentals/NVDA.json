@@ -1,0 +1,40 @@
+[
+  {
+    "date_observation": "2026-01-25",
+    "date_publication": "2026-02-25",
+    "kind": "fundamentals",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000021",
+      "cik": 1045810,
+      "currency": "USD",
+      "filing_date": "2026-02-25",
+      "form": "10-K",
+      "metrics": {
+        "cash": 10605000000,
+        "equity": 157293000000,
+        "long_term_debt": 7469000000,
+        "net_income": 120067000000,
+        "operating_cash_flow": 102718000000,
+        "revenue": 215938000000,
+        "total_assets": 206803000000
+      },
+      "period_end": "2026-01-25",
+      "xbrl_concepts": {
+        "cash": "CashAndCashEquivalentsAtCarryingValue",
+        "equity": "StockholdersEquity",
+        "long_term_debt": "LongTermDebtNoncurrent",
+        "net_income": "NetIncomeLoss",
+        "operating_cash_flow": "NetCashProvidedByUsedInOperatingActivities",
+        "revenue": "Revenues",
+        "total_assets": "Assets"
+      }
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "10-K déposé le 2026-02-25, exercice clos le 2026-01-25",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/"
+  }
+]

@@ -1,0 +1,382 @@
+[
+  {
+    "date_observation": "2026-09-27",
+    "date_publication": "2026-10-21",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-26-000197",
+      "cik": 200406,
+      "filing_date": "2026-10-21",
+      "form": "10-Q",
+      "report_date": "2026-09-27"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "10-Q déposé le 2026-10-21",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040626000197/jnj-20260927.htm"
+  },
+  {
+    "date_observation": "2026-10-13",
+    "date_publication": "2026-10-13",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-26-000189",
+      "cik": 200406,
+      "filing_date": "2026-10-13",
+      "form": "8-K",
+      "report_date": "2026-10-13"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "8-K déposé le 2026-10-13",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040626000189/jnj-20261013.htm"
+  },
+  {
+    "date_observation": "2026-08-04",
+    "date_publication": "2026-08-04",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-26-000167",
+      "cik": 200406,
+      "filing_date": "2026-08-04",
+      "form": "8-K",
+      "report_date": "2026-08-04"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "8-K déposé le 2026-08-04",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040626000167/jnj-20260804.htm"
+  },
+  {
+    "date_observation": "2026-07-29",
+    "date_publication": "2026-07-29",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-26-000163",
+      "cik": 200406,
+      "filing_date": "2026-07-29",
+      "form": "8-K",
+      "report_date": "2026-07-29"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "8-K déposé le 2026-07-29",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040626000163/jnj-20260729.htm"
+  },
+  {
+    "date_observation": "2026-07-27",
+    "date_publication": "2026-07-28",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-26-000155",
+      "cik": 200406,
+      "filing_date": "2026-07-28",
+      "form": "8-K",
+      "report_date": "2026-07-27"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "8-K déposé le 2026-07-28",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040626000155/jnj-20260727.htm"
+  },
+  {
+    "date_observation": "2026-06-28",
+    "date_publication": "2026-07-23",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-26-000153",
+      "cik": 200406,
+      "filing_date": "2026-07-23",
+      "form": "10-Q",
+      "report_date": "2026-06-28"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "10-Q déposé le 2026-07-23",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040626000153/jnj-20260628.htm"
+  },
+  {
+    "date_observation": "2026-07-15",
+    "date_publication": "2026-07-15",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-26-000146",
+      "cik": 200406,
+      "filing_date": "2026-07-15",
+      "form": "8-K",
+      "report_date": "2026-07-15"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "8-K déposé le 2026-07-15",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040626000146/jnj-20260715.htm"
+  },
+  {
+    "date_observation": "2026-04-23",
+    "date_publication": "2026-04-28",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-26-000089",
+      "cik": 200406,
+      "filing_date": "2026-04-28",
+      "form": "8-K",
+      "report_date": "2026-04-23"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "8-K déposé le 2026-04-28",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040626000089/jnj-20260423.htm"
+  },
+  {
+    "date_observation": "2026-03-29",
+    "date_publication": "2026-04-22",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-26-000087",
+      "cik": 200406,
+      "filing_date": "2026-04-22",
+      "form": "10-Q",
+      "report_date": "2026-03-29"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "10-Q déposé le 2026-04-22",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040626000087/jnj-20260329.htm"
+  },
+  {
+    "date_observation": "2026-04-14",
+    "date_publication": "2026-04-14",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-26-000076",
+      "cik": 200406,
+      "filing_date": "2026-04-14",
+      "form": "8-K",
+      "report_date": "2026-04-14"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "8-K déposé le 2026-04-14",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040626000076/jnj-20260414.htm"
+  },
+  {
+    "date_observation": "2025-12-28",
+    "date_publication": "2026-02-11",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-26-000016",
+      "cik": 200406,
+      "filing_date": "2026-02-11",
+      "form": "10-K",
+      "report_date": "2025-12-28"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "10-K déposé le 2026-02-11",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040626000016/jnj-20251228.htm"
+  },
+  {
+    "date_observation": "2026-01-21",
+    "date_publication": "2026-01-21",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-26-000002",
+      "cik": 200406,
+      "filing_date": "2026-01-21",
+      "form": "8-K",
+      "report_date": "2026-01-21"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "8-K déposé le 2026-01-21",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040626000002/jnj-20260121.htm"
+  },
+  {
+    "date_observation": "2025-09-28",
+    "date_publication": "2025-10-22",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-25-000209",
+      "cik": 200406,
+      "filing_date": "2025-10-22",
+      "form": "10-Q",
+      "report_date": "2025-09-28"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "10-Q déposé le 2025-10-22",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040625000209/jnj-20250928.htm"
+  },
+  {
+    "date_observation": "2025-10-14",
+    "date_publication": "2025-10-14",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-25-000201",
+      "cik": 200406,
+      "filing_date": "2025-10-14",
+      "form": "8-K",
+      "report_date": "2025-10-14"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "8-K déposé le 2025-10-14",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040625000201/jnj-20251014.htm"
+  },
+  {
+    "date_observation": "2025-09-08",
+    "date_publication": "2025-09-09",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-25-000190",
+      "cik": 200406,
+      "filing_date": "2025-09-09",
+      "form": "8-K",
+      "report_date": "2025-09-08"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "8-K déposé le 2025-09-09",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040625000190/jnj-20250908.htm"
+  },
+  {
+    "date_observation": "2025-06-29",
+    "date_publication": "2025-07-24",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-25-000178",
+      "cik": 200406,
+      "filing_date": "2025-07-24",
+      "form": "10-Q",
+      "report_date": "2025-06-29"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "10-Q déposé le 2025-07-24",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040625000178/jnj-20250629.htm"
+  },
+  {
+    "date_observation": "2025-07-16",
+    "date_publication": "2025-07-16",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-25-000170",
+      "cik": 200406,
+      "filing_date": "2025-07-16",
+      "form": "8-K",
+      "report_date": "2025-07-16"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "8-K déposé le 2025-07-16",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040625000170/jnj-20250716.htm"
+  },
+  {
+    "date_observation": "2025-06-10",
+    "date_publication": "2025-06-10",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-25-000152",
+      "cik": 200406,
+      "filing_date": "2025-06-10",
+      "form": "8-K",
+      "report_date": "2025-06-10"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "8-K déposé le 2025-06-10",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040625000152/jnj-20250610.htm"
+  },
+  {
+    "date_observation": "2025-04-24",
+    "date_publication": "2025-04-30",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-25-000141",
+      "cik": 200406,
+      "filing_date": "2025-04-30",
+      "form": "8-K",
+      "report_date": "2025-04-24"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "8-K déposé le 2025-04-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040625000141/jnj-20250424.htm"
+  },
+  {
+    "date_observation": "2025-03-30",
+    "date_publication": "2025-04-23",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-25-000119",
+      "cik": 200406,
+      "filing_date": "2025-04-23",
+      "form": "10-Q",
+      "report_date": "2025-03-30"
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "10-Q déposé le 2025-04-23",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040625000119/jnj-20250330.htm"
+  }
+]

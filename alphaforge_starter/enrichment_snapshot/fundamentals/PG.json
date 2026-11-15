@@ -1,0 +1,40 @@
+[
+  {
+    "date_observation": "2026-06-30",
+    "date_publication": "2026-08-04",
+    "kind": "fundamentals",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000080424-26-000103",
+      "cik": 80424,
+      "currency": "USD",
+      "filing_date": "2026-08-04",
+      "form": "10-K",
+      "metrics": {
+        "cash": 9942000000,
+        "equity": 54311000000,
+        "long_term_debt": 22842000000,
+        "net_income": 16046000000,
+        "operating_cash_flow": 19556000000,
+        "revenue": 87032000000,
+        "total_assets": 126521000000
+      },
+      "period_end": "2026-06-30",
+      "xbrl_concepts": {
+        "cash": "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+        "equity": "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+        "long_term_debt": "LongTermDebtNoncurrent",
+        "net_income": "NetIncomeLoss",
+        "operating_cash_flow": "NetCashProvidedByUsedInOperatingActivities",
+        "revenue": "Revenues",
+        "total_assets": "Assets"
+      }
+    },
+    "text": null,
+    "ticker": "PG",
+    "title": "10-K déposé le 2026-08-04, exercice clos le 2026-06-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/80424/000008042426000103/"
+  }
+]

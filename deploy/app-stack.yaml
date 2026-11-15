@@ -25,6 +25,12 @@ Parameters:
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Au moins deux sous-réseaux publics de zones différentes.
+  SecUserAgent:
+    Type: String
+    Default: ""
+    Description: >-
+      Identification exigée par la SEC pour SEC EDGAR (nom et courriel de l'équipe). Vide : dépôts et fondamentaux non branchés,
+      affichés comme tels. Ce n'est pas un secret, mais une donnée de contact : elle n'est jamais écrite dans le dépôt git.
   CloudFrontPrefixList:
     Type: String
     Default: pl-3b927c52
@@ -189,6 +195,7 @@ Resources:
             - { Name: AWS_REGION, Value: !Ref AWS::Region }
             - { Name: ALPHAFORGE_LLM_MODEL, Value: !Ref ModelId }
             - { Name: ALPHAFORGE_S3_BUCKET, Value: !Ref ArtifactBucket }
+            - { Name: ALPHAFORGE_SEC_USER_AGENT, Value: !Ref SecUserAgent }
           LogConfiguration:
             LogDriver: awslogs
             Options:

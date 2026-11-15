@@ -11,6 +11,8 @@ def shown_value(value: float, unit: str) -> float:
         return round(v * 100, 1)
     if unit == "corr":
         return round(v, 2)
+    if unit == "money":  # montant en dollars US, affiché en milliards (ou en millions sous le milliard), une décimale
+        return round(v / 1e9, 1) if v >= 1e9 else round(v / 1e6, 1)
     return v if v.is_integer() else round(v, 1)
 
 
@@ -22,6 +24,12 @@ def format_number(value: float, unit: str, lang: str) -> str:
     if unit == "pct":
         s = f"{x:.1f}"
         return s.replace(".", ",") + " %" if lang == "fr" else s + "%"
+    if unit == "money":
+        big = abs(float(value)) >= 1e9
+        s = f"{x:.1f}"
+        if lang == "fr":
+            return s.replace(".", ",") + (" milliards $ US" if big else " millions $ US")
+        return "USD " + s + (" billion" if big else " million")
     s = str(int(x)) if float(x).is_integer() else f"{x:.1f}"
     return s.replace(".", ",") if lang == "fr" else s
 

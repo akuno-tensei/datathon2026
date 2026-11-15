@@ -25,6 +25,9 @@ from alphaforge.app import forms, views
 from alphaforge.app.i18n import t
 from alphaforge.app.labels import GLOSSARY, human, human_date, humanize_text, window_name
 from alphaforge.app.pipeline import AlphaForge, Analysis, enrichment_coverage
+from alphaforge.explainability.config import TEMPLATES as EXPL_TEMPLATES
+from alphaforge.explainability.compose import FUND_ORDER
+from alphaforge.explainability.formatting import format_number
 from alphaforge.governance import GovernanceConfig
 from alphaforge.orchestrator import ProfileError, load_profile, validate_profile
 
@@ -244,7 +247,12 @@ def render_enrichment(a: Analysis, key: str) -> None:
     for i, r in enumerate(ev.rows):
         with st.container(border=True):
             if r.status == "ok":
-                st.markdown(f"**{r.ticker}** · {human(r.kind, lang)} · {t('enr_conf_' + r.confidence, lang)} · {t('enr_published', lang)} {r.date_publication} · {t('enr_source', lang)} {r.source}")
+                st.markdown(f"**{r.ticker}** · {human(r.kind, lang)} · {t('enr_conf_' + r.confidence, lang)} · {t('enr_published', lang)} {human_date(str(r.date_publication), lang)} · {t('enr_source', lang)} {r.source}")
+                if r.kind == "fundamentals" and (r.value or {}).get("metrics"):  # chiffres du rapport annuel, tels qu'au registre
+                    labels = EXPL_TEMPLATES[lang]["fund_labels"]
+                    st.caption(t("enr_fund_period", lang, end=human_date(str(r.value.get("period_end")), lang), form=r.value.get("form", "")))
+                    st.table(pd.DataFrame([{t("enr_fund_metric", lang): labels.get(k, human(k, lang)).replace("{amount}", "").strip().capitalize(), t("enr_fund_amount", lang): format_number(v, "money", lang) if v >= 0 else "−" + format_number(v, "money", lang)}
+                                           for k, v in sorted(r.value["metrics"].items(), key=lambda kv: FUND_ORDER.index(kv[0]) if kv[0] in FUND_ORDER else 99)]))
                 for f in r.facts[:3]:
                     st.markdown(f"> {f['excerpt']}")
                 if r.url:

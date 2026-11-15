@@ -1,0 +1,154 @@
+[
+  {
+    "date_observation": "2026-09-30",
+    "date_publication": "2026-11-02",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0002115436-26-000020",
+      "cik": 2115436,
+      "filing_date": "2026-11-02",
+      "form": "10-Q",
+      "report_date": "2026-09-30"
+    },
+    "text": null,
+    "ticker": "XOM",
+    "title": "10-Q déposé le 2026-11-02",
+    "url": "https://www.sec.gov/Archives/edgar/data/2115436/000211543626000020/xom-20260930.htm"
+  },
+  {
+    "date_observation": "2026-10-30",
+    "date_publication": "2026-10-30",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0002115436-26-000018",
+      "cik": 2115436,
+      "filing_date": "2026-10-30",
+      "form": "8-K",
+      "report_date": "2026-10-30"
+    },
+    "text": null,
+    "ticker": "XOM",
+    "title": "8-K déposé le 2026-10-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/2115436/000211543626000018/xom-20261030.htm"
+  },
+  {
+    "date_observation": "2026-10-16",
+    "date_publication": "2026-10-16",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0002115436-26-000013",
+      "cik": 2115436,
+      "filing_date": "2026-10-16",
+      "form": "8-K",
+      "report_date": "2026-10-16"
+    },
+    "text": null,
+    "ticker": "XOM",
+    "title": "8-K déposé le 2026-10-16",
+    "url": "https://www.sec.gov/Archives/edgar/data/2115436/000211543626000013/xom-20261016.htm"
+  },
+  {
+    "date_observation": "2026-09-25",
+    "date_publication": "2026-09-25",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-402986",
+      "cik": 2115436,
+      "filing_date": "2026-09-25",
+      "form": "8-K",
+      "report_date": "2026-09-25"
+    },
+    "text": null,
+    "ticker": "XOM",
+    "title": "8-K déposé le 2026-09-25",
+    "url": "https://www.sec.gov/Archives/edgar/data/2115436/000119312526402986/d15072d8k.htm"
+  },
+  {
+    "date_observation": "2026-08-28",
+    "date_publication": "2026-08-28",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-373026",
+      "cik": 2115436,
+      "filing_date": "2026-08-28",
+      "form": "8-K",
+      "report_date": "2026-08-28"
+    },
+    "text": null,
+    "ticker": "XOM",
+    "title": "8-K déposé le 2026-08-28",
+    "url": "https://www.sec.gov/Archives/edgar/data/2115436/000119312526373026/d82162d8k.htm"
+  },
+  {
+    "date_observation": "2026-06-30",
+    "date_publication": "2026-08-03",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000034088-26-000093",
+      "cik": 2115436,
+      "filing_date": "2026-08-03",
+      "form": "10-Q",
+      "report_date": "2026-06-30"
+    },
+    "text": null,
+    "ticker": "XOM",
+    "title": "10-Q déposé le 2026-08-03",
+    "url": "https://www.sec.gov/Archives/edgar/data/2115436/000003408826000093/xom-20260630.htm"
+  },
+  {
+    "date_observation": "2026-07-31",
+    "date_publication": "2026-07-31",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0002115436-26-000006",
+      "cik": 2115436,
+      "filing_date": "2026-07-31",
+      "form": "8-K",
+      "report_date": "2026-07-31"
+    },
+    "text": null,
+    "ticker": "XOM",
+    "title": "8-K déposé le 2026-07-31",
+    "url": "https://www.sec.gov/Archives/edgar/data/2115436/000211543626000006/xom-20260731.htm"
+  },
+  {
+    "date_observation": "2026-07-07",
+    "date_publication": "2026-07-07",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0002115436-26-000003",
+      "cik": 2115436,
+      "filing_date": "2026-07-07",
+      "form": "8-K",
+      "report_date": "2026-07-07"
+    },
+    "text": null,
+    "ticker": "XOM",
+    "title": "8-K déposé le 2026-07-07",
+    "url": "https://www.sec.gov/Archives/edgar/data/2115436/000211543626000003/xom-20260707.htm"
+  }
+]

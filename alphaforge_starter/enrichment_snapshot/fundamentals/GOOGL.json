@@ -1,0 +1,40 @@
+[
+  {
+    "date_observation": "2025-12-31",
+    "date_publication": "2026-02-05",
+    "kind": "fundamentals",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001652044-26-000018",
+      "cik": 1652044,
+      "currency": "USD",
+      "filing_date": "2026-02-05",
+      "form": "10-K",
+      "metrics": {
+        "cash": 30708000000,
+        "equity": 415265000000,
+        "long_term_debt": 46547000000,
+        "net_income": 132170000000,
+        "operating_cash_flow": 164713000000,
+        "revenue": 402836000000,
+        "total_assets": 595281000000
+      },
+      "period_end": "2025-12-31",
+      "xbrl_concepts": {
+        "cash": "CashAndCashEquivalentsAtCarryingValue",
+        "equity": "StockholdersEquity",
+        "long_term_debt": "LongTermDebtNoncurrent",
+        "net_income": "NetIncomeLoss",
+        "operating_cash_flow": "NetCashProvidedByUsedInOperatingActivities",
+        "revenue": "Revenues",
+        "total_assets": "Assets"
+      }
+    },
+    "text": null,
+    "ticker": "GOOGL",
+    "title": "10-K déposé le 2026-02-05, exercice clos le 2025-12-31",
+    "url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000018/"
+  }
+]

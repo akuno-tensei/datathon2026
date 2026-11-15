@@ -10,7 +10,7 @@ class StrictModel(BaseModel):
 
 Label = Literal["fait", "hypothese", "scenario_fictif"]
 Basis = Literal["evidence", "assumption", "scenario"]  # origine d'un énoncé ; `label_content` en déduit l'étiquette
-Unit = Literal["pct", "years", "ratio", "corr"]  # corr : coefficient de corrélation, deux décimales, signe conservé
+Unit = Literal["pct", "years", "ratio", "corr", "money"]  # corr : deux décimales, signe conservé ; money : millions ou milliards de dollars US
 
 
 class Figure(StrictModel):

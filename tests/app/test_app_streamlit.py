@@ -444,7 +444,8 @@ def test_toggle_switches_between_the_enriched_mode_and_the_four_agent_core(app):
 
 def test_sources_actually_connected_are_shown_and_nothing_is_pretended(app):
     line = next(c.value for c in app.caption if c.value.startswith("ℹ Sources d'enrichissement"))
-    assert "Cotes ESG et controverses : non branchée" in line and "Dépôts réglementaires (SEC EDGAR) : non branchée" in line
+    assert "Cotes ESG et controverses : non branchée" in line
+    assert "Dépôts réglementaires (SEC EDGAR) : instantané hors ligne" in line  # sans identification SEC : l'instantané versionné, dit comme tel
     assert "jamais une valeur supposée" in line
     app.text_input(key="sec_ua").set_value("Jeanne Test, jeanne@example.org").run()
     line = next(c.value for c in app.caption if c.value.startswith("ℹ Sources d'enrichissement"))
@@ -559,3 +560,32 @@ def test_the_analysis_shows_periods_in_plain_words_not_codes(app):
     assert list(df.columns)[:3] == ["Période", "Du", "Au"] and "année 2022" in set(df["Période"])
     assert any(e.label.startswith("🧮 Hypothèses de calcul") for e in app.expander)  # formules repliées, toujours accessibles
     assert any(m.value.startswith("**NVDA** — ⚠ SENSIBLE : la volatilité change de") for m in app.markdown)
+
+
+# ---- fondamentaux SEC EDGAR dans l'interface (servis par le cache, sans réseau) --------------------------------
+def test_fundamentals_show_as_a_table_and_in_the_verified_explanation(tmp_path, monkeypatch):
+    import json
+
+    import streamlit as st
+    import alphaforge.app.pipeline as pipeline
+
+    cache = tmp_path / "cache"
+    (cache / "fundamentals").mkdir(parents=True)
+    (cache / "fundamentals" / "NVDA.json").write_text(json.dumps([{
+        "ticker": "NVDA", "kind": "fundamentals", "source_id": "sec_edgar", "url": "https://www.sec.gov/Archives/edgar/data/1045810/A/",
+        "title": "10-K", "date_publication": "2026-02-25", "date_observation": "2026-01-25", "retrieved_on": "2026-11-13",
+        "structured": {"form": "10-K", "filing_date": "2026-02-25", "period_end": "2026-01-25", "accession_number": "A", "cik": 1045810,
+                       "currency": "USD", "metrics": {"revenue": 130_497_000_000, "net_income": 72_880_000_000}, "xbrl_concepts": {}},
+    }]), encoding="utf-8")
+    monkeypatch.setattr(pipeline, "ENRICHMENT_CACHE_DIR", cache)
+    monkeypatch.setattr(pipeline, "USER_PROFILES_DIR", tmp_path / "profiles")
+    st.cache_resource.clear()
+    app = AppTest.from_file(APP, default_timeout=60).run()
+    app.text_area(key="req_box").set_value("Évalue NVDA et ses résultats")
+    next(b for b in app.button if b.label == "Envoyer").click().run()
+    assert not app.exception, app.exception
+    table = next(t.value for t in app.table if "Indicateur" in t.value.columns)
+    assert list(table["Indicateur"]) == ["Chiffre d'affaires", "Bénéfice net"]
+    assert list(table["Montant"]) == ["130,5 milliards $ US", "72,9 milliards $ US"]
+    assert any("Fondamentaux de NVDA" in m.value and "niveau A" in m.value for m in app.markdown)
+    assert any("Explication vérifiée" in s.value for s in app.success)

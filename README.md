@@ -135,9 +135,25 @@ python3 deploy/deploy.py --bucket <bucket-des-archives> --delete  # supprime les
 
 **En local**, Bedrock et S3 sont activés par variables d'environnement : `ALPHAFORGE_LLM=0` désactive Bedrock (les tests le font), `ALPHAFORGE_LLM_MODEL` change de modèle, `ALPHAFORGE_S3_BUCKET` active l'archive.
 
+## Après l'événement
+
+Le compte AWS de l'événement sera supprimé, avec la démo hébergée, Bedrock et l'archive S3. Le projet reste utilisable :
+
+| Élément | Sans compte AWS |
+|---|---|
+| Prototype local (`streamlit run alphaforge/app/streamlit_app.py`) | Fonctionne hors ligne : données des 31 actifs dans `alphaforge_starter/`. |
+| Interprétation des demandes | Par règles, détecté automatiquement (aucun identifiant AWS : Bedrock n'est pas tenté) et affiché sous le verdict. Score au banc d'essai : voir `deploy/bench_results.json` (règles contre Haiku 4.5). |
+| Archive des registres | Absente ; l'export Markdown de l'interface reste disponible. |
+| SEC EDGAR (dépôts, fondamentaux) | Gratuit et indépendant d'AWS : en direct avec une identification SEC, sinon l'instantané versionné. |
+| Tests et CI | Inchangés : ils n'utilisent jamais AWS. |
+
+**Redéployer sur un autre compte AWS** : `python3 deploy/deploy.py --bucket <bucket>` recrée tout (modèles CloudFormation dans `deploy/`) ; ajouter `ALPHAFORGE_SEC_USER_AGENT="Nom contact@exemple.org"` devant la commande pour brancher la SEC. Coût indicatif, non vérifié sur la grille tarifaire : quelques dollars par jour pour Fargate et l'équilibreur de charge, plus une fraction de cent par demande Bedrock. `--delete` supprime les deux piles.
+
+**Mettre à jour l'instantané SEC** : `ALPHAFORGE_SEC_USER_AGENT="Nom contact@exemple.org" python3 alphaforge_starter/build_sec_snapshot.py` ; l'identification n'est écrite dans aucun fichier.
+
 ## Ce qui n'est pas couvert
 
-- **Enrichissement** (`alphaforge/enrichment/`, agent 2.1) : l'agent est appelé par l'orchestrateur quand le profil ou la demande crée un besoin (interrupteur « Enrichissement » dans l'interface ; une panne de l'agent n'arrête pas les quatre autres). Seul `EdgarProvider` (métadonnées des dépôts américains, identification SEC nom + courriel demandée dans l'onglet Sources, gardée en session seulement) est branché, avec un cache disque dans `alphaforge/app/cache/` (ignoré par git). Aucun fournisseur de cotes ESG, de fondamentaux, de nouvelles ou de composition de FNB n'est branché : ces besoins apparaissent comme des lacunes nommées. Les préférences ESG de Mateo ne sont donc pas encore vérifiables par des données ; la gouvernance le signale et nomme le substitut déclaré (le FNB filtré ESGV). Une controverse ne bloque que si elle vient d'une source de niveau A ou B ; un signal de niveau C (nouvelles) n'est qu'un avertissement. Les dépôts canadiens (SEDAR+) n'ont pas d'API publique documentée : ils restent une lacune.
+- **Enrichissement** (`alphaforge/enrichment/`, agent 2.1) : l'agent est appelé par l'orchestrateur quand le profil ou la demande crée un besoin (interrupteur « Enrichissement » dans l'interface ; une panne de l'agent n'arrête pas les quatre autres). Une source officielle est branchée : `EdgarProvider` (SEC EDGAR, niveau A), pour les métadonnées des dépôts américains et les fondamentaux du dernier rapport annuel déposé avant la date d'analyse (données XBRL « companyfacts » : chiffre d'affaires, bénéfice net, flux de trésorerie d'exploitation, trésorerie, dette à long terme, capitaux propres, actif total ; tous les chiffres viennent du même rapport, un indicateur absent est omis). Elle couvre les actions américaines ; les titres canadiens restent une lacune (SEDAR+ n'a pas d'API publique). Les fondamentaux se déclenchent quand la demande les évoque (« résultats », « bénéfices », « dette »…). La SEC exige une identification (nom et courriel) : saisie dans l'onglet Sources (gardée en session seulement) ou variable `ALPHAFORGE_SEC_USER_AGENT` (aussi sur la version hébergée). Sans elle, l'application sert l'instantané versionné `alphaforge_starter/enrichment_snapshot/` (données SEC arrêtées au 12 novembre 2026, voir son `SOURCE.md`), affiché comme tel ; XOM n'y a pas de fondamentaux (nouveau déclarant sans rapport annuel). Cache disque dans `alphaforge/app/cache/` (ignoré par git). Aucun fournisseur de cotes ESG, de nouvelles ou de composition de FNB n'est branché : ces besoins apparaissent comme des lacunes nommées. Les préférences ESG de Mateo ne sont donc pas encore vérifiables par des données ; la gouvernance le signale et nomme le substitut déclaré (le FNB filtré ESGV). Une controverse ne bloque que si elle vient d'une source de niveau A ou B ; un signal de niveau C (nouvelles) n'est qu'un avertissement. Les dépôts canadiens (SEDAR+) n'ont pas d'API publique documentée : ils restent une lacune.
 - **Transparence des FNB** : sans la composition des fonds, un FNB est traité comme une position unique.
 - **Pas de projection** : tout est descriptif ou rétrospectif.
 

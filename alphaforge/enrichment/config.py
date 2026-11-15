@@ -15,6 +15,24 @@ MAX_FACTS_PER_TEXT = 10
 FILING_FORMS: Set[str] = {"10-K", "10-Q", "8-K", "20-F", "40-F", "6-K"}
 MAX_FILINGS = 20
 
+# ---- fondamentaux (SEC EDGAR, données XBRL « companyfacts ») ----
+# Rapports annuels seulement : tous les chiffres viennent du même rapport, déposé avant la date d'analyse.
+ANNUAL_FORMS: Set[str] = {"10-K", "10-K/A", "20-F", "20-F/A", "40-F", "40-F/A"}
+# Indicateur -> concepts XBRL us-gaap, par ordre de préférence (une société n'emploie qu'un des libellés possibles).
+# « duration » : un flux sur l'exercice (≈ 1 an) ; « instant » : un solde à la date de clôture.
+FUNDAMENTAL_CONCEPTS: Dict[str, Dict[str, object]] = {
+    "revenue": {"period": "duration", "concepts": [
+        "RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues", "SalesRevenueNet", "RevenuesNetOfInterestExpense"]},
+    "net_income": {"period": "duration", "concepts": ["NetIncomeLoss", "ProfitLoss"]},
+    "operating_cash_flow": {"period": "duration", "concepts": ["NetCashProvidedByUsedInOperatingActivities"]},
+    "cash": {"period": "instant", "concepts": ["CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"]},
+    "long_term_debt": {"period": "instant", "concepts": ["LongTermDebtNoncurrent", "LongTermDebt"]},
+    # À défaut, capitaux propres y compris les participations ne donnant pas le contrôle (concept retenu consigné dans xbrl_concepts).
+    "equity": {"period": "instant", "concepts": ["StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"]},
+    "total_assets": {"period": "instant", "concepts": ["Assets"]},
+}
+ANNUAL_DAYS = (330, 400)  # durée acceptée d'un exercice, en jours (exercices de 52 ou 53 semaines)
+
 # ---- besoins déclenchés par le profil (kind == "theme") ----
 ESG_THEMES: Set[str] = {"esg", "isr", "investissement_responsable", "durable"}
 CONTROVERSY_THEMES: Set[str] = {"eviter_controverses", "controverses", "sans_controverse"}

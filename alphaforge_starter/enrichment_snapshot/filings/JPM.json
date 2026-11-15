@@ -1,0 +1,382 @@
+[
+  {
+    "date_observation": "2026-09-30",
+    "date_publication": "2026-11-03",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-069523",
+      "cik": 19617,
+      "filing_date": "2026-11-03",
+      "form": "10-Q",
+      "report_date": "2026-09-30"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "10-Q déposé le 2026-11-03",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026069523/jpm-20260930.htm"
+  },
+  {
+    "date_observation": "2026-10-20",
+    "date_publication": "2026-10-20",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-426704",
+      "cik": 19617,
+      "filing_date": "2026-10-20",
+      "form": "8-K",
+      "report_date": "2026-10-20"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-10-20",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000119312526426704/d351999d8k.htm"
+  },
+  {
+    "date_observation": "2026-10-13",
+    "date_publication": "2026-10-13",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-065616",
+      "cik": 19617,
+      "filing_date": "2026-10-13",
+      "form": "8-K",
+      "report_date": "2026-10-13"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-10-13",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026065616/jpm-20261013.htm"
+  },
+  {
+    "date_observation": "2026-10-13",
+    "date_publication": "2026-10-13",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-065582",
+      "cik": 19617,
+      "filing_date": "2026-10-13",
+      "form": "8-K",
+      "report_date": "2026-10-13"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-10-13",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026065582/jpm-20261013.htm"
+  },
+  {
+    "date_observation": "2026-06-30",
+    "date_publication": "2026-08-06",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-054343",
+      "cik": 19617,
+      "filing_date": "2026-08-06",
+      "form": "10-Q",
+      "report_date": "2026-06-30"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "10-Q déposé le 2026-08-06",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026054343/jpm-20260630.htm"
+  },
+  {
+    "date_observation": "2026-07-23",
+    "date_publication": "2026-07-23",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-314128",
+      "cik": 19617,
+      "filing_date": "2026-07-23",
+      "form": "8-K",
+      "report_date": "2026-07-23"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-07-23",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000119312526314128/d103985d8k.htm"
+  },
+  {
+    "date_observation": "2026-07-21",
+    "date_publication": "2026-07-23",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000019617-26-000288",
+      "cik": 19617,
+      "filing_date": "2026-07-23",
+      "form": "8-K",
+      "report_date": "2026-07-21"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-07-23",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000001961726000288/jpm-20260721.htm"
+  },
+  {
+    "date_observation": "2026-07-14",
+    "date_publication": "2026-07-14",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-048086",
+      "cik": 19617,
+      "filing_date": "2026-07-14",
+      "form": "8-K",
+      "report_date": "2026-07-14"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-07-14",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026048086/jpm-20260714.htm"
+  },
+  {
+    "date_observation": "2026-07-14",
+    "date_publication": "2026-07-14",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-048078",
+      "cik": 19617,
+      "filing_date": "2026-07-14",
+      "form": "8-K",
+      "report_date": "2026-07-14"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-07-14",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026048078/jpm-20260714.htm"
+  },
+  {
+    "date_observation": "2026-06-24",
+    "date_publication": "2026-06-25",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000019617-26-000241",
+      "cik": 19617,
+      "filing_date": "2026-06-25",
+      "form": "8-K",
+      "report_date": "2026-06-24"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-06-25",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000001961726000241/jpm-20260624.htm"
+  },
+  {
+    "date_observation": "2026-06-24",
+    "date_publication": "2026-06-24",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-045169",
+      "cik": 19617,
+      "filing_date": "2026-06-24",
+      "form": "8-K",
+      "report_date": "2026-06-24"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-06-24",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026045169/jpm-20260624.htm"
+  },
+  {
+    "date_observation": "2026-06-24",
+    "date_publication": "2026-06-24",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-045167",
+      "cik": 19617,
+      "filing_date": "2026-06-24",
+      "form": "8-K",
+      "report_date": "2026-06-24"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-06-24",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026045167/jpm-20260624.htm"
+  },
+  {
+    "date_observation": "2026-06-02",
+    "date_publication": "2026-06-02",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-253533",
+      "cik": 19617,
+      "filing_date": "2026-06-02",
+      "form": "8-K",
+      "report_date": "2026-06-02"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-06-02",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000119312526253533/d113536d8k.htm"
+  },
+  {
+    "date_observation": "2026-05-27",
+    "date_publication": "2026-05-27",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-242018",
+      "cik": 19617,
+      "filing_date": "2026-05-27",
+      "form": "8-K",
+      "report_date": "2026-05-27"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-05-27",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000119312526242018/d51433d8k.htm"
+  },
+  {
+    "date_observation": "2026-05-19",
+    "date_publication": "2026-05-21",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000019617-26-000228",
+      "cik": 19617,
+      "filing_date": "2026-05-21",
+      "form": "8-K",
+      "report_date": "2026-05-19"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-05-21",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000001961726000228/jpm-20260519.htm"
+  },
+  {
+    "date_observation": "2026-05-06",
+    "date_publication": "2026-05-07",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-211978",
+      "cik": 19617,
+      "filing_date": "2026-05-07",
+      "form": "8-K",
+      "report_date": "2026-05-06"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-05-07",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000119312526211978/d903351d8k.htm"
+  },
+  {
+    "date_observation": "2026-03-31",
+    "date_publication": "2026-05-01",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-029344",
+      "cik": 19617,
+      "filing_date": "2026-05-01",
+      "form": "10-Q",
+      "report_date": "2026-03-31"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "10-Q déposé le 2026-05-01",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026029344/jpm-20260331.htm"
+  },
+  {
+    "date_observation": "2026-04-21",
+    "date_publication": "2026-04-24",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000019617-26-000119",
+      "cik": 19617,
+      "filing_date": "2026-04-24",
+      "form": "8-K",
+      "report_date": "2026-04-21"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-04-24",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000001961726000119/jpm-20260421.htm"
+  },
+  {
+    "date_observation": "2026-04-23",
+    "date_publication": "2026-04-23",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-173739",
+      "cik": 19617,
+      "filing_date": "2026-04-23",
+      "form": "8-K",
+      "report_date": "2026-04-23"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-04-23",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000119312526173739/d235028d8k.htm"
+  },
+  {
+    "date_observation": "2026-04-14",
+    "date_publication": "2026-04-14",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-025013",
+      "cik": 19617,
+      "filing_date": "2026-04-14",
+      "form": "8-K",
+      "report_date": "2026-04-14"
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "8-K déposé le 2026-04-14",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026025013/jpm-20260414.htm"
+  }
+]

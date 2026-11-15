@@ -11,7 +11,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from ..enrichment import CachedProvider, CachingProvider, EdgarProvider, EnrichmentAgent
+from ..enrichment import CachedProvider, CachingProvider, EdgarProvider, EnrichmentAgent, ProviderError
 from ..explainability import Explainer, Explanation
 from ..governance import Governance
 from ..orchestrator import InvestorProfile, LLMParser, Orchestrator, ProfileError, QuantAnalyst, RuleBasedParser, RunResult, load_profile
@@ -21,10 +21,22 @@ from ..quant import DataStore
 from .archive import archive_notes, build_archive
 
 ENRICHMENT_CACHE_DIR = Path(__file__).resolve().parent / "cache" / "enrichment"  # données publiques déjà collectées (hors git)
+# Instantané SEC EDGAR versionné (dépôts et fondamentaux des actions américaines) : la démo hors ligne garde l'enrichissement.
+ENRICHMENT_SNAPSHOT_DIR = Path(__file__).resolve().parents[2] / "alphaforge_starter" / "enrichment_snapshot"
 USER_PROFILES_DIR = Path(__file__).resolve().parent / "profiles" / "user"  # profils créés depuis l'interface (données locales)
 # Interprétation des demandes par Amazon Bedrock. Modèle retenu par le banc d'essai deploy/bench_llm.py
 # (scores dans deploy/bench_results.json, jamais recopiés ici) : aucun signal de périmètre manqué.
 DEFAULT_LLM_MODEL = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+
+
+def aws_credentials_available() -> bool:
+    """Des identifiants AWS sont-ils disponibles (variables, fichier, rôle de la machine ou de la tâche) ? Aucun appel à un service."""
+    try:
+        import boto3
+
+        return boto3.session.Session().get_credentials() is not None
+    except Exception:  # boto3 absent ou configuration illisible
+        return False
 
 
 def build_parser() -> Any:
@@ -32,6 +44,8 @@ def build_parser() -> Any:
     ALPHAFORGE_LLM (« 0 » pour désactiver), ALPHAFORGE_LLM_MODEL, AWS_REGION. Aucun identifiant AWS dans le code :
     boto3 lit le rôle de la machine (profil d'instance ou rôle de tâche)."""
     if os.environ.get("ALPHAFORGE_LLM", "1") == "0":
+        return RuleBasedParser()
+    if not aws_credentials_available():  # poste sans compte AWS (par exemple après l'événement) : règles, sans tentative à chaque demande
         return RuleBasedParser()
     try:
         client = BedrockClient(os.environ.get("ALPHAFORGE_LLM_MODEL") or DEFAULT_LLM_MODEL,
@@ -78,37 +92,66 @@ class _CapturingExplainer:
         return self.last.text
 
 
-def build_enrichment_agent(sec_user_agent: Optional[str] = None, cache_dir: Optional[Path] = None, today: Optional[date] = None) -> EnrichmentAgent:
+class _FirstAvailable:
+    """Essaie chaque fournisseur dans l'ordre et rend le premier qui répond ; sinon l'erreur du premier (la plus parlante).
+    Sert la chaîne « SEC en direct -> cache local -> instantané du dépôt » : une source qui manque se voit dans la lacune."""
+
+    def __init__(self, *providers: Any):
+        self._providers = [p for p in providers if p is not None]
+        self.source_id = self._providers[0].source_id
+
+    def fetch(self, kind, ticker, as_of):
+        first = None
+        for p in self._providers:
+            try:
+                return p.fetch(kind, ticker, as_of)
+            except ProviderError as e:
+                first = first or e
+        raise first  # type: ignore[misc]
+
+
+def build_enrichment_agent(sec_user_agent: Optional[str] = None, cache_dir: Optional[Path] = None, today: Optional[date] = None,
+                           snapshot_dir: Optional[Path] = None) -> EnrichmentAgent:
     """Agent d'enrichissement avec les sources réellement disponibles ; une source absente donne une lacune explicite, jamais une valeur.
 
-    - dépôts (`fetch_filings`) : SEC EDGAR en direct si un identifiant (nom et courriel) est fourni, avec le cache en repli ;
-      sans identifiant, le cache seul (la SEC l'exige) ;
-    - ESG, fondamentaux, nouvelles, composition des FNB : aucune source en direct n'est branchée ; seules des données déjà
-      présentes dans le cache (`<cache>/<type>/<symbole>.json`) sont servies.
+    - dépôts (`fetch_filings`) et fondamentaux (`fetch_fundamentals`, dernier rapport annuel XBRL) : SEC EDGAR en direct si un
+      identifiant (nom et courriel) est fourni ; à défaut, ou si l'appel échoue, le cache local, puis l'instantané versionné
+      dans `alphaforge_starter/enrichment_snapshot/` (démo hors ligne, données arrêtées au 12 novembre 2026) ;
+    - ESG, nouvelles, composition des FNB : aucune source en direct n'est branchée ; seules des données déjà présentes dans
+      le cache (`<cache>/<type>/<symbole>.json`) sont servies.
     `today` : date de collecte consignée sur les fiches source (l'agent n'a pas d'horloge).
     """
-    cache = CachedProvider(Path(cache_dir) if cache_dir else ENRICHMENT_CACHE_DIR, source_id="cache")
     root = Path(cache_dir) if cache_dir else ENRICHMENT_CACHE_DIR
+    snap_root = Path(snapshot_dir) if snapshot_dir else ENRICHMENT_SNAPSHOT_DIR
+    cache = CachedProvider(root, source_id="cache")
+    snapshot = CachedProvider(snap_root, source_id="sec_edgar")
     providers: Dict[str, Any] = {}
-    if sec_user_agent and sec_user_agent.strip():
-        providers["fetch_filings"] = CachingProvider(EdgarProvider(sec_user_agent.strip(), today or date.today()), cache)
-    elif (root / "filings").is_dir():
-        providers["fetch_filings"] = cache
-    for tool, kind in (("fetch_esg", "esg"), ("fetch_fundamentals", "fundamentals"), ("fetch_news", "news"), ("fetch_etf_holdings", "etf_holdings")):
+    live = (CachingProvider(EdgarProvider(sec_user_agent.strip(), today or date.today()), cache)  # une instance : liste des déclarants lue une fois
+            if sec_user_agent and sec_user_agent.strip() else None)
+    for tool, kind in (("fetch_filings", "filings"), ("fetch_fundamentals", "fundamentals")):
+        chain = [live, cache if (live is None and (root / kind).is_dir()) else None, snapshot if (snap_root / kind).is_dir() else None]
+        if any(chain):
+            providers[tool] = _FirstAvailable(*chain)
+    for tool, kind in (("fetch_esg", "esg"), ("fetch_news", "news"), ("fetch_etf_holdings", "etf_holdings")):
         if (root / kind).is_dir():
             providers[tool] = cache
     return EnrichmentAgent(providers)
 
 
-def enrichment_coverage(sec_user_agent: Optional[str] = None, cache_dir: Optional[Path] = None) -> Dict[str, str]:
-    """Pour chaque outil de collecte : « live », « cache » ou « absent ». Affiché tel quel : ce qui n'est pas branché se voit."""
+def enrichment_coverage(sec_user_agent: Optional[str] = None, cache_dir: Optional[Path] = None,
+                        snapshot_dir: Optional[Path] = None) -> Dict[str, str]:
+    """Pour chaque outil de collecte : « live », « cache », « snapshot » ou « absent ». Affiché tel quel : ce qui n'est pas branché se voit."""
     root = Path(cache_dir) if cache_dir else ENRICHMENT_CACHE_DIR
+    snap_root = Path(snapshot_dir) if snapshot_dir else ENRICHMENT_SNAPSHOT_DIR
     out: Dict[str, str] = {}
     for tool, kind in (("fetch_filings", "filings"), ("fetch_esg", "esg"), ("fetch_fundamentals", "fundamentals"), ("fetch_news", "news"), ("fetch_etf_holdings", "etf_holdings")):
-        if tool == "fetch_filings" and sec_user_agent and sec_user_agent.strip():
+        sec = tool in ("fetch_filings", "fetch_fundamentals")
+        if sec and sec_user_agent and sec_user_agent.strip():
             out[tool] = "live"
         elif (root / kind).is_dir():
             out[tool] = "cache"
+        elif sec and (snap_root / kind).is_dir():
+            out[tool] = "snapshot"
         else:
             out[tool] = "absent"
     return out

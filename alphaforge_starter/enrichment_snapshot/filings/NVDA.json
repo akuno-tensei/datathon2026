@@ -1,0 +1,382 @@
+[
+  {
+    "date_observation": "2026-11-11",
+    "date_publication": "2026-11-12",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000082",
+      "cik": 1045810,
+      "filing_date": "2026-11-12",
+      "form": "8-K",
+      "report_date": "2026-11-11"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2026-11-12",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000082/nvda-20261111.htm"
+  },
+  {
+    "date_observation": "2026-09-02",
+    "date_publication": "2026-09-03",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000078",
+      "cik": 1045810,
+      "filing_date": "2026-09-03",
+      "form": "8-K",
+      "report_date": "2026-09-02"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2026-09-03",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000078/nvda-20260902.htm"
+  },
+  {
+    "date_observation": "2026-07-26",
+    "date_publication": "2026-08-26",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000075",
+      "cik": 1045810,
+      "filing_date": "2026-08-26",
+      "form": "10-Q",
+      "report_date": "2026-07-26"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "10-Q déposé le 2026-08-26",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm"
+  },
+  {
+    "date_observation": "2026-08-26",
+    "date_publication": "2026-08-26",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000073",
+      "cik": 1045810,
+      "filing_date": "2026-08-26",
+      "form": "8-K",
+      "report_date": "2026-08-26"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2026-08-26",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000073/nvda-20260826.htm"
+  },
+  {
+    "date_observation": "2026-08-17",
+    "date_publication": "2026-08-17",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000069",
+      "cik": 1045810,
+      "filing_date": "2026-08-17",
+      "form": "8-K",
+      "report_date": "2026-08-17"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2026-08-17",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000069/nvda-20260817.htm"
+  },
+  {
+    "date_observation": "2026-06-28",
+    "date_publication": "2026-07-02",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000060",
+      "cik": 1045810,
+      "filing_date": "2026-07-02",
+      "form": "8-K",
+      "report_date": "2026-06-28"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2026-07-02",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000060/nvda-20260628.htm"
+  },
+  {
+    "date_observation": "2026-06-24",
+    "date_publication": "2026-06-30",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000056",
+      "cik": 1045810,
+      "filing_date": "2026-06-30",
+      "form": "8-K",
+      "report_date": "2026-06-24"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2026-06-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000056/nvda-20260624.htm"
+  },
+  {
+    "date_observation": "2026-06-15",
+    "date_publication": "2026-06-18",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-275783",
+      "cik": 1045810,
+      "filing_date": "2026-06-18",
+      "form": "8-K",
+      "report_date": "2026-06-15"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2026-06-18",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000119312526275783/d48176d8k.htm"
+  },
+  {
+    "date_observation": "2026-04-26",
+    "date_publication": "2026-05-20",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000052",
+      "cik": 1045810,
+      "filing_date": "2026-05-20",
+      "form": "10-Q",
+      "report_date": "2026-04-26"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "10-Q déposé le 2026-05-20",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm"
+  },
+  {
+    "date_observation": "2026-05-20",
+    "date_publication": "2026-05-20",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000051",
+      "cik": 1045810,
+      "filing_date": "2026-05-20",
+      "form": "8-K",
+      "report_date": "2026-05-20"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2026-05-20",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000051/nvda-20260520.htm"
+  },
+  {
+    "date_observation": "2026-05-07",
+    "date_publication": "2026-05-08",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000028",
+      "cik": 1045810,
+      "filing_date": "2026-05-08",
+      "form": "8-K",
+      "report_date": "2026-05-07"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2026-05-08",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000028/nvda-20260507.htm"
+  },
+  {
+    "date_observation": "2026-04-24",
+    "date_publication": "2026-04-27",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000026",
+      "cik": 1045810,
+      "filing_date": "2026-04-27",
+      "form": "8-K",
+      "report_date": "2026-04-24"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2026-04-27",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000026/nvda-20260424.htm"
+  },
+  {
+    "date_observation": "2026-03-02",
+    "date_publication": "2026-03-06",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000024",
+      "cik": 1045810,
+      "filing_date": "2026-03-06",
+      "form": "8-K",
+      "report_date": "2026-03-02"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2026-03-06",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000024/nvda-20260302.htm"
+  },
+  {
+    "date_observation": "2026-01-25",
+    "date_publication": "2026-02-25",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000021",
+      "cik": 1045810,
+      "filing_date": "2026-02-25",
+      "form": "10-K",
+      "report_date": "2026-01-25"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "10-K déposé le 2026-02-25",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+  },
+  {
+    "date_observation": "2026-02-25",
+    "date_publication": "2026-02-25",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000019",
+      "cik": 1045810,
+      "filing_date": "2026-02-25",
+      "form": "8-K",
+      "report_date": "2026-02-25"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2026-02-25",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000019/nvda-20260225.htm"
+  },
+  {
+    "date_observation": "2026-01-20",
+    "date_publication": "2026-01-23",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-26-000003",
+      "cik": 1045810,
+      "filing_date": "2026-01-23",
+      "form": "8-K",
+      "report_date": "2026-01-20"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2026-01-23",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000003/nvda-20260120.htm"
+  },
+  {
+    "date_observation": "2025-10-26",
+    "date_publication": "2025-11-19",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-25-000230",
+      "cik": 1045810,
+      "filing_date": "2025-11-19",
+      "form": "10-Q",
+      "report_date": "2025-10-26"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "10-Q déposé le 2025-11-19",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000230/nvda-20251026.htm"
+  },
+  {
+    "date_observation": "2025-11-19",
+    "date_publication": "2025-11-19",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-25-000228",
+      "cik": 1045810,
+      "filing_date": "2025-11-19",
+      "form": "8-K",
+      "report_date": "2025-11-19"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2025-11-19",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000228/nvda-20251119.htm"
+  },
+  {
+    "date_observation": "2025-07-27",
+    "date_publication": "2025-08-27",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-25-000209",
+      "cik": 1045810,
+      "filing_date": "2025-08-27",
+      "form": "10-Q",
+      "report_date": "2025-07-27"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "10-Q déposé le 2025-08-27",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000209/nvda-20250727.htm"
+  },
+  {
+    "date_observation": "2025-08-27",
+    "date_publication": "2025-08-27",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001045810-25-000207",
+      "cik": 1045810,
+      "filing_date": "2025-08-27",
+      "form": "8-K",
+      "report_date": "2025-08-27"
+    },
+    "text": null,
+    "ticker": "NVDA",
+    "title": "8-K déposé le 2025-08-27",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000207/nvda-20250827.htm"
+  }
+]

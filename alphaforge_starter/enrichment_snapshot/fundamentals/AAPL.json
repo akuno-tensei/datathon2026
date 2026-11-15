@@ -1,0 +1,40 @@
+[
+  {
+    "date_observation": "2026-09-26",
+    "date_publication": "2026-11-03",
+    "kind": "fundamentals",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000320193-26-000026",
+      "cik": 320193,
+      "currency": "USD",
+      "filing_date": "2026-11-03",
+      "form": "10-K",
+      "metrics": {
+        "cash": 36305000000,
+        "equity": 112093000000,
+        "long_term_debt": 68208000000,
+        "net_income": 132175000000,
+        "operating_cash_flow": 145097000000,
+        "revenue": 478834000000,
+        "total_assets": 404548000000
+      },
+      "period_end": "2026-09-26",
+      "xbrl_concepts": {
+        "cash": "CashAndCashEquivalentsAtCarryingValue",
+        "equity": "StockholdersEquity",
+        "long_term_debt": "LongTermDebtNoncurrent",
+        "net_income": "NetIncomeLoss",
+        "operating_cash_flow": "NetCashProvidedByUsedInOperatingActivities",
+        "revenue": "RevenueFromContractWithCustomerExcludingAssessedTax",
+        "total_assets": "Assets"
+      }
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "10-K déposé le 2026-11-03, exercice clos le 2026-09-26",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/"
+  }
+]

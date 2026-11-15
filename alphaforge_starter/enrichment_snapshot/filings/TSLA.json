@@ -1,0 +1,382 @@
+[
+  {
+    "date_observation": "2026-09-30",
+    "date_publication": "2026-10-22",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-066775",
+      "cik": 1318605,
+      "filing_date": "2026-10-22",
+      "form": "10-Q",
+      "report_date": "2026-09-30"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "10-Q déposé le 2026-10-22",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026066775/tsla-20260930.htm"
+  },
+  {
+    "date_observation": "2026-10-21",
+    "date_publication": "2026-10-21",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-066738",
+      "cik": 1318605,
+      "filing_date": "2026-10-21",
+      "form": "8-K",
+      "report_date": "2026-10-21"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2026-10-21",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026066738/tsla-20261021.htm"
+  },
+  {
+    "date_observation": "2026-10-02",
+    "date_publication": "2026-10-02",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-064366",
+      "cik": 1318605,
+      "filing_date": "2026-10-02",
+      "form": "8-K",
+      "report_date": "2026-10-02"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2026-10-02",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026064366/tsla-20261002.htm"
+  },
+  {
+    "date_observation": "2026-09-29",
+    "date_publication": "2026-09-29",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-063820",
+      "cik": 1318605,
+      "filing_date": "2026-09-29",
+      "form": "8-K",
+      "report_date": "2026-09-29"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2026-09-29",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026063820/tsla-20260929.htm"
+  },
+  {
+    "date_observation": "2026-06-30",
+    "date_publication": "2026-07-23",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-049270",
+      "cik": 1318605,
+      "filing_date": "2026-07-23",
+      "form": "10-Q",
+      "report_date": "2026-06-30"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "10-Q déposé le 2026-07-23",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026049270/tsla-20260630.htm"
+  },
+  {
+    "date_observation": "2026-07-22",
+    "date_publication": "2026-07-22",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-049213",
+      "cik": 1318605,
+      "filing_date": "2026-07-22",
+      "form": "8-K",
+      "report_date": "2026-07-22"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2026-07-22",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026049213/tsla-20260722.htm"
+  },
+  {
+    "date_observation": "2026-07-02",
+    "date_publication": "2026-07-02",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-046717",
+      "cik": 1318605,
+      "filing_date": "2026-07-02",
+      "form": "8-K",
+      "report_date": "2026-07-02"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2026-07-02",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026046717/tsla-20260702.htm"
+  },
+  {
+    "date_observation": "2026-03-31",
+    "date_publication": "2026-04-23",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-026673",
+      "cik": 1318605,
+      "filing_date": "2026-04-23",
+      "form": "10-Q",
+      "report_date": "2026-03-31"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "10-Q déposé le 2026-04-23",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026026673/tsla-20260331.htm"
+  },
+  {
+    "date_observation": "2026-04-22",
+    "date_publication": "2026-04-22",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-026551",
+      "cik": 1318605,
+      "filing_date": "2026-04-22",
+      "form": "8-K",
+      "report_date": "2026-04-22"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2026-04-22",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026026551/tsla-20260422.htm"
+  },
+  {
+    "date_observation": "2026-04-02",
+    "date_publication": "2026-04-02",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-022956",
+      "cik": 1318605,
+      "filing_date": "2026-04-02",
+      "form": "8-K",
+      "report_date": "2026-04-02"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2026-04-02",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026022956/tsla-20260402.htm"
+  },
+  {
+    "date_observation": "2025-12-31",
+    "date_publication": "2026-01-29",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-003952",
+      "cik": 1318605,
+      "filing_date": "2026-01-29",
+      "form": "10-K",
+      "report_date": "2025-12-31"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "10-K déposé le 2026-01-29",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026003952/tsla-20251231.htm"
+  },
+  {
+    "date_observation": "2026-01-28",
+    "date_publication": "2026-01-28",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-003837",
+      "cik": 1318605,
+      "filing_date": "2026-01-28",
+      "form": "8-K",
+      "report_date": "2026-01-28"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2026-01-28",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026003837/tsla-20260128.htm"
+  },
+  {
+    "date_observation": "2026-01-02",
+    "date_publication": "2026-01-02",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-000016",
+      "cik": 1318605,
+      "filing_date": "2026-01-02",
+      "form": "8-K",
+      "report_date": "2026-01-02"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2026-01-02",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026000016/tsla-20260102.htm"
+  },
+  {
+    "date_observation": "2025-11-06",
+    "date_publication": "2025-11-07",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-25-108507",
+      "cik": 1318605,
+      "filing_date": "2025-11-07",
+      "form": "8-K",
+      "report_date": "2025-11-06"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2025-11-07",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000110465925108507/tm2530590d1_8k.htm"
+  },
+  {
+    "date_observation": "2025-09-30",
+    "date_publication": "2025-10-23",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-25-045968",
+      "cik": 1318605,
+      "filing_date": "2025-10-23",
+      "form": "10-Q",
+      "report_date": "2025-09-30"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "10-Q déposé le 2025-10-23",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828025045968/tsla-20250930.htm"
+  },
+  {
+    "date_observation": "2025-10-22",
+    "date_publication": "2025-10-22",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-25-045861",
+      "cik": 1318605,
+      "filing_date": "2025-10-22",
+      "form": "8-K",
+      "report_date": "2025-10-22"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2025-10-22",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828025045861/tsla-20251022.htm"
+  },
+  {
+    "date_observation": "2025-10-02",
+    "date_publication": "2025-10-02",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-25-043530",
+      "cik": 1318605,
+      "filing_date": "2025-10-02",
+      "form": "8-K",
+      "report_date": "2025-10-02"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2025-10-02",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828025043530/tsla-20251002.htm"
+  },
+  {
+    "date_observation": "2025-09-03",
+    "date_publication": "2025-09-05",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-25-087862",
+      "cik": 1318605,
+      "filing_date": "2025-09-05",
+      "form": "8-K",
+      "report_date": "2025-09-03"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2025-09-05",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000110465925087862/tm2525337d1_8k.htm"
+  },
+  {
+    "date_observation": "2025-08-03",
+    "date_publication": "2025-08-04",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-25-073263",
+      "cik": 1318605,
+      "filing_date": "2025-08-04",
+      "form": "8-K",
+      "report_date": "2025-08-03"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "8-K déposé le 2025-08-04",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000110465925073263/tm2522385d1_8k.htm"
+  },
+  {
+    "date_observation": "2025-06-30",
+    "date_publication": "2025-07-24",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-25-035806",
+      "cik": 1318605,
+      "filing_date": "2025-07-24",
+      "form": "10-Q",
+      "report_date": "2025-06-30"
+    },
+    "text": null,
+    "ticker": "TSLA",
+    "title": "10-Q déposé le 2025-07-24",
+    "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828025035806/tsla-20250630.htm"
+  }
+]

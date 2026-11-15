@@ -1,0 +1,40 @@
+[
+  {
+    "date_observation": "2026-06-30",
+    "date_publication": "2026-07-29",
+    "kind": "fundamentals",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-323660",
+      "cik": 789019,
+      "currency": "USD",
+      "filing_date": "2026-07-29",
+      "form": "10-K",
+      "metrics": {
+        "cash": 20935000000,
+        "equity": 442387000000,
+        "long_term_debt": 31067000000,
+        "net_income": 133749000000,
+        "operating_cash_flow": 182935000000,
+        "revenue": 331839000000,
+        "total_assets": 758376000000
+      },
+      "period_end": "2026-06-30",
+      "xbrl_concepts": {
+        "cash": "CashAndCashEquivalentsAtCarryingValue",
+        "equity": "StockholdersEquity",
+        "long_term_debt": "LongTermDebtNoncurrent",
+        "net_income": "NetIncomeLoss",
+        "operating_cash_flow": "NetCashProvidedByUsedInOperatingActivities",
+        "revenue": "RevenueFromContractWithCustomerExcludingAssessedTax",
+        "total_assets": "Assets"
+      }
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "10-K déposé le 2026-07-29, exercice clos le 2026-06-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/"
+  }
+]

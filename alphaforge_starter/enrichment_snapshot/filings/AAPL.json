@@ -1,0 +1,382 @@
+[
+  {
+    "date_observation": "2026-11-05",
+    "date_publication": "2026-11-09",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001140361-26-042798",
+      "cik": 320193,
+      "filing_date": "2026-11-09",
+      "form": "8-K",
+      "report_date": "2026-11-05"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2026-11-09",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126042798/ef20085077_8k.htm"
+  },
+  {
+    "date_observation": "2026-09-26",
+    "date_publication": "2026-11-03",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000320193-26-000026",
+      "cik": 320193,
+      "filing_date": "2026-11-03",
+      "form": "10-K",
+      "report_date": "2026-09-26"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "10-K déposé le 2026-11-03",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+  },
+  {
+    "date_observation": "2026-11-02",
+    "date_publication": "2026-11-02",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000320193-26-000024",
+      "cik": 320193,
+      "filing_date": "2026-11-02",
+      "form": "8-K",
+      "report_date": "2026-11-02"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2026-11-02",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000024/aapl-20261102.htm"
+  },
+  {
+    "date_observation": "2026-06-27",
+    "date_publication": "2026-07-31",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000320193-26-000020",
+      "cik": 320193,
+      "filing_date": "2026-07-31",
+      "form": "10-Q",
+      "report_date": "2026-06-27"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "10-Q déposé le 2026-07-31",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000020/aapl-20260627.htm"
+  },
+  {
+    "date_observation": "2026-07-30",
+    "date_publication": "2026-07-30",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000320193-26-000018",
+      "cik": 320193,
+      "filing_date": "2026-07-30",
+      "form": "8-K",
+      "report_date": "2026-07-30"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2026-07-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000018/aapl-20260730.htm"
+  },
+  {
+    "date_observation": "2026-03-28",
+    "date_publication": "2026-05-01",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000320193-26-000013",
+      "cik": 320193,
+      "filing_date": "2026-05-01",
+      "form": "10-Q",
+      "report_date": "2026-03-28"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "10-Q déposé le 2026-05-01",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000013/aapl-20260328.htm"
+  },
+  {
+    "date_observation": "2026-04-30",
+    "date_publication": "2026-04-30",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000320193-26-000011",
+      "cik": 320193,
+      "filing_date": "2026-04-30",
+      "form": "8-K",
+      "report_date": "2026-04-30"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2026-04-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000011/aapl-20260430.htm"
+  },
+  {
+    "date_observation": "2026-04-17",
+    "date_publication": "2026-04-20",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001140361-26-015711",
+      "cik": 320193,
+      "filing_date": "2026-04-20",
+      "form": "8-K",
+      "report_date": "2026-04-17"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2026-04-20",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126015711/ef20071035_8k.htm"
+  },
+  {
+    "date_observation": "2026-02-24",
+    "date_publication": "2026-02-24",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001140361-26-006577",
+      "cik": 320193,
+      "filing_date": "2026-02-24",
+      "form": "8-K",
+      "report_date": "2026-02-24"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2026-02-24",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126006577/ef20060722_8k.htm"
+  },
+  {
+    "date_observation": "2025-12-27",
+    "date_publication": "2026-01-30",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000320193-26-000006",
+      "cik": 320193,
+      "filing_date": "2026-01-30",
+      "form": "10-Q",
+      "report_date": "2025-12-27"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "10-Q déposé le 2026-01-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000006/aapl-20251227.htm"
+  },
+  {
+    "date_observation": "2026-01-29",
+    "date_publication": "2026-01-29",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000320193-26-000005",
+      "cik": 320193,
+      "filing_date": "2026-01-29",
+      "form": "8-K",
+      "report_date": "2026-01-29"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2026-01-29",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000005/aapl-20260129.htm"
+  },
+  {
+    "date_observation": "2025-12-30",
+    "date_publication": "2026-01-02",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001140361-26-000199",
+      "cik": 320193,
+      "filing_date": "2026-01-02",
+      "form": "8-K",
+      "report_date": "2025-12-30"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2026-01-02",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126000199/ef20060722_8k.htm"
+  },
+  {
+    "date_observation": "2025-12-04",
+    "date_publication": "2025-12-05",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001140361-25-044561",
+      "cik": 320193,
+      "filing_date": "2025-12-05",
+      "form": "8-K",
+      "report_date": "2025-12-04"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2025-12-05",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036125044561/ef20060722_8k.htm"
+  },
+  {
+    "date_observation": "2025-09-27",
+    "date_publication": "2025-10-31",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000320193-25-000079",
+      "cik": 320193,
+      "filing_date": "2025-10-31",
+      "form": "10-K",
+      "report_date": "2025-09-27"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "10-K déposé le 2025-10-31",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm"
+  },
+  {
+    "date_observation": "2025-10-30",
+    "date_publication": "2025-10-30",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000320193-25-000077",
+      "cik": 320193,
+      "filing_date": "2025-10-30",
+      "form": "8-K",
+      "report_date": "2025-10-30"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2025-10-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000077/aapl-20251030.htm"
+  },
+  {
+    "date_observation": "2025-06-28",
+    "date_publication": "2025-08-01",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000320193-25-000073",
+      "cik": 320193,
+      "filing_date": "2025-08-01",
+      "form": "10-Q",
+      "report_date": "2025-06-28"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "10-Q déposé le 2025-08-01",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000073/aapl-20250628.htm"
+  },
+  {
+    "date_observation": "2025-07-31",
+    "date_publication": "2025-07-31",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000320193-25-000071",
+      "cik": 320193,
+      "filing_date": "2025-07-31",
+      "form": "8-K",
+      "report_date": "2025-07-31"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2025-07-31",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000071/aapl-20250731.htm"
+  },
+  {
+    "date_observation": "2025-07-21",
+    "date_publication": "2025-07-25",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001140361-25-027340",
+      "cik": 320193,
+      "filing_date": "2025-07-25",
+      "form": "8-K",
+      "report_date": "2025-07-21"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2025-07-25",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036125027340/ef20052355_8k.htm"
+  },
+  {
+    "date_observation": "2025-07-08",
+    "date_publication": "2025-07-09",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001140361-25-025275",
+      "cik": 320193,
+      "filing_date": "2025-07-09",
+      "form": "8-K",
+      "report_date": "2025-07-08"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2025-07-09",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036125025275/ef20051741_8k.htm"
+  },
+  {
+    "date_observation": "2025-05-05",
+    "date_publication": "2025-05-12",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001140361-25-018400",
+      "cik": 320193,
+      "filing_date": "2025-05-12",
+      "form": "8-K",
+      "report_date": "2025-05-05"
+    },
+    "text": null,
+    "ticker": "AAPL",
+    "title": "8-K déposé le 2025-05-12",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036125018400/ef20048691_8k.htm"
+  }
+]

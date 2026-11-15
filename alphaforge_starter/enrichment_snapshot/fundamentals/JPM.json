@@ -1,0 +1,38 @@
+[
+  {
+    "date_observation": "2025-12-31",
+    "date_publication": "2026-02-13",
+    "kind": "fundamentals",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001628280-26-008131",
+      "cik": 19617,
+      "currency": "USD",
+      "filing_date": "2026-02-13",
+      "form": "10-K",
+      "metrics": {
+        "cash": 343338000000,
+        "equity": 362438000000,
+        "net_income": 57048000000,
+        "operating_cash_flow": -147782000000,
+        "revenue": 182447000000,
+        "total_assets": 4424900000000
+      },
+      "period_end": "2025-12-31",
+      "xbrl_concepts": {
+        "cash": "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+        "equity": "StockholdersEquity",
+        "net_income": "NetIncomeLoss",
+        "operating_cash_flow": "NetCashProvidedByUsedInOperatingActivities",
+        "revenue": "Revenues",
+        "total_assets": "Assets"
+      }
+    },
+    "text": null,
+    "ticker": "JPM",
+    "title": "10-K déposé le 2026-02-13, exercice clos le 2025-12-31",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000162828026008131/"
+  }
+]

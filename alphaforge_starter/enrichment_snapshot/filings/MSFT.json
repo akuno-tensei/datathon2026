@@ -1,0 +1,382 @@
+[
+  {
+    "date_observation": "2026-11-04",
+    "date_publication": "2026-11-05",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-448357",
+      "cik": 789019,
+      "filing_date": "2026-11-05",
+      "form": "8-K",
+      "report_date": "2026-11-04"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2026-11-05",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526448357/d177209d8k.htm"
+  },
+  {
+    "date_observation": "2026-10-29",
+    "date_publication": "2026-11-04",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-447173",
+      "cik": 789019,
+      "filing_date": "2026-11-04",
+      "form": "8-K",
+      "report_date": "2026-10-29"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2026-11-04",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526447173/d178557d8k.htm"
+  },
+  {
+    "date_observation": "2026-10-28",
+    "date_publication": "2026-10-28",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-436149",
+      "cik": 789019,
+      "filing_date": "2026-10-28",
+      "form": "8-K",
+      "report_date": "2026-10-28"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2026-10-28",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526436149/msft-20261028.htm"
+  },
+  {
+    "date_observation": "2026-09-30",
+    "date_publication": "2026-10-28",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-436133",
+      "cik": 789019,
+      "filing_date": "2026-10-28",
+      "form": "10-Q",
+      "report_date": "2026-09-30"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "10-Q déposé le 2026-10-28",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm"
+  },
+  {
+    "date_observation": "2026-10-28",
+    "date_publication": "2026-10-28",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-436122",
+      "cik": 789019,
+      "filing_date": "2026-10-28",
+      "form": "8-K",
+      "report_date": "2026-10-28"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2026-10-28",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526436122/msft-20261028.htm"
+  },
+  {
+    "date_observation": "2026-09-02",
+    "date_publication": "2026-09-02",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-380280",
+      "cik": 789019,
+      "filing_date": "2026-09-02",
+      "form": "8-K",
+      "report_date": "2026-09-02"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2026-09-02",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526380280/d291965d8k.htm"
+  },
+  {
+    "date_observation": "2026-06-30",
+    "date_publication": "2026-07-29",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-323660",
+      "cik": 789019,
+      "filing_date": "2026-07-29",
+      "form": "10-K",
+      "report_date": "2026-06-30"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "10-K déposé le 2026-07-29",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+  },
+  {
+    "date_observation": "2026-07-29",
+    "date_publication": "2026-07-29",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-323632",
+      "cik": 789019,
+      "filing_date": "2026-07-29",
+      "form": "8-K",
+      "report_date": "2026-07-29"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2026-07-29",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323632/msft-20260729.htm"
+  },
+  {
+    "date_observation": "2026-06-02",
+    "date_publication": "2026-06-05",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-258667",
+      "cik": 789019,
+      "filing_date": "2026-06-05",
+      "form": "8-K",
+      "report_date": "2026-06-02"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2026-06-05",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526258667/d26760d8k.htm"
+  },
+  {
+    "date_observation": "2026-05-13",
+    "date_publication": "2026-05-14",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-224155",
+      "cik": 789019,
+      "filing_date": "2026-05-14",
+      "form": "8-K",
+      "report_date": "2026-05-13"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2026-05-14",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526224155/d125909d8k.htm"
+  },
+  {
+    "date_observation": "2026-03-31",
+    "date_publication": "2026-04-29",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-191507",
+      "cik": 789019,
+      "filing_date": "2026-04-29",
+      "form": "10-Q",
+      "report_date": "2026-03-31"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "10-Q déposé le 2026-04-29",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526191507/msft-20260331.htm"
+  },
+  {
+    "date_observation": "2026-04-29",
+    "date_publication": "2026-04-29",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-191457",
+      "cik": 789019,
+      "filing_date": "2026-04-29",
+      "form": "8-K",
+      "report_date": "2026-04-29"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2026-04-29",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526191457/msft-20260429.htm"
+  },
+  {
+    "date_observation": "2025-12-31",
+    "date_publication": "2026-01-28",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-027207",
+      "cik": 789019,
+      "filing_date": "2026-01-28",
+      "form": "10-Q",
+      "report_date": "2025-12-31"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "10-Q déposé le 2026-01-28",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526027207/msft-20251231.htm"
+  },
+  {
+    "date_observation": "2026-01-28",
+    "date_publication": "2026-01-28",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-26-027198",
+      "cik": 789019,
+      "filing_date": "2026-01-28",
+      "form": "8-K",
+      "report_date": "2026-01-28"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2026-01-28",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526027198/msft-20260128.htm"
+  },
+  {
+    "date_observation": "2025-12-05",
+    "date_publication": "2025-12-08",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-25-311196",
+      "cik": 789019,
+      "filing_date": "2025-12-08",
+      "form": "8-K",
+      "report_date": "2025-12-05"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2025-12-08",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312525311196/d34077d8k.htm"
+  },
+  {
+    "date_observation": "2025-09-30",
+    "date_publication": "2025-10-29",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-25-256321",
+      "cik": 789019,
+      "filing_date": "2025-10-29",
+      "form": "10-Q",
+      "report_date": "2025-09-30"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "10-Q déposé le 2025-10-29",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312525256321/msft-20250930.htm"
+  },
+  {
+    "date_observation": "2025-10-28",
+    "date_publication": "2025-10-29",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-25-256310",
+      "cik": 789019,
+      "filing_date": "2025-10-29",
+      "form": "8-K",
+      "report_date": "2025-10-28"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2025-10-29",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312525256310/msft-20251028.htm"
+  },
+  {
+    "date_observation": "2025-09-24",
+    "date_publication": "2025-09-30",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001193125-25-225125",
+      "cik": 789019,
+      "filing_date": "2025-09-30",
+      "form": "8-K",
+      "report_date": "2025-09-24"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2025-09-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312525225125/d863209d8k.htm"
+  },
+  {
+    "date_observation": "2025-06-30",
+    "date_publication": "2025-07-30",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000950170-25-100235",
+      "cik": 789019,
+      "filing_date": "2025-07-30",
+      "form": "10-K",
+      "report_date": "2025-06-30"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "10-K déposé le 2025-07-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/msft-20250630.htm"
+  },
+  {
+    "date_observation": "2025-07-30",
+    "date_publication": "2025-07-30",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000950170-25-100226",
+      "cik": 789019,
+      "filing_date": "2025-07-30",
+      "form": "8-K",
+      "report_date": "2025-07-30"
+    },
+    "text": null,
+    "ticker": "MSFT",
+    "title": "8-K déposé le 2025-07-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100226/msft-20250730.htm"
+  }
+]

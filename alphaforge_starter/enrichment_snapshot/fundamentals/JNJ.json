@@ -1,0 +1,40 @@
+[
+  {
+    "date_observation": "2025-12-28",
+    "date_publication": "2026-02-11",
+    "kind": "fundamentals",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0000200406-26-000016",
+      "cik": 200406,
+      "currency": "USD",
+      "filing_date": "2026-02-11",
+      "form": "10-K",
+      "metrics": {
+        "cash": 19709000000,
+        "equity": 81544000000,
+        "long_term_debt": 39438000000,
+        "net_income": 26804000000,
+        "operating_cash_flow": 24530000000,
+        "revenue": 94193000000,
+        "total_assets": 199210000000
+      },
+      "period_end": "2025-12-28",
+      "xbrl_concepts": {
+        "cash": "CashAndCashEquivalentsAtCarryingValue",
+        "equity": "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+        "long_term_debt": "LongTermDebtNoncurrent",
+        "net_income": "NetIncomeLoss",
+        "operating_cash_flow": "NetCashProvidedByUsedInOperatingActivities",
+        "revenue": "RevenueFromContractWithCustomerExcludingAssessedTax",
+        "total_assets": "Assets"
+      }
+    },
+    "text": null,
+    "ticker": "JNJ",
+    "title": "10-K déposé le 2026-02-11, exercice clos le 2025-12-28",
+    "url": "https://www.sec.gov/Archives/edgar/data/200406/000020040626000016/"
+  }
+]

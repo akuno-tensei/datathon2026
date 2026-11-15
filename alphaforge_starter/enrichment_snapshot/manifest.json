@@ -1,0 +1,47 @@
+{
+  "as_of": "2026-11-12",
+  "retrieved_on": "2026-11-15",
+  "source": "SEC EDGAR (data.sec.gov, www.sec.gov)",
+  "tickers": {
+    "AAPL": {
+      "filings": 20,
+      "fundamentals": 1
+    },
+    "MSFT": {
+      "filings": 20,
+      "fundamentals": 1
+    },
+    "NVDA": {
+      "filings": 20,
+      "fundamentals": 1
+    },
+    "GOOGL": {
+      "filings": 20,
+      "fundamentals": 1
+    },
+    "AMZN": {
+      "filings": 20,
+      "fundamentals": 1
+    },
+    "TSLA": {
+      "filings": 20,
+      "fundamentals": 1
+    },
+    "JPM": {
+      "filings": 20,
+      "fundamentals": 1
+    },
+    "JNJ": {
+      "filings": 20,
+      "fundamentals": 1
+    },
+    "PG": {
+      "filings": 20,
+      "fundamentals": 1
+    },
+    "XOM": {
+      "filings": 8,
+      "fundamentals": "lacune : no_data_before_as_of"
+    }
+  }
+}

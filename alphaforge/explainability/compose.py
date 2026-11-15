@@ -16,6 +16,8 @@ from .formatting import format_number
 from .ledger_read import LedgerView, numeric_leaves, seq_ref
 from .models import Figure, Limits, Statement, Unit, VerificationReport
 
+# Ordre de lecture des fondamentaux : résultats, puis bilan.
+FUND_ORDER = ("revenue", "net_income", "operating_cash_flow", "cash", "long_term_debt", "equity", "total_assets")
 MAX_ENRICHED_FACTS = 3  # faits de niveau C cités par enregistrement : l'explication reste lisible
 _WINDOW_NONE = {"fr": "analysée", "en": "analysed"}
 _QUOTES = {"fr": ("« ", " »"), "en": ('"', '"')}
@@ -264,6 +266,25 @@ class _Composer:
                     self.add(section, T["enr_filing_period"].format(period=b.lit(v["report_date"]), **k), b)
                 else:
                     self.add(section, T["enr_filing"].format(**k), b)
+            if rec["kind"] == "fundamentals" and (rec.get("value") or {}).get("metrics"):
+                v = rec["value"]
+                b = self.b()
+                b.ref(rec["record_id"])
+                labels, parts = T["fund_labels"], []
+                ordered = [(n, v["metrics"][n]) for n in FUND_ORDER if n in v["metrics"]] + [
+                    (n, x) for n, x in v["metrics"].items() if n not in FUND_ORDER]
+                for name, amount in ordered:  # ordre de lecture d'un rapport ; le signe se dit par le libellé, jamais par le chiffre
+                    key = {"net_income": "net_loss", "operating_cash_flow": "negative_operating_cash_flow",
+                           "equity": "negative_equity"}.get(name, name) if amount < 0 else name
+                    if key in labels:
+                        parts.append(labels[key].format(amount=b.num(amount, "money", rec["record_id"])))  # libellé et montant : un gabarit
+                if parts:
+                    self.add(section, T["enr_fundamentals"].format(
+                        t=b.lit(t), period=b.lit(v.get("period_end", "")), form=b.lit(v.get("form", "")), filed=b.lit(v.get("filing_date", "")),
+                        level=rec["confidence"], source=b.lit(source), metrics=", ".join(parts)), b)
+                    if not getattr(self, "_fund_note", False):  # la précision ne se répète pas pour chaque actif
+                        self._fund_note = True
+                        self.add(section, T["enr_fund_note"], self.b(), basis="assumption")
             for fact in rec.get("facts", [])[:MAX_ENRICHED_FACTS]:
                 b = self.b()
                 b.ref(rec["record_id"])

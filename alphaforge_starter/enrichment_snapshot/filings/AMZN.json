@@ -1,0 +1,382 @@
+[
+  {
+    "date_observation": "2026-09-30",
+    "date_publication": "2026-10-30",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001018724-26-000040",
+      "cik": 1018724,
+      "filing_date": "2026-10-30",
+      "form": "10-Q",
+      "report_date": "2026-09-30"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "10-Q déposé le 2026-10-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000040/amzn-20260930.htm"
+  },
+  {
+    "date_observation": "2026-10-29",
+    "date_publication": "2026-10-29",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001018724-26-000038",
+      "cik": 1018724,
+      "filing_date": "2026-10-29",
+      "form": "8-K",
+      "report_date": "2026-10-29"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-10-29",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000038/amzn-20261029.htm"
+  },
+  {
+    "date_observation": "2026-09-14",
+    "date_publication": "2026-09-14",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-26-107526",
+      "cik": 1018724,
+      "filing_date": "2026-09-14",
+      "form": "8-K",
+      "report_date": "2026-09-14"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-09-14",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000110465926107526/tm2624614d5_8k.htm"
+  },
+  {
+    "date_observation": "2026-09-08",
+    "date_publication": "2026-09-09",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001018724-26-000036",
+      "cik": 1018724,
+      "filing_date": "2026-09-09",
+      "form": "8-K",
+      "report_date": "2026-09-08"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-09-09",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000036/amzn-20260908.htm"
+  },
+  {
+    "date_observation": "2026-06-30",
+    "date_publication": "2026-07-31",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001018724-26-000026",
+      "cik": 1018724,
+      "filing_date": "2026-07-31",
+      "form": "10-Q",
+      "report_date": "2026-06-30"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "10-Q déposé le 2026-07-31",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000026/amzn-20260630.htm"
+  },
+  {
+    "date_observation": "2026-07-30",
+    "date_publication": "2026-07-30",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001018724-26-000024",
+      "cik": 1018724,
+      "filing_date": "2026-07-30",
+      "form": "8-K",
+      "report_date": "2026-07-30"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-07-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000024/amzn-20260730.htm"
+  },
+  {
+    "date_observation": "2026-07-09",
+    "date_publication": "2026-07-09",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-26-082293",
+      "cik": 1018724,
+      "filing_date": "2026-07-09",
+      "form": "8-K",
+      "report_date": "2026-07-09"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-07-09",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000110465926082293/tm2619352d4_8k.htm"
+  },
+  {
+    "date_observation": "2026-06-12",
+    "date_publication": "2026-06-12",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-26-073562",
+      "cik": 1018724,
+      "filing_date": "2026-06-12",
+      "form": "8-K",
+      "report_date": "2026-06-12"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-06-12",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000110465926073562/tm2613616d5_8k.htm"
+  },
+  {
+    "date_observation": "2026-06-08",
+    "date_publication": "2026-06-10",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-26-072140",
+      "cik": 1018724,
+      "filing_date": "2026-06-10",
+      "form": "8-K",
+      "report_date": "2026-06-08"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-06-10",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000110465926072140/tm2613616d4_8k.htm"
+  },
+  {
+    "date_observation": "2026-05-20",
+    "date_publication": "2026-05-22",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-26-065717",
+      "cik": 1018724,
+      "filing_date": "2026-05-22",
+      "form": "8-K",
+      "report_date": "2026-05-20"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-05-22",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000110465926065717/tm2614288d1_8k.htm"
+  },
+  {
+    "date_observation": "2026-03-31",
+    "date_publication": "2026-04-30",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001018724-26-000014",
+      "cik": 1018724,
+      "filing_date": "2026-04-30",
+      "form": "10-Q",
+      "report_date": "2026-03-31"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "10-Q déposé le 2026-04-30",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000014/amzn-20260331.htm"
+  },
+  {
+    "date_observation": "2026-04-29",
+    "date_publication": "2026-04-29",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001018724-26-000012",
+      "cik": 1018724,
+      "filing_date": "2026-04-29",
+      "form": "8-K",
+      "report_date": "2026-04-29"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-04-29",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000012/amzn-20260429.htm"
+  },
+  {
+    "date_observation": "2026-04-14",
+    "date_publication": "2026-04-14",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-26-042880",
+      "cik": 1018724,
+      "filing_date": "2026-04-14",
+      "form": "8-K",
+      "report_date": "2026-04-14"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-04-14",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000110465926042880/tm2611746d1_8k.htm"
+  },
+  {
+    "date_observation": "2026-04-09",
+    "date_publication": "2026-04-09",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-26-041034",
+      "cik": 1018724,
+      "filing_date": "2026-04-09",
+      "form": "8-K",
+      "report_date": "2026-04-09"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-04-09",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000110465926041034/tm263815d2_8k.htm"
+  },
+  {
+    "date_observation": "2026-03-16",
+    "date_publication": "2026-03-16",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-26-028556",
+      "cik": 1018724,
+      "filing_date": "2026-03-16",
+      "form": "8-K",
+      "report_date": "2026-03-16"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-03-16",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000110465926028556/tm266670d9_8k.htm"
+  },
+  {
+    "date_observation": "2026-03-13",
+    "date_publication": "2026-03-13",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-26-027729",
+      "cik": 1018724,
+      "filing_date": "2026-03-13",
+      "form": "8-K",
+      "report_date": "2026-03-13"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-03-13",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000110465926027729/tm266670d8_8k.htm"
+  },
+  {
+    "date_observation": "2026-02-27",
+    "date_publication": "2026-02-27",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-26-021050",
+      "cik": 1018724,
+      "filing_date": "2026-02-27",
+      "form": "8-K",
+      "report_date": "2026-02-27"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-02-27",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000110465926021050/tm267374d1_8k.htm"
+  },
+  {
+    "date_observation": "2025-12-31",
+    "date_publication": "2026-02-06",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001018724-26-000004",
+      "cik": 1018724,
+      "filing_date": "2026-02-06",
+      "form": "10-K",
+      "report_date": "2025-12-31"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "10-K déposé le 2026-02-06",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000004/amzn-20251231.htm"
+  },
+  {
+    "date_observation": "2026-02-05",
+    "date_publication": "2026-02-05",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001018724-26-000002",
+      "cik": 1018724,
+      "filing_date": "2026-02-05",
+      "form": "8-K",
+      "report_date": "2026-02-05"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2026-02-05",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000002/amzn-20260205.htm"
+  },
+  {
+    "date_observation": "2025-11-20",
+    "date_publication": "2025-11-20",
+    "kind": "filings",
+    "methodology": null,
+    "retrieved_on": "2026-11-15",
+    "source_id": "sec_edgar",
+    "structured": {
+      "accession_number": "0001104659-25-114647",
+      "cik": 1018724,
+      "filing_date": "2025-11-20",
+      "form": "8-K",
+      "report_date": "2025-11-20"
+    },
+    "text": null,
+    "ticker": "AMZN",
+    "title": "8-K déposé le 2025-11-20",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000110465925114647/tm2530638d3_8k.htm"
+  }
+]
