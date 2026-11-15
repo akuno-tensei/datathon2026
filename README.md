@@ -204,13 +204,15 @@ Sans `ALPHAFORGE_SEC_USER_AGENT`, une mise à jour conserve l'identification dé
 
 ## Après l'événement
 
-Le compte AWS de l'événement sera supprimé, avec la démo hébergée, Bedrock et l'archive S3. Le projet reste utilisable :
+Le compte AWS de l'événement ferme le 16 novembre 2026 à 13 h 59, avec la démo hébergée, Bedrock et l'archive S3. Le projet reste utilisable :
 
 | Élément | Sans compte AWS |
 |---|---|
-| Prototype local (`streamlit run alphaforge/app/streamlit_app.py`) | Fonctionne hors ligne : données des 31 actifs dans `alphaforge_starter/`. |
-| Interprétation des demandes | Par règles, détecté automatiquement (aucun identifiant AWS : Bedrock n'est pas tenté) et affiché sous le verdict. Score au banc d'essai : voir `deploy/bench_results.json` (règles contre Haiku 4.5). |
-| Archive des registres | Absente ; l'export Markdown de l'interface reste disponible. |
+| Démo hébergée (https://d3rh9mi9cqh6mn.cloudfront.net/) | **Ne répond plus** : ECS, l'équilibreur, CloudFront et ECR disparaissent. Il faut lancer l'application en local ou l'héberger ailleurs (ci-dessous). |
+| Prototype local (`streamlit run alphaforge/app/streamlit_app.py`) | Fonctionne hors ligne : données des 31 actifs dans `alphaforge_starter/`. Les cinq agents, les calculs, la gouvernance, les explications vérifiées, la conclusion « En résumé », les profils (ajout, modification, suppression, comparaison) et les deux langues sont inchangés. |
+| Interprétation des demandes | Par règles, détecté automatiquement (aucun identifiant AWS : Bedrock n'est pas tenté) et affiché sous le verdict. Les règles comprennent moins de formulations : 30/36 au banc d'essai, contre 108/108 pour Claude Haiku 4.5 (`deploy/bench_results.json`). Par exemple, « l'or » n'est pas relié à GLD. |
+| Archive des registres | Absente ; aucune analyse n'est archivée et les archives déjà écrites disparaissent avec le bucket. L'export Markdown de l'interface reste disponible. |
+| Preuves de l'intégration AWS | Plus de console : seules les captures faites avant la fermeture en témoignent. |
 | SEC EDGAR (dépôts, fondamentaux) | Gratuit et indépendant d'AWS : en direct avec une identification SEC, sinon l'instantané versionné. |
 | Tests et CI | Inchangés : ils n'utilisent jamais AWS. |
 
@@ -220,7 +222,9 @@ Le compte AWS de l'événement sera supprimé, avec la démo hébergée, Bedrock
 3. « Advanced settings » : Python 3.12 (suite complète vérifiée sous 3.12). Les dépendances viennent de `requirements.txt` à la racine.
 4. Facultatif, pour la SEC en direct : dans « Secrets », ajouter `ALPHAFORGE_SEC_USER_AGENT = "Nom de l'équipe contact@exemple.org"`.
 
-Différence connue sans Bedrock : une question comme « je devrais en acheter ? » est refusée comme demande de conseil personnalisé (avertissement), et non comme demande de transaction (bloqué) ; les deux refusent de conseiller.
+Différence connue sans Bedrock : une question comme « je devrais en acheter ? » est refusée comme demande de conseil personnalisé (avertissement), et non comme demande de transaction (bloqué) ; les deux refusent de conseiller. Un ordre explicite (« Achète 10 actions AAPL ») reste bloqué, et une demande de prédiction reste hors périmètre.
+
+**Vérifié le 15 novembre 2026** : application lancée en local sans aucun accès AWS (ni identifiants, ni rôle, ni bucket, ni identification SEC). Parcours dans le navigateur : 12 vérifications sur 13 passent, la seule différence étant la question « je devrais en acheter ? » ci-dessus ; création, modification, analyse et suppression d'un profil : toutes passent. Les fondamentaux SEC s'affichent depuis l'instantané, au niveau A.
 
 **Redéployer sur un autre compte AWS** : `python3 deploy/deploy.py --bucket <bucket>` recrée tout (modèles CloudFormation dans `deploy/`) ; ajouter `ALPHAFORGE_SEC_USER_AGENT="Nom contact@exemple.org"` devant la commande pour brancher la SEC. Coût indicatif, non vérifié sur la grille tarifaire : quelques dollars par jour pour Fargate et l'équilibreur de charge, plus une fraction de cent par demande Bedrock. `--delete` supprime les deux piles.
 

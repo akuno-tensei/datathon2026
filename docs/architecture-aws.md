@@ -80,6 +80,9 @@ désigne toujours le même code.
 
 - **Fermeture du compte.** Le compte AWS de l'événement ferme le 16 novembre 2026 à 13 h 59 : la démo hébergée s'arrête. Le
   code reste utilisable hors AWS (règles et instantané SEC), et `deploy/deploy.py` redéploie tout sur un autre compte.
+  Ce qui est perdu : l'adresse CloudFront, l'interprétation par Bedrock (remplacée par les règles, 30/36 au banc d'essai
+  contre 108/108), l'archive S3 et les archives déjà écrites, et la console comme preuve. Ce qui reste : tous les agents,
+  calculs, verdicts, explications et profils. Détail et vérification sans AWS : [README, « Après l'événement »](../README.md#après-lévénement).
 - **Pas de limite de requêtes.** L'adresse est publique, sans AWS WAF. Amélioration : une règle de limitation de débit WAF
   devant CloudFront.
 - **Pas d'alarme.** Les journaux et les métriques du conteneur existent (CloudWatch, Container Insights), mais aucune alarme
