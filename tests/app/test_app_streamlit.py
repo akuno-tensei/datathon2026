@@ -509,7 +509,7 @@ def test_measure_bars_say_how_much_of_the_limit_is_used_and_details_move_to_a_ca
     bars = [p.proto.text for p in app.get("progress")]
     assert bars and all("de la limite" in s for s in bars[:2])
     assert not any("jours de bourse" in s or "fenêtre «" in s for s in bars)  # le détail technique n'encombre plus la barre
-    caps = [c.value for c in app.caption if c.value.startswith("Pire fenêtre mesurée")]
+    caps = [c.value for c in app.caption if c.value.startswith("Période la plus défavorable")]
     assert any("252 jours de bourse par an" in c for c in caps) and any("prix ajustés" in c for c in caps)
 
 
@@ -535,3 +535,27 @@ def test_the_profile_form_shows_readable_choices_but_stores_the_codes(app):
     assert app.select_slider(key="pf_risk").value == "faible_modere"  # la valeur enregistrée ne change pas
     assert "Faible à modéré" in app.select_slider(key="pf_risk").options
     assert "Préservation du capital" in app.multiselect(key="pf_obj").options
+
+
+# ---- termes compréhensibles par un débutant ------------------------------------
+def test_a_glossary_explains_the_terms_from_every_tab(app):
+    (gl,) = [e for e in app.expander if e.label.startswith("📖 Lexique")]
+    text = " ".join(m.value for m in gl.markdown)
+    for term in ("Volatilité annualisée", "Perte maximale depuis un sommet", "Année 2022", "Corrélation", "FNB", "Preuve"):
+        assert f"**{term}**" in text
+    app.radio(key="lang").set_value("en").run()
+    assert any(e.label.startswith("📖 Glossary") for e in app.expander)
+
+
+def test_the_analysis_shows_periods_in_plain_words_not_codes(app):
+    app.text_area(key="req_box").set_value("Compare NVDA et TLT")
+    next(b for b in app.button if b.label == "Envoyer").click().run()
+    assert not app.exception, app.exception
+    shown = " ".join([m.value for m in app.markdown] + [c.value for c in app.caption] + [e.label for e in app.expander])
+    for code in ("fenêtre « 2022 »", "fenêtre « complet »", "« 1_an »", "compute_metrics", "compare_assets", "drawdown", "2021-11-12"):
+        assert code not in shown, code
+    assert "(en 2022)" in shown and "Période la plus défavorable : année 2022" in shown
+    df = app.dataframe[0].value
+    assert list(df.columns)[:3] == ["Période", "Du", "Au"] and "année 2022" in set(df["Période"])
+    assert any(e.label.startswith("🧮 Hypothèses de calcul") for e in app.expander)  # formules repliées, toujours accessibles
+    assert any(m.value.startswith("**NVDA** — ⚠ SENSIBLE : la volatilité change de") for m in app.markdown)

@@ -14,6 +14,7 @@ from alphaforge.app._reload import refresh  # noqa: E402
 
 # Code modifié depuis le dernier affichage : les modules du projet sont réimportés à jour (voir _reload.py), sans relancer le serveur.
 import os  # noqa: E402
+import re  # noqa: E402
 
 CODE_STAMP = refresh(Path(__file__).resolve().parents[1], purge=os.environ.get("ALPHAFORGE_HOT_RELOAD", "1") != "0")
 
@@ -22,7 +23,7 @@ import streamlit as st  # noqa: E402
 
 from alphaforge.app import forms, views
 from alphaforge.app.i18n import t
-from alphaforge.app.labels import human, humanize_text
+from alphaforge.app.labels import GLOSSARY, human, human_date, humanize_text, window_name
 from alphaforge.app.pipeline import AlphaForge, Analysis, enrichment_coverage
 from alphaforge.governance import GovernanceConfig
 from alphaforge.orchestrator import ProfileError, load_profile, validate_profile
@@ -115,6 +116,8 @@ with er2:
     else:
         st.caption(f"⚙ **{t('mode_core', lang)}**")
         st.caption("ℹ " + t("enr_mode_off", lang))
+with st.expander("📖 " + t("gl_title", lang)):  # lexique pour débutant, accessible depuis tous les onglets
+    st.markdown("\n".join(f"- **{term}** : {text}" for term, text in GLOSSARY.get(lang, GLOSSARY["fr"])))
 # Résultat d'un enregistrement ou d'une suppression de profil : visible même quand le panneau est fermé.
 if S.get("pf_flash"):
     st.success("✓ " + S.pop("pf_flash"))
@@ -204,7 +207,7 @@ def render_verdict(a: Analysis, key: str) -> None:
                 c2.progress(m.ratio, text=t("of_limit", lang, p=pct(used, lang)) if m.ok or used is None else t("over_limit", lang, p=pct(used, lang)))
                 with c3:
                     evidence_button(m.evidence_id, f"{key}-m-{asset['ticker']}-{i}")
-                st.caption(humanize_text(f"{t('worst_window', lang)} : {m.window} · {m.basis} · {m.origin}", lang))
+                st.caption(humanize_text(f"{t('worst_window', lang)} : {window_name(m.window, lang)} · {m.basis} · {m.origin}", lang))
             for j, rl in enumerate(views.asset_reasons(asset, lang)):
                 st.markdown(f"{rl.icon} *{rl.kind}* — {humanize_text(rl.message, lang)}")
     for g in v.get("global_reasons", []):
@@ -275,20 +278,26 @@ def render_sensitivity(a: Analysis, key: str) -> None:
         if not tab:
             continue
         if tab.indicator:
-            spread = f" · {pct(tab.relative_spread, lang)}" if tab.relative_spread is not None else ""
-            st.markdown(f"**{tab.ticker}** — {'⚠' if tab.indicator == 'sensible' else '✓' if tab.indicator == 'stable' else '•'} "
-                        f"{t('sens_' + tab.indicator, lang)}{spread} ({t('threshold', lang)} {pct(tab.threshold, lang)})")
+            icon = '⚠' if tab.indicator == 'sensible' else '✓' if tab.indicator == 'stable' else '•'
+            explain = (t("sens_explain_" + tab.indicator, lang, spread=pct(tab.relative_spread, lang), thr=pct(tab.threshold, lang))
+                       if tab.relative_spread is not None else "")
+            st.markdown(f"**{tab.ticker}** — {icon} {t('sens_' + tab.indicator, lang)}" + (f" : {explain}" if explain else ""))
             evidence_button(tab.evidence_id, f"{key}-stress-{tab.ticker}")
         else:
             st.markdown(f"**{tab.ticker}** — " + t("sens_pending", lang))
         df = pd.DataFrame(tab.rows)
         for col in ("volatility", "max_drawdown", "total_return"):
-            df[col] = df[col].map(lambda x: pct(x, lang) if x == x and x is not None else "—")  # « — » : fenêtre non calculée
+            df[col] = df[col].map(lambda x: pct(x, lang) if x == x and x is not None else "—")  # « — » : période non calculée
+        df["window"] = df["window"].map(lambda w: window_name(w, lang))
+        for col in ("start", "end"):
+            df[col] = df[col].map(lambda d: human_date(str(d), lang) if d else "—")
+        df["status"] = df["status"].map(lambda x: t("row_status_" + str(x), lang) if t("row_status_" + str(x), lang) != "row_status_" + str(x) else human(str(x), lang))
+        df = df.rename(columns={c: t("col_" + c, lang) for c in df.columns})  # en-têtes lisibles ; les données ne changent pas
         st.dataframe(df, hide_index=True, width="stretch")
         cols = st.columns(min(len(tab.rows), 5) or 1)
         for i, r in enumerate(tab.rows):
             with cols[i % len(cols)]:
-                st.caption(r["window"])
+                st.caption(window_name(r["window"], lang))
                 evidence_button(r["evidence_id"], f"{key}-sens-{tab.ticker}-{i}")
 
 
@@ -300,18 +309,19 @@ def render_correlation(a: Analysis, key: str) -> None:
 
     st.markdown(f"### {t('corr_title', lang)}")
     st.markdown(f"**{t('corr_reference', lang)}** : {t('corr_ref_' + cv.reference, lang)} · "
-                + t("corr_obs", lang, n=cv.n_obs, a=cv.first_date, b=cv.last_date))
+                + t("corr_obs", lang, n=cv.n_obs, a=human_date(str(cv.first_date), lang), b=human_date(str(cv.last_date), lang)))
+    st.caption("ℹ " + t("corr_explain", lang))
     df = pd.DataFrame(cv.cells)
     base = alt.Chart(df).encode(x=alt.X("a:N", title=None, sort=cv.tickers), y=alt.Y("b:N", title=None, sort=cv.tickers))
     heat = base.mark_rect().encode(color=alt.Color("corr:Q", scale=alt.Scale(domain=[-1, 1], scheme="redblue", reverse=True),
                                                     title="corr"), tooltip=["a", "b", alt.Tooltip("corr:Q", format=".2f")])
     text = base.mark_text().encode(text=alt.Text("corr:Q", format=".2f"))  # valeur écrite dans chaque case : jamais la couleur seule
     st.altair_chart((heat + text).properties(height=60 * len(cv.tickers) + 40), use_container_width=True)
-    st.caption(cv.alt)
+    st.caption(re.sub(r"(-?\d)\.(\d)", r"\1,\2", cv.alt) if lang == "fr" else cv.alt)
     if cv.complement:
         st.caption(t("corr_complement", lang, n=cv.complement["n_obs"]))
     for x in cv.excluded:
-        st.caption("⚠ " + t("corr_excluded", lang, t=x["ticker"], r=x["reason"]))
+        st.caption("⚠ " + humanize_text(t("corr_excluded", lang, t=x["ticker"], r=x["reason"]), lang))
     evidence_button(cv.evidence_id, f"{key}-corr")
 
 
@@ -367,9 +377,14 @@ def render_portfolio(a: Analysis, key: str) -> None:
 def render_limits(a: Analysis, key: str) -> None:
     st.markdown(f"### {t('limits_title', lang)}")  # toujours présente, jamais repliée
     for sec, lines in views.limit_sections(a, lang).items():
-        if lines:
-            st.markdown(f"**{t('section_' + sec, lang)}**")
-            render_lines(lines, f"{key}-lim-{sec}")
+        if not lines:
+            continue
+        if sec == "assumptions":  # formules de calcul : utiles pour vérifier, repliées pour ne pas noyer le lecteur
+            with st.expander("🧮 " + t("assumptions_fold", lang, n=len(lines))):
+                render_lines(lines, f"{key}-lim-{sec}")
+            continue
+        st.markdown(f"**{t('section_' + sec, lang)}**")
+        render_lines(lines, f"{key}-lim-{sec}")
 
 
 def render_trace(a: Analysis, key: str) -> None:
@@ -399,9 +414,10 @@ def render_drawer(a: Analysis) -> None:
     if st.button(t("close", lang), key="drawer-close"):
         S.evidence_open = None
         st.rerun()
-    st.markdown(f"**{t('tool', lang)}** : {card.tool} v{card.version} · {card.status}  \n**{t('n_obs', lang)}** : {card.n_obs}")
+    st.markdown(f"**{t('tool', lang)}** : {human(card.tool, lang)} (`{card.tool}` v{card.version}) · {t('row_status_' + card.status, lang) if card.status in ('ok', 'warning', 'refused') else card.status}  \n**{t('n_obs', lang)}** : {card.n_obs}")
     if card.window:
-        st.markdown(f"**{t('window', lang)}** : {card.window.get('start')} → {card.window.get('end')} ({card.window.get('alias') or '—'})")
+        st.markdown(f"**{t('col_window', lang)}** : {human_date(str(card.window.get('start')), lang)} → {human_date(str(card.window.get('end')), lang)}"
+                    + (f" ({window_name(card.window['alias'], lang)})" if card.window.get('alias') else ""))
     st.markdown(f"**{t('params', lang)}**")
     st.json(card.params)
     st.markdown(f"**{t('inputs', lang)}**")
@@ -535,7 +551,7 @@ with tab_cmp:
         if diffs:
             st.markdown(f"**{t('differences', lang)}**")
             for d in diffs:
-                st.markdown(f"- {d.text}")
+                st.markdown(f"- {humanize_text(d.text, lang)}")
         L, R = st.columns(2)
         for col, an, k in ((L, cmp.left, "cl"), (R, cmp.right, "cr")):
             with col:
@@ -691,17 +707,18 @@ with tab_src:
     st.markdown(f"### {t('sources_title', lang)}")
     if a is not None:
         for s in sorted({s for e in a.result.ledger.evidence() for s in e.get("sources", [])}):
-            st.markdown(f"- {s}")
+            st.markdown(f"- {humanize_text(s, lang)}")
     from alphaforge.quant.config import DEFAULT_DATA_DIR
 
-    st.dataframe(pd.read_csv(DEFAULT_DATA_DIR / "sources_metadata.csv"), hide_index=True, width="stretch")
+    meta = pd.read_csv(DEFAULT_DATA_DIR / "sources_metadata.csv")
+    st.dataframe(meta.rename(columns={c: t("src_" + c, lang) for c in meta.columns}), hide_index=True, width="stretch")
     st.markdown(f"### {t('gaps_title', lang)}")
     gaps = [r for asset in ((a.verdict or {}).get("assets", []) if a else []) for r in asset["reasons"] if r["check"] in ("data_gaps", "soft_preferences")]
     for r in gaps:
-        st.markdown(f"- {'⚠' if r['severity'] == 'warn' else 'ℹ'} {r['message']}")
+        st.markdown(f"- {'⚠' if r['severity'] == 'warn' else 'ℹ'} {humanize_text(r['message'], lang)}")
     if a is not None and not gaps:
         st.caption(t("gaps_none", lang))
-    st.caption(f"{t('fingerprint', lang)} : {F.store.fingerprint[:12]}")
+    st.caption(f"{t('fingerprint', lang)} : {F.store.fingerprint[:12]} — {t('fingerprint_help', lang)}")
     st.markdown(f"### 🌐 {t('enr_cov_title', lang)}")
     st.text_input(t("enr_sec_label", lang), key="sec_ua", help=t("enr_sec_help", lang), placeholder="Prénom Nom, prenom.nom@exemple.org")
     cov = enrichment_coverage(S.get("sec_ua") or os.environ.get("ALPHAFORGE_SEC_USER_AGENT"))

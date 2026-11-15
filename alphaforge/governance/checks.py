@@ -299,7 +299,7 @@ def check_horizon_fit(profile: InvestorProfile, f: AssetFacts) -> List[Reason]:
         Reason(
             check="horizon_fit", code="RECOVERY_LONGER_THAN_HORIZON", severity="warn",
             message=(
-                f"Le pire repli de {f.ticker} a duré {years:.1f}".replace(".", ",") + f" an(s) du sommet ({w.peak_date}) à {end} ({state}), "
+                f"Le pire repli de {f.ticker} a duré " + f"{years:.1f}".replace(".", ",") + f" an(s) du sommet ({w.peak_date}) à {end} ({state}), "
                 f"soit plus que l'horizon minimal du profil ({profile.horizon_years_min} an(s))."
             ),
             measures={
