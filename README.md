@@ -40,6 +40,7 @@ Ce README donne la vue d'ensemble. Chaque partie a sa propre documentation, écr
 | Explicabilité (rédaction, vérificateur, provenance, formats des nombres) | [`alphaforge/explainability/README.md`](alphaforge/explainability/README.md) |
 | Interface et assemblage (pipeline, vues, Streamlit, libellés, archive S3) | [`alphaforge/app/README.md`](alphaforge/app/README.md) |
 | Déploiement AWS, image, banc d'essai Bedrock, CI | [`deploy/README.md`](deploy/README.md) |
+| Intégration AWS : schémas, justification, bonnes pratiques, preuves observables | [`docs/architecture-aws.md`](docs/architecture-aws.md) |
 | Suite de tests (lancement, doublures, contenu de chaque dossier) | [`tests/README.md`](tests/README.md) |
 | Données de départ et instantané SEC | [`alphaforge_starter/README.md`](alphaforge_starter/README.md), [`alphaforge_starter/enrichment_snapshot/SOURCE.md`](alphaforge_starter/enrichment_snapshot/SOURCE.md) |
 
