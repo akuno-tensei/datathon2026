@@ -148,7 +148,7 @@ alphaforge/
   quant/            analyste : datastore, outils, registre, fenêtres, métriques
   orchestrator/     profils, interprétation de la demande, plan, registre (ledger)
   governance/       contraintes dérivées du profil, contrôles, verdict
-  explainability/   rédaction, vérificateur de chiffres, limites, étiquettes
+  explainability/   rédaction, vérificateur (chiffres, ton, provenance de chaque mot), limites, étiquettes
   enrichment/       agent 2.1 : besoins, collecte, filtre as_of, faits sourcés, fiches source, écriture au registre
   app/              pipeline des agents, vues, application Streamlit
 alphaforge_starter/ données de départ et script de régénération

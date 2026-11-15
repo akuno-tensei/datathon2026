@@ -9,11 +9,12 @@ from typing import List, Optional, Set
 from ..orchestrator.ledger import Ledger
 from ..orchestrator.profile import InvestorProfile
 from .compose import compose_explanation, render
-from .config import ExplainConfig
+from .config import TEMPLATES, ExplainConfig
 from .label_content import label_all
 from .ledger_read import ledger_read
 from .limits import limits_builder
 from .models import Explanation, Issue, Limits, VerificationReport
+from .provenance import Vocabulary
 from .verifier import claim_verifier
 
 AGENT = "explicabilite"
@@ -25,6 +26,8 @@ class Explainer:
 
     def explain(self, profile: InvestorProfile, ledger: Ledger) -> Explanation:
         view = ledger_read(ledger)
+        # Liste blanche de rédaction : gabarits de la langue + chaînes du registre (sans le texte libre de la demande).
+        vocab = Vocabulary.build(TEMPLATES.get(profile.language, TEMPLATES["fr"]), view.vocab_strings) if self._cfg.provenance_check else None
         exclude: Set[str] = set()
         removed_all: List[str] = []
         issues_all: List[Issue] = []
@@ -33,7 +36,7 @@ class Explainer:
             attempt += 1
             body = compose_explanation(view, profile, exclude)
             lim = limits_builder(view, profile, self._cfg, exclude)
-            cleaned, report = claim_verifier(view, label_all(body + lim.statements()), attempts=attempt)
+            cleaned, report = claim_verifier(view, label_all(body + lim.statements()), attempts=attempt, vocabulary=vocab)
             removed_all += [s for s in report.removed if s not in removed_all]
             issues_all += report.issues
             if report.approved or not report.removed or attempt >= self._cfg.max_attempts:

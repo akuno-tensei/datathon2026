@@ -7,17 +7,21 @@ Contrôles par énoncé :
 4. le texte ne contient aucun autre nombre : après retrait des chiffres déclarés, des chaînes autorisées et des dates, il ne reste aucun chiffre ;
 5. les chaînes autorisées et les dates du texte figurent dans le registre ;
 6. le texte ne contient aucune tournure de conseil, de prédiction ou de promesse (« achetez », « vous devriez », « garanti »,
-   « va monter »...). Un mot cité entre guillemets (« achète ») est une mention, pas un conseil : il est toléré.
+   « va monter »...). Un mot cité entre guillemets (« achète ») est une mention, pas un conseil : il est toléré ;
+7. (si un vocabulaire est fourni) chaque mot, chaque enchaînement et chaque citation vient d'un gabarit de rédaction ou du
+   registre (`provenance.py`) : une liste blanche, qui ne dépend pas de la liste de mots interdits du contrôle 6.
 
 Issue : un énoncé fautif est retiré. Un énoncé « fait » sans preuve est rétrogradé en hypothèse s'il ne contient aucun chiffre, sinon retiré.
 Le contrôle 6 repère les formulations explicites ; il ne détecte pas une recommandation déguisée sans mot interdit.
+Le contrôle 7 couvre ce cas pour tout mot étranger aux gabarits et au registre ; ses limites sont décrites dans `provenance.py`.
 """
 import re
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from .formatting import parse_shown, shown_value
 from .ledger_read import LedgerView, numeric_leaves
 from .models import Issue, Statement, VerificationReport
+from .provenance import Vocabulary, provenance_issues
 
 _ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 _REL_TOL = 1e-9
@@ -33,7 +37,8 @@ ADVICE_PATTERNS = [
     r"va (?:monter|baisser|doubler|grimper|chuter|rebondir)", r"vont (?:monter|baisser|doubler|grimper|chuter|rebondir)",
     r"meilleur(?:e)? (?:choix|placement|investissement|option)",
     # anglais
-    r"buy", r"sell", r"you should", r"i (?:would )?recommend", r"we (?:would )?recommend", r"guaranteed?",
+    # « buy and hold » nomme une méthode de simulation, pas un conseil
+    r"buy(?![\s_-]+and[\s_-]+hold)", r"sell", r"you should", r"i (?:would )?recommend", r"we (?:would )?recommend", r"guaranteed?",
     r"risk[- ]free", r"will (?:rise|fall|double|go up|go down|increase|decrease|rebound)",
     r"best (?:choice|investment|pick|option)",
 ]
@@ -60,7 +65,7 @@ def _residual(s: Statement) -> str:
     return text
 
 
-def check_statement(view: LedgerView, s: Statement) -> List[Issue]:
+def check_statement(view: LedgerView, s: Statement, vocabulary: Optional[Vocabulary] = None) -> List[Issue]:
     issues: List[Issue] = []
 
     def bad(code: str, message: str) -> None:
@@ -101,16 +106,23 @@ def check_statement(view: LedgerView, s: Statement) -> List[Issue]:
     found = advice_wording(s.text)
     if found:
         bad("advice_wording", f"Tournure de conseil ou de prédiction hors périmètre : {', '.join(repr(x) for x in found)}.")
+    if vocabulary is not None:
+        unsourced = provenance_issues(s.text, list(s.literals) + [f.shown for f in s.figures], vocabulary)
+        if unsourced:
+            bad("unsourced_wording", "Formulation sans provenance (ni gabarit, ni registre) : " + " ; ".join(unsourced[:3]) + ".")
     return issues
 
 
-def claim_verifier(view: LedgerView, statements: List[Statement], attempts: int = 1) -> Tuple[List[Statement], VerificationReport]:
+def claim_verifier(view: LedgerView, statements: List[Statement], attempts: int = 1,
+                   vocabulary: Optional[Vocabulary] = None) -> Tuple[List[Statement], VerificationReport]:
+    """`vocabulary` active le contrôle 7 (provenance). L'agent d'explicabilité le fournit toujours ; un appel direct sans
+    vocabulaire ne fait que les contrôles 1 à 6."""
     kept: List[Statement] = []
     removed: List[str] = []
     downgraded: List[str] = []
     issues: List[Issue] = []
     for s in statements:
-        found = check_statement(view, s)
+        found = check_statement(view, s, vocabulary)
         issues += found
         hard = [i for i in found if i.code != "no_evidence"]
         if hard:

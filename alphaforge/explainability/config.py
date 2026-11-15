@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 class ExplainConfig(BaseModel):
     max_attempts: int = 2  # rédaction -> vérification -> rédaction ; le vérificateur peut rejeter une fois
+    provenance_check: bool = True  # contrôle 7 du vérificateur : tout mot vient d'un gabarit ou du registre (provenance.py)
     # Nombre maximal d'hypothèses techniques affichées selon l'expérience (None = toutes). Les limites ne sont jamais tronquées.
     assumptions_cap: Dict[str, Optional[int]] = Field(
         default_factory=lambda: {"debutant": 2, "intermediaire": 5, "avance": None}

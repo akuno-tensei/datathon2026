@@ -32,6 +32,7 @@ NEUTRAL = [
     "AlphaForge is a decision-support simulation: no real transaction, no personalised advice, no return forecast.",
     "Objectif du profil : eviter_controverses.",
     "Le rachat d'actions et les ventes passées ne sont pas couverts.",
+    "Fictional retrospective scenario (buy and hold, basis 252): 2 positions.",
 ]
 
 

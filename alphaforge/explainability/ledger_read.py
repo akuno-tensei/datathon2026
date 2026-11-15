@@ -32,6 +32,8 @@ class LedgerView:
     cards: Dict[str, Tuple[int, Dict[str, Any]]] = field(default_factory=dict)  # card_id -> (seq, fiche source)
     refs: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # evidence_id, record_id et `seq:N` -> payload
     corpus: str = ""  # toutes les chaînes du registre, pour vérifier tickers, dates et énoncés repris tels quels
+    # Mêmes chaînes SANS le texte libre de la demande : vocabulaire autorisé du contrôle de provenance (provenance.py).
+    vocab_strings: List[str] = field(default_factory=list)
 
     def has_ref(self, ref: str) -> bool:
         return ref in self.refs
@@ -69,6 +71,8 @@ def ledger_read(ledger: Ledger) -> LedgerView:
     for e in ledger.entries():
         view.refs[seq_ref(e.seq)] = e.payload
         strings.extend(string_leaves(e.payload))
+        own = {k: v for k, v in e.payload.items() if k != "raw_text"} if e.kind == "request" else e.payload
+        view.vocab_strings.extend(x for x in string_leaves(own) if isinstance(x, str))
         if e.kind == "evidence":
             view.evidence.append(e.payload)
             view.refs[e.payload["evidence_id"]] = e.payload

@@ -36,7 +36,7 @@ class Statement(StrictModel):
 
 class Issue(StrictModel):
     sid: str
-    code: str  # unknown_ref, no_evidence, figure_mismatch, figure_format, unsupported_number, unknown_literal, unlabeled, advice_wording
+    code: str  # unknown_ref, no_evidence, figure_mismatch, figure_format, unsupported_number, unknown_literal, unlabeled, advice_wording, unsourced_wording
     message: str
 
 
