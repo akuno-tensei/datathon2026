@@ -34,7 +34,14 @@ def refresh(root: Path, package: str = PACKAGE, keep: frozenset = frozenset(KEEP
     key = f"{package}:{Path(root).resolve()}"
     previous = _stamps.get(key)
     if purge and previous is not None and previous != stamp:
-        for name in [n for n in sys.modules if (n == package or n.startswith(package + ".")) and n not in keep]:
+        purged = [n for n in sys.modules if (n == package or n.startswith(package + ".")) and n not in keep]
+        for name in purged:
             del sys.modules[name]
+        # Un paquet conservé garde ses sous-modules en attribut : `from alphaforge.app import views` relirait alors l'ancien
+        # module (cause des erreurs « has no attribute 'conclusion_lines' » sur un serveur resté ouvert). On retire ces attributs.
+        for name in purged:
+            parent, _, child = name.rpartition(".")
+            if parent in keep and parent in sys.modules and hasattr(sys.modules[parent], child):
+                delattr(sys.modules[parent], child)
     _stamps[key] = stamp
     return stamp

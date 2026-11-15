@@ -49,6 +49,7 @@ L'orchestrateur appelle l'agent à l'étape 6 (`alphaforge/orchestrator/orchestr
 | `limits.py` | `limits_builder` : hypothèses, limites, incertitudes, non couvert. |
 | `label_content.py` | `label_content`, `label_all` : étiquette « fait », « hypothèse », « scénario fictif » ou « synthèse ». |
 | `synthesis.py` | `build_synthesis`, `verify_synthesis`, `insert_after_verdict` : la synthèse placée après le verdict (section 5.9). |
+| `conclusion.py` | `build_conclusion` : la conclusion en langage simple, placée à la fin (section 5.10). |
 | `formatting.py` | `shown_value`, `format_number`, `parse_shown` : même code pour écrire et pour contrôler un nombre. |
 | `verifier.py` | `claim_verifier`, `check_statement`, `advice_wording`, `ADVICE_PATTERNS` : les 7 contrôles. |
 | `provenance.py` | `Vocabulary`, `provenance_issues` : liste blanche de mots, enchaînements et citations (contrôle 7). |
@@ -232,6 +233,25 @@ Les gabarits n'utilisent pas le mot « vous » (ni « you » ou « yours » en a
 **Placement** (`insert_after_verdict`). Juste après l'énoncé dont le texte est la phrase `verdict` ; à défaut, en fin de section `summary`. L'interface affiche la section `summary` en mode résumé (`alphaforge/app/views.py`, `explanation_sections`), donc la synthèse y apparaît, avec ses liens vers les preuves, sans changement de l'interface.
 
 L'exemple 12 montre trois synthèses réelles.
+
+### 5.10 Conclusion en langage simple
+
+`conclusion.py` écrit, à la fin de l'explication, un résumé pour un lecteur débutant : ce que dit le verdict, sans chiffre et sans jargon. Elle est rédigée après la synthèse, à partir du verdict seul, avec les gabarits `TEMPLATES[langue]["conclusion"]` (`config.py`).
+
+**Contenu, dans l'ordre** (`build_conclusion`) :
+1. une phrase d'ensemble selon le statut du verdict (`headline`) : rien ne va à l'encontre du profil (`conforme`), certains points demandent de la prudence (`avertissement`), une règle explicite empêche l'idée de cadrer (`bloqué`). Si le blocage ne vient que de la demande (transaction réelle), la phrase le dit (`scope_blocked`) au lieu de mettre l'actif en cause ;
+2. selon la demande :
+   - **évaluer un actif ou comparer des actifs** : une phrase par actif demandé. Bloqué : la règle en clair (« ce type d'actif n'est pas permis à ce niveau de risque »). Limites dépassées : « son prix a varié plus fortement que ce que ce profil accepte », « il a déjà connu une baisse plus forte… », « il a mis plus de temps à remonter que l'horizon minimal… », suivi de « C'est un signal de prudence, pas une interdiction ». Conforme : ses variations passées sont restées dans les limites. Sans données : on ne se prononce pas. Pour deux actifs ou plus, une phrase rappelle qu'ils sont examinés côte à côte, sans classement ; une forte corrélation (`HIGH_CORRELATION`) est dite en clair (« les réunir apporte peu de diversification ») ;
+   - **scénario de portefeuille** (`build_scenario` avec une preuve `portfolio_metrics`) : le portefeuille reste dans les limites, ou les dépasse, avec chaque dépassement en clair (poids d'un actif, part d'un type d'actif, variations, pire baisse) ; puis le rappel qu'il s'agit d'un rejeu fictif, ni prévision ni allocation conseillée. Si le scénario n'a pas pu être rejoué, la phrase le dit et les actifs sont décrits un par un ;
+3. les alternatives conformes, nommées comme « des pistes à examiner, pas des conseils », ou leur absence ;
+4. un renvoi au périmètre s'il y a un refus (prévision, transaction, conseil) ;
+5. toujours la même fin : « Ces constats décrivent le passé : ils ne disent pas ce qui arrivera. La décision revient à l'investisseur. »
+
+**Garde-fous.** Aucun chiffre (donc aucun fait nouveau), aucun mot « vous » dans les gabarits (le contrôle de provenance reste strict, voir 5.9). Étiquette `conclusion` (« Conclusion »). Chaque phrase cite le verdict comme preuve et passe par `verify_synthesis` : les 7 contrôles, plus la règle « aucun fait nouveau ». Une phrase rejetée est retirée, jamais réparée. Sans verdict, pas de conclusion.
+
+**Affichage.** Dans le texte rendu (`render`), la section « En résumé » vient après les hypothèses, limites et incertitudes. Dans l'interface, `views.conclusion_lines` l'affiche à la fin de l'analyse, quel que soit le niveau de lecture ; `explanation_sections` ne la répète pas. L'onglet « Comparer deux profils » ajoute sa propre conclusion (`views.comparison_conclusion`), construite à partir des deux verdicts seulement, sans chiffre : même demande, mêmes données ; le constat pour chaque profil ; la différence vient des limites de chaque profil, pas des données.
+
+**Vérifié** : sur 171 analyses réelles (3 profils, 2 langues, 3 niveaux d'expérience, 17 demandes et scénarios), aucune phrase retirée, aucune conclusion manquante, aucun chiffre. Tests : `tests/explainability/test_expl_conclusion.py`, et deux tests d'interface dans `tests/app/test_app_streamlit.py`.
 
 ## 6. Limites et incertitudes
 

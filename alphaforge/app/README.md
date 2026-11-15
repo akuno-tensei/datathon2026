@@ -118,6 +118,8 @@ Chaque vue reçoit une `Analysis` (parfois une `Comparison`) et la langue. Les t
 | `comparison_diffs` | Différences de limites dérivées et de statuts par actif entre deux profils. | Verdicts des deux analyses. |
 | `report_markdown` | Rapport exportable en Markdown. | Uniquement le registre : aucun chiffre nouveau (section 6). |
 
+**Conclusions.** `conclusion_lines(analysis, lang)` renvoie la conclusion en langage simple de l'explicabilité (affichée par `render_conclusion` à la fin de l'analyse, après les limites, quel que soit le niveau de lecture) ; `explanation_sections` l'exclut pour ne pas la répéter. `comparison_conclusion(cmp, lang)` construit celle de l'onglet « Comparer deux profils » à partir des deux verdicts seulement, sans chiffre (voir `alphaforge/explainability/README.md`, section 5.10).
+
 ## 5. Libellés lisibles (`labels.py`)
 
 Règle : **affichage seulement**. Les valeurs enregistrées, les codes transmis aux agents et les messages des agents ne changent jamais. Un test vérifie que les nombres restent identiques après reformulation (`test_numbers_are_never_changed_by_the_rewording`). L'incident d'origine, documenté dans `.kiro/steering/app-interface.md` : un remplacement de « . » par « , » sur un message entier avait transformé « SHOP.TO » en « SHOP,TO ».

@@ -3,7 +3,7 @@ from typing import List
 
 from .models import Label, Statement
 
-_BY_BASIS = {"evidence": "fait", "assumption": "hypothese", "scenario": "scenario_fictif", "synthesis": "synthese"}
+_BY_BASIS = {"evidence": "fait", "assumption": "hypothese", "scenario": "scenario_fictif", "synthesis": "synthese", "conclusion": "conclusion"}
 
 
 def label_content(statement: Statement) -> Statement:

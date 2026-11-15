@@ -360,12 +360,22 @@ def explanation_sections(analysis: Analysis, lang: str, detail: bool) -> Dict[st
 
     out: Dict[str, List[ExplanationLine]] = {}
     for s in e.statements:
-        if keep is not None and s.section not in keep:
-            continue
+        if s.section == "conclusion" or (keep is not None and s.section not in keep):
+            continue  # la conclusion est affichée à part, à la fin (conclusion_lines)
         out.setdefault(s.section, []).append(
             ExplanationLine(s.section, LABELS[lang].get(s.label or "fait", s.label or ""), s.text, list(s.refs),
                             [{"shown": f.shown, "ref": f.ref} for f in s.figures]))
     return out
+
+
+def conclusion_lines(analysis: Analysis, lang: str) -> List[ExplanationLine]:
+    """Conclusion en langage simple (agent d'explicabilité, vérifiée), affichée à la fin de l'analyse dans tous les modes."""
+    e = analysis.explanation
+    if e is None:
+        return []
+    from ..explainability.config import LABELS
+    return [ExplanationLine(s.section, LABELS[lang].get(s.label or "conclusion", ""), s.text, list(s.refs), [])
+            for s in e.statements if s.section == "conclusion"]
 
 
 def limit_sections(analysis: Analysis, lang: str) -> Dict[str, List[ExplanationLine]]:
@@ -539,6 +549,29 @@ def comparison_diffs(cmp: Comparison, lang: str) -> List[DiffRow]:
         if tk in rb and la[tk] != rb[tk]:
             rows.append(DiffRow(t("diff_status", lang, t=tk, sa=t("status_" + la[tk], lang), sb=t("status_" + rb[tk], lang), pa=pa, pb=pb)))
     return rows
+
+
+def comparison_conclusion(cmp: Comparison, lang: str) -> List[str]:
+    """Conclusion en langage simple de l'onglet « Comparer deux profils ». Construite à partir des deux verdicts seulement :
+    aucun chiffre, aucune donnée nouvelle ; chaque analyse garde par ailleurs sa propre conclusion vérifiée."""
+    lc, rc = cmp.left.verdict, cmp.right.verdict
+    if not (lc and rc):
+        return []
+    na = cmp.left.profile.display_name or cmp.left.profile.profile_id
+    nb = cmp.right.profile.profile_id if not cmp.right.profile.display_name else cmp.right.profile.display_name
+    out = [t("cc_intro", lang)]
+    left = {x["ticker"]: x["status"] for x in lc["assets"]}
+    right = {x["ticker"]: x["status"] for x in rc["assets"]}
+    differ = False
+    for tk, sa in left.items():
+        if tk not in right:
+            continue
+        sb = right[tk]
+        differ |= sa != sb
+        out.append(t("cc_asset", lang, t=tk, pa=na, pb=nb, sa=t("cc_status_" + sa, lang), sb=t("cc_status_" + sb, lang)))
+    out.append(t("cc_differ" if differ else "cc_same", lang))
+    out.append(t("cc_close", lang))
+    return out
 
 
 def _pc(x: Optional[float], lang: str) -> str:

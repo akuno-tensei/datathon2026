@@ -76,7 +76,7 @@ Le mandat encourage une approche agentique **simple, focalisée et vérifiable**
 | `compose_explanation` | Adapte le niveau de langage et la structure au profil (expérience, langue) |
 | `claim_verifier` | Contrôle que chaque nombre et chaque affirmation correspond à une entrée du registre. Une affirmation sans preuve est supprimée ou marquée comme hypothèse |
 | `limits_builder` | Compile hypothèses, limites, incertitudes et ce qui n'est pas couvert |
-| `label_content` | Étiquette chaque énoncé : fait, hypothèse ou scénario fictif. *Implémenté avec une quatrième étiquette, « synthèse », pour les phrases qui relient le verdict à ses raisons (`synthesis.py`).* |
+| `label_content` | Étiquette chaque énoncé : fait, hypothèse ou scénario fictif. *Implémenté avec deux étiquettes de plus : « synthèse », pour les phrases qui relient le verdict à ses raisons (`synthesis.py`), et « conclusion », pour le résumé en langage simple placé à la fin (`conclusion.py`).* |
 
 ## 1.3 Liens entre les agents
 

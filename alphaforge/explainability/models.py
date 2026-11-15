@@ -8,8 +8,8 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-Label = Literal["fait", "hypothese", "scenario_fictif", "synthese"]  # synthese : reprise du verdict et de ses raisons (synthesis.py)
-Basis = Literal["evidence", "assumption", "scenario", "synthesis"]  # origine d'un énoncé ; `label_content` en déduit l'étiquette
+Label = Literal["fait", "hypothese", "scenario_fictif", "synthese", "conclusion"]  # synthese : synthesis.py ; conclusion : conclusion.py
+Basis = Literal["evidence", "assumption", "scenario", "synthesis", "conclusion"]  # origine d'un énoncé ; `label_content` en déduit l'étiquette
 Unit = Literal["pct", "years", "ratio", "corr", "money"]  # corr : deux décimales, signe conservé ; money : millions ou milliards de dollars US
 
 

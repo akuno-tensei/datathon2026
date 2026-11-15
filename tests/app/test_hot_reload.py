@@ -122,3 +122,16 @@ def test_purge_can_be_disabled_for_processes_that_hold_module_references(pkg):
 
 def test_the_test_suite_runs_with_hot_reload_disabled():
     assert os.environ.get("ALPHAFORGE_HOT_RELOAD") == "0"
+
+
+def test_from_kept_package_import_submodule_gets_the_new_module(pkg):
+    """Cause de « module 'alphaforge.app.views' has no attribute 'conclusion_lines' » : le paquet gardé gardait l'ancien
+    sous-module en attribut, et `from paquet import module` le relisait au lieu de réimporter la version à jour."""
+    from hotpkg import mod as old
+
+    _reload.refresh(pkg, "hotpkg", frozenset({"hotpkg"}))
+    _bump(pkg / "mod.py", "VERSION = 4\nADDED = True\n", offset=10)
+    _reload.refresh(pkg, "hotpkg", frozenset({"hotpkg"}))
+    from hotpkg import mod as new
+
+    assert new is not old and new.VERSION == 4 and new.ADDED is True

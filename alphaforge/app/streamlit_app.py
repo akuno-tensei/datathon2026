@@ -102,7 +102,7 @@ with top[1]:
                help=t("np_del_open_help" if created else "np_delete_none", lang))
 profile = F.get_profile(pid)
 with top[2]:
-    as_of = st.date_input(t("as_of", lang), value=F.store.last_date, min_value=F.store.first_date, max_value=F.store.last_date)
+    as_of = st.date_input(t("as_of", lang), help=t("as_of_help", lang), value=F.store.last_date, min_value=F.store.first_date, max_value=F.store.last_date)
 with top[3]:
     base = st.selectbox(t("base_currency", lang), ["CAD", "USD"], index=0 if profile.base_currency == "CAD" else 1)
 
@@ -382,6 +382,18 @@ def render_portfolio(a: Analysis, key: str) -> None:
     evidence_button(pv.evidence_id, f"{key}-pf")
 
 
+def render_conclusion(a: Analysis, key: str) -> None:
+    """Conclusion en langage simple, à la fin de l'analyse, quel que soit le niveau de lecture."""
+    lines = views.conclusion_lines(a, lang)
+    if not lines:
+        return
+    with st.container(border=True):
+        st.markdown(f"### 🧭 {t('conclusion_title', lang)}")
+        st.caption(t("conclusion_note", lang))
+        for l in lines:
+            st.markdown(f"- {l.text}")
+
+
 def render_limits(a: Analysis, key: str) -> None:
     st.markdown(f"### {t('limits_title', lang)}")  # toujours présente, jamais repliée
     for sec, lines in views.limit_sections(a, lang).items():
@@ -537,6 +549,7 @@ with tab_an:
             render_correlation(a, "an")
             render_portfolio(a, "an")
             render_limits(a, "an")
+            render_conclusion(a, "an")
     with right:
         if S.analysis is not None:
             if S.evidence_open:
@@ -567,6 +580,13 @@ with tab_cmp:
                 st.markdown(f"#### {an.profile.display_name or an.profile.profile_id}")
                 render_verdict(an, k)
                 render_explanation(an, k)
+                render_conclusion(an, k)
+        conc = views.comparison_conclusion(cmp, lang)
+        if conc:
+            with st.container(border=True):
+                st.markdown(f"### 🧭 {t('conclusion_title', lang)}")
+                for line in conc:
+                    st.markdown(f"- {line}")
 
 def _fill_form(state: Dict[str, Any]) -> None:
     """Rappel : remplit tous les champs du formulaire de profil (avant le rendu, donc avant la création des champs)."""

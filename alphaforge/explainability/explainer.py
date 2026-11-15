@@ -15,6 +15,7 @@ from .ledger_read import ledger_read
 from .limits import limits_builder
 from .models import Explanation, Issue, Limits, VerificationReport
 from .provenance import Vocabulary
+from .conclusion import build_conclusion
 from .synthesis import build_synthesis, insert_after_verdict, verify_synthesis
 from .verifier import claim_verifier
 
@@ -53,10 +54,16 @@ class Explainer:
         body_ok = insert_after_verdict(body_ok, syn_kept, view, profile)
         removed_all += syn_removed
         issues_all += syn_issues
+        # Conclusion en langage simple, à la fin : sans chiffre, vérifiée comme la synthèse (une phrase rejetée est retirée).
+        con_kept, con_removed, con_issues = verify_synthesis(view, label_all(build_conclusion(view, profile)), body_ok, vocab)
+        body_ok = body_ok + con_kept
+        removed_all += con_removed
+        issues_all += con_issues
 
         final = VerificationReport(
             approved=report.approved and not removed_all,
-            attempts=attempt, verified=report.verified + len(syn_kept), removed=removed_all, downgraded=report.downgraded,
+            attempts=attempt, verified=report.verified + len(syn_kept) + len(con_kept), removed=removed_all,
+            downgraded=report.downgraded,
             issues=issues_all,
         )
         text = render(body_ok, limits, profile, final)

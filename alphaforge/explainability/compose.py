@@ -457,6 +457,9 @@ def render(
         for key, items in groups:
             if items:
                 parts += ["", f"### {T['titles'][key]}"] + [line(s) for s in items]
+    conclusion = [s for s in statements if s.section == "conclusion"]  # toujours en dernier : le résumé en langage simple
+    if conclusion:
+        parts += ["", f"## {T['titles']['conclusion']}"] + [line(s) for s in conclusion]
     n = report.verified + len(report.downgraded)
     parts += ["", "---", T["footer"].format(n=n, r=len(report.removed), d=len(report.downgraded))]
     return "\n".join(parts) + "\n"

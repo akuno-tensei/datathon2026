@@ -601,3 +601,23 @@ def test_a_plain_request_on_a_us_stock_shows_its_fundamentals_from_the_snapshot(
     assert not [e for e in a.result.ledger.entries("enrichment") if e.payload["kind"] == "filings"]  # pas la liste des dépôts
     assert a.verdict["assets"][0]["status"] == a.verdict["status"]
     assert any("ne modifient pas le verdict" in m.value for m in app.markdown)
+
+
+# ---- conclusion en langage simple, à la fin ------------------------------------
+def test_each_analysis_ends_with_a_plain_language_conclusion(app):
+    app.text_area(key="req_box").set_value("Évalue NVDA")  # Robert : avertissement
+    next(b for b in app.button if b.label == "Envoyer").click().run()
+    assert not app.exception, app.exception
+    md = [m.value for m in app.markdown]
+    title = next(i for i, m in enumerate(md) if m.startswith("### 🧭 En résumé"))
+    assert title > next(i for i, m in enumerate(md) if m.startswith("### Limites et incertitudes"))  # après les limites
+    assert md[title + 1].startswith("- En bref :") and any("La décision revient à l'investisseur" in m for m in md[title:])
+
+
+def test_the_profile_comparison_ends_with_a_plain_language_conclusion(app):
+    next(b for b in app.button if b.key == "cmp_go").click().run()
+    assert not app.exception, app.exception
+    md = [m.value for m in app.markdown]
+    last = max(i for i, m in enumerate(md) if m.startswith("### 🧭 En résumé"))
+    assert md[last + 1] == "- Même demande, mêmes données : seul le profil change."
+    assert any(m.startswith("- La différence vient des limites") or m.startswith("- Les deux profils aboutissent") for m in md[last:])
