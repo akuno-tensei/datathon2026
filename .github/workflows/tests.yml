@@ -18,18 +18,16 @@ jobs:
   pytest:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Même image de base que l'application déployée (Dockerfile) : Python 3.9 n'existe plus sur les machines Ubuntu récentes
+    # de GitHub, et tester dans l'image de production évite tout écart d'environnement.
+    container: public.ecr.aws/docker/library/python:3.9-slim
     env:
       ALPHAFORGE_LLM: "0"
       ALPHAFORGE_S3_BUCKET: ""
       ALPHAFORGE_HOT_RELOAD: "0"
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.9"  # même version que le poste de développement et l'image déployée
-          cache: pip
-          cache-dependency-path: deploy/requirements.lock.txt
+      - uses: actions/checkout@v5
       - name: Dépendances (versions exactes de l'image déployée)
         run: |
           python -m pip install --upgrade pip
