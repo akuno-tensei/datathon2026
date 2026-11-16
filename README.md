@@ -8,6 +8,15 @@ Projet du Datathon 2026 (PolyFinances), cas AlphaForge AI. Les documents de réf
 
 **Démo hébergée** (compte AWS de l'événement, actif jusqu'au lundi 16 novembre 2026 à 13 h 59) : https://d3rh9mi9cqh6mn.cloudfront.net/
 
+**Version sans AWS en ligne** : https://datathon2026-fynfuk7p95hfetqxcfxxkc.streamlit.app/ (Streamlit Community Cloud, Python 3.12, branche `main`). Elle tourne avec le même code, avec l'interprétation par règles à la place de Bedrock et sans archive S3. Elle se met à jour à chaque envoi sur `main`.
+
+**Héberger votre propre copie** (gratuit, sans AWS) :
+
+1. Forker le dépôt sur votre compte GitHub.
+2. Sur https://share.streamlit.io, « Create app » : votre fork, branche `main`, fichier `alphaforge/app/streamlit_app.py`.
+3. « Advanced settings » : Python 3.12. Les dépendances viennent de `requirements.txt` à la racine.
+4. Facultatif, pour les données SEC en direct : dans « Secrets », ajouter au premier niveau `ALPHAFORGE_SEC_USER_AGENT = "Votre nom votre-courriel@exemple.org"`. La SEC exige un vrai nom et un vrai courriel de contact. Sans ce secret, l'app utilise l'instantané SEC inclus dans le dépôt.
+
 Après la fermeture du compte, l'application reste utilisable en local et sur un hébergement sans AWS : voir [Après l'événement](#après-lévénement).
 
 ## Démarrage rapide
@@ -21,6 +30,7 @@ python3 -m pytest                                    # toute la suite de tests (
 L'interface se lance depuis n'importe quel dossier et fonctionne hors ligne : les données du jeu de départ sont dans `alphaforge_starter/`, et un instantané des données SEC dans `alphaforge_starter/enrichment_snapshot/`. Sans compte AWS, la demande est interprétée par des règles (voir [Après l'événement](#après-lévénement)).
 
 Utilisation en bref :
+
 1. Choisir un profil (Amira, Mateo, Robert, ou en créer un avec le bouton **➕ Ajouter**, sous la liste des profils ; **✏️ Modifier** change le profil créé sélectionné ; **🗑 Supprimer** retire un profil créé), la date d'analyse, la devise de base et la langue. L'interrupteur **Enrichissement** active l'agent d'enrichissement (activé par défaut) ; la ligne à côté dit quelles sources sont branchées.
 2. Écrire une demande (« Évalue NVDA », « Compare NVDA et BTC-USD »), ou construire un scénario de portefeuille en saisissant les poids, ou les écrire dans la demande (« 60 % SPY et 40 % AGG, sans rééquilibrage »).
 3. Lire le verdict, l'explication, la sensibilité à la période, les limites. Chaque bouton **Preuve** ouvre le calcul qui soutient un chiffre, avec la commande qui le reproduit à l'identique (l'identifiant complet apparaît au survol). Le panneau **📖 Lexique** explique les termes de l'analyse.
@@ -30,24 +40,25 @@ Utilisation en bref :
 
 Ce README donne la vue d'ensemble. Chaque partie a sa propre documentation, écrite à partir du code et avec des exemples exécutés :
 
-| Partie | Document |
-|---|---|
-| Carte du paquet, déroulé d'une analyse, qui écrit et qui lit le registre | [`alphaforge/README.md`](alphaforge/README.md) |
-| Orchestrateur (profil, interprétation de la demande, plan, registre) | [`alphaforge/orchestrator/README.md`](alphaforge/orchestrator/README.md) |
-| Analyste quantitatif (outils, fenêtres, métriques, contrat d'une preuve) | [`alphaforge/quant/README.md`](alphaforge/quant/README.md) |
-| Enrichissement (besoins, sources, niveaux de confiance, SEC EDGAR, instantané) | [`alphaforge/enrichment/README.md`](alphaforge/enrichment/README.md) |
-| Gouvernance (limites dérivées, contrôles, codes de raison, verdict, alternatives) | [`alphaforge/governance/README.md`](alphaforge/governance/README.md) |
-| Explicabilité (rédaction, vérificateur, provenance, formats des nombres) | [`alphaforge/explainability/README.md`](alphaforge/explainability/README.md) |
-| Interface et assemblage (pipeline, vues, Streamlit, libellés, archive S3) | [`alphaforge/app/README.md`](alphaforge/app/README.md) |
-| Déploiement AWS, image, banc d'essai Bedrock, CI | [`deploy/README.md`](deploy/README.md) |
-| Intégration AWS : schémas, justification, bonnes pratiques, preuves observables | [`docs/architecture-aws.md`](docs/architecture-aws.md) |
-| Validation des résultats et des explications : recalcul indépendant, reproductibilité, banc d'essai, limites | [`docs/validation.md`](docs/validation.md) |
-| Suite de tests (lancement, doublures, contenu de chaque dossier) | [`tests/README.md`](tests/README.md) |
-| Données de départ et instantané SEC | [`alphaforge_starter/README.md`](alphaforge_starter/README.md), [`alphaforge_starter/enrichment_snapshot/SOURCE.md`](alphaforge_starter/enrichment_snapshot/SOURCE.md) |
+| Partie                                                                                                       | Document                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Carte du paquet, déroulé d'une analyse, qui écrit et qui lit le registre                                     | [`alphaforge/README.md`](alphaforge/README.md)                                                                                                                         |
+| Orchestrateur (profil, interprétation de la demande, plan, registre)                                         | [`alphaforge/orchestrator/README.md`](alphaforge/orchestrator/README.md)                                                                                               |
+| Analyste quantitatif (outils, fenêtres, métriques, contrat d'une preuve)                                     | [`alphaforge/quant/README.md`](alphaforge/quant/README.md)                                                                                                             |
+| Enrichissement (besoins, sources, niveaux de confiance, SEC EDGAR, instantané)                               | [`alphaforge/enrichment/README.md`](alphaforge/enrichment/README.md)                                                                                                   |
+| Gouvernance (limites dérivées, contrôles, codes de raison, verdict, alternatives)                            | [`alphaforge/governance/README.md`](alphaforge/governance/README.md)                                                                                                   |
+| Explicabilité (rédaction, vérificateur, provenance, formats des nombres)                                     | [`alphaforge/explainability/README.md`](alphaforge/explainability/README.md)                                                                                           |
+| Interface et assemblage (pipeline, vues, Streamlit, libellés, archive S3)                                    | [`alphaforge/app/README.md`](alphaforge/app/README.md)                                                                                                                 |
+| Déploiement AWS, image, banc d'essai Bedrock, CI                                                             | [`deploy/README.md`](deploy/README.md)                                                                                                                                 |
+| Intégration AWS : schémas, justification, bonnes pratiques, preuves observables                              | [`docs/architecture-aws.md`](docs/architecture-aws.md)                                                                                                                 |
+| Validation des résultats et des explications : recalcul indépendant, reproductibilité, banc d'essai, limites | [`docs/validation.md`](docs/validation.md)                                                                                                                             |
+| Suite de tests (lancement, doublures, contenu de chaque dossier)                                             | [`tests/README.md`](tests/README.md)                                                                                                                                   |
+| Données de départ et instantané SEC                                                                          | [`alphaforge_starter/README.md`](alphaforge_starter/README.md), [`alphaforge_starter/enrichment_snapshot/SOURCE.md`](alphaforge_starter/enrichment_snapshot/SOURCE.md) |
 
 ## Valeur pour une institution financière
 
 L'argument central est la **traçabilité** : chaque conclusion se rejoue à l'identique et se rattache à ses preuves.
+
 - **Auditabilité.** Chaque chiffre affiché porte un identifiant de preuve, l'empreinte des données lues et la commande qui le recalcule. Le registre complet d'une analyse a une empreinte SHA-256 stable : la même analyse redonne la même empreinte ([`docs/validation.md`](docs/validation.md)). Un contrôleur peut donc vérifier après coup ce qui a été dit, sur quelles données et selon quelles règles.
 - **Conformité.** Les refus sont explicites et codés (transaction, prédiction, conseil personnalisé, exclusion déclarée) ; aucun nombre n'est produit par un modèle de langage ; aucune donnée postérieure à la date d'analyse n'est lue. Les seuils de risque sont des paramètres de politique nommés, regroupés dans un seul fichier (`alphaforge/governance/config.py`) que la conformité peut relire, sans règle propre à un client.
 - **Confiance du client.** Le client voit pourquoi une idée est jugée cohérente ou non avec son profil, avec les limites et les incertitudes, dans sa langue et en termes simples. La décision lui revient, et l'outil le dit.
@@ -63,17 +74,18 @@ Demande + profil ─► Orchestrateur ─► (Enrichissement) ─► Analyste qu
                                             └────────────► Explicabilité ◄──────┘ ─► Réponse expliquée
 ```
 
-| Agent | Rôle | Code |
-|---|---|---|
-| Orchestrateur | Charge et valide le profil, interprète la demande (Amazon Bedrock, revérifié par des règles ; règles seules sans AWS), planifie, route, tient le registre. Ne calcule rien, ne rend aucun verdict. | `alphaforge/orchestrator/` |
-| Enrichissement | Va chercher les données publiques absentes du jeu de départ quand un besoin est détecté, les date, leur donne un niveau de confiance (A, B, C) et les écrit au registre avec leur fiche source. Ne conclut rien. Désactivable : le noyau à quatre agents travaille alors seul et le dit. | `alphaforge/enrichment/` |
-| Analyste quantitatif | Produit des faits chiffrés reproductibles, sans prédiction. Outils déterministes, sans accès réseau. | `alphaforge/quant/` |
-| Gouvernance | Compare les preuves aux limites **dérivées du profil** et rend un verdict visible : `conforme`, `avertissement`, `bloqué`. Peut demander à l'analyste de chiffrer des alternatives (2 itérations au plus). | `alphaforge/governance/` |
-| Explicabilité | Rédige l'explication depuis le seul registre, puis la vérifie (chiffres, ton, provenance de chaque mot). Un énoncé non prouvé est retiré. | `alphaforge/explainability/` |
+| Agent                | Rôle                                                                                                                                                                                                                                                                                     | Code                         |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| Orchestrateur        | Charge et valide le profil, interprète la demande (Amazon Bedrock, revérifié par des règles ; règles seules sans AWS), planifie, route, tient le registre. Ne calcule rien, ne rend aucun verdict.                                                                                       | `alphaforge/orchestrator/`   |
+| Enrichissement       | Va chercher les données publiques absentes du jeu de départ quand un besoin est détecté, les date, leur donne un niveau de confiance (A, B, C) et les écrit au registre avec leur fiche source. Ne conclut rien. Désactivable : le noyau à quatre agents travaille alors seul et le dit. | `alphaforge/enrichment/`     |
+| Analyste quantitatif | Produit des faits chiffrés reproductibles, sans prédiction. Outils déterministes, sans accès réseau.                                                                                                                                                                                     | `alphaforge/quant/`          |
+| Gouvernance          | Compare les preuves aux limites **dérivées du profil** et rend un verdict visible : `conforme`, `avertissement`, `bloqué`. Peut demander à l'analyste de chiffrer des alternatives (2 itérations au plus).                                                                               | `alphaforge/governance/`     |
+| Explicabilité        | Rédige l'explication depuis le seul registre, puis la vérifie (chiffres, ton, provenance de chaque mot). Un énoncé non prouvé est retiré.                                                                                                                                                | `alphaforge/explainability/` |
 
 L'interface (`alphaforge/app/`) assemble les agents sur les données réelles et ne contient aucune logique métier : elle rend des vues testables (`views.py`).
 
 Principes tenus partout :
+
 - **Le profil est une donnée, pas du code.** Aucune règle propre à un persona : les limites (volatilité, perte maximale, plafonds par actif et par classe) sont dérivées du niveau de risque et de l'horizon.
 - **Aucun nombre n'est produit par un modèle de langage.** Bedrock ne fait qu'interpréter la demande ; tous les chiffres viennent d'outils déterministes ou de sources officielles, et l'explicabilité les relie à une preuve ou les retire.
 - **Contraintes dures et préférences souples sont distinguées** : une exclusion bloque, une préférence oriente.
@@ -83,22 +95,23 @@ Principes tenus partout :
 
 ### Outils de l'analyste
 
-| Outil | Rôle |
-|---|---|
-| `asset_lookup` | Confirme qu'un actif existe (symbole ou nom libre), renvoie ses métadonnées et sa couverture. Hors univers : `NOT_IN_UNIVERSE` avec les plus proches. |
-| `get_prices` | Série de prix sur une fenêtre explicite, dans la devise native. Renvoie un `series_id`, jamais la série. |
-| `data_quality_check` | Couverture, trous, valeurs invalides, sauts, fractionnements suspects, début tardif. Un statut `insuffisant` bloque les calculs suivants. Il signale, il ne corrige jamais. |
-| `convert_currency` | CAD/USD au taux du même jour, avant le calcul des rendements. Report borné, jamais de taux futur. Refuse une double conversion. |
-| `compute_metrics` | Rendement cumulatif et annualisé, volatilité, drawdown (sommet, creux, récupération), pire jour, pire mois, rendements par année civile. Effet de change rapporté. Sharpe optionnel. |
-| `stress_window` | Rejoue une mesure sur plusieurs fenêtres (complet, 2022, hors 2022, 1 an, 3 ans) et dit si elle est stable ou sensible, avec le seuil affiché. |
-| `correlation_matrix` | Corrélations des rendements, avec la méthode d'alignement des calendriers et le nombre d'observations communes. |
-| `portfolio_metrics` | Rejeu historique d'une allocation fictive : indicateurs, concentration (HHI, nombre effectif), répartition, contribution au risque, ratio de diversification. |
+| Outil                | Rôle                                                                                                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `asset_lookup`       | Confirme qu'un actif existe (symbole ou nom libre), renvoie ses métadonnées et sa couverture. Hors univers : `NOT_IN_UNIVERSE` avec les plus proches.                                |
+| `get_prices`         | Série de prix sur une fenêtre explicite, dans la devise native. Renvoie un `series_id`, jamais la série.                                                                             |
+| `data_quality_check` | Couverture, trous, valeurs invalides, sauts, fractionnements suspects, début tardif. Un statut `insuffisant` bloque les calculs suivants. Il signale, il ne corrige jamais.          |
+| `convert_currency`   | CAD/USD au taux du même jour, avant le calcul des rendements. Report borné, jamais de taux futur. Refuse une double conversion.                                                      |
+| `compute_metrics`    | Rendement cumulatif et annualisé, volatilité, drawdown (sommet, creux, récupération), pire jour, pire mois, rendements par année civile. Effet de change rapporté. Sharpe optionnel. |
+| `stress_window`      | Rejoue une mesure sur plusieurs fenêtres (complet, 2022, hors 2022, 1 an, 3 ans) et dit si elle est stable ou sensible, avec le seuil affiché.                                       |
+| `correlation_matrix` | Corrélations des rendements, avec la méthode d'alignement des calendriers et le nombre d'observations communes.                                                                      |
+| `portfolio_metrics`  | Rejeu historique d'une allocation fictive : indicateurs, concentration (HHI, nombre effectif), répartition, contribution au risque, ratio de diversification.                        |
 
 ### Le registre de preuves
 
 Chaque outil de l'analyste renvoie une entrée de forme fixe : `evidence_id`, outil et version, fenêtre, paramètres explicites, données lues avec leur empreinte (`inputs`, SHA-256 des lignes lues jusqu'à `as_of`), nombre d'observations, avertissements, hypothèses, limites. L'`evidence_id` dépend de l'outil, de sa version, des paramètres et des données : le même appel redonne le même identifiant. Un paramètre `as_of` est accepté partout, et aucune donnée postérieure n'est lue. Les données de l'enrichissement y sont écrites avec leur date de publication, leur niveau de confiance et le lien vers leur fiche source.
 
 Exemple de reproduction (la commande est affichée dans le tiroir de preuve) :
+
 ```python
 from alphaforge.quant import DataStore, run_tool
 store = DataStore.from_directory()
@@ -108,6 +121,7 @@ run_tool(store, "compute_metrics", {"ticker": "NVDA", "window": {"alias": "2022"
 ### Vérification de l'explication
 
 Avant affichage, chaque énoncé passe par `claim_verifier` (`alphaforge/explainability/verifier.py`) :
+
 1. chaque référence existe dans le registre, et un énoncé « fait » en cite au moins une ;
 2. chaque chiffre se retrouve dans la preuve citée, arrondi tel qu'affiché ; il ne reste aucun autre nombre dans le texte ;
 3. aucune tournure de conseil, de prédiction ou de promesse (liste de mots interdits ; un mot cité entre guillemets est une mention, pas un conseil) ;
@@ -123,11 +137,11 @@ Un énoncé fautif est retiré et l'explication est rédigée à nouveau sans lu
 
 Il s'active quand un **besoin de donnée** dépasse le jeu de départ : un thème du profil (ESG, éviter les controverses), un mot de la demande (« résultats », « dette », « controverses », « nouvelles »…), ou, pour une action américaine demandée, ses fondamentaux de contexte. Chaque donnée passe par un filtre temporel obligatoire (rien de publié après la date d'analyse), reçoit un niveau de confiance (A : source officielle ; B : fournisseur tiers avec méthodologie ; C : texte ou nouvelle, jamais utilisé dans un calcul) et une fiche source. Une source qui échoue devient une lacune nommée, jamais une valeur supposée. Une panne de l'agent n'arrête pas les quatre autres.
 
-| Besoin | Source | État |
-|---|---|---|
-| Dépôts réglementaires | SEC EDGAR (niveau A) : métadonnées des derniers dépôts (formulaire, dates, lien), pas leur texte | Branché pour les actions américaines |
-| Fondamentaux | SEC EDGAR, données XBRL « companyfacts » (niveau A) : chiffre d'affaires, bénéfice net, flux de trésorerie d'exploitation, trésorerie, dette à long terme, capitaux propres, actif total, tous tirés du dernier rapport annuel déposé avant la date d'analyse ; un indicateur absent du rapport est omis | Branché pour les actions américaines |
-| Cotes ESG et controverses, nouvelles, composition des FNB | — | Aucune source : lacune nommée |
+| Besoin                                                    | Source                                                                                                                                                                                                                                                                                                   | État                                 |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Dépôts réglementaires                                     | SEC EDGAR (niveau A) : métadonnées des derniers dépôts (formulaire, dates, lien), pas leur texte                                                                                                                                                                                                         | Branché pour les actions américaines |
+| Fondamentaux                                              | SEC EDGAR, données XBRL « companyfacts » (niveau A) : chiffre d'affaires, bénéfice net, flux de trésorerie d'exploitation, trésorerie, dette à long terme, capitaux propres, actif total, tous tirés du dernier rapport annuel déposé avant la date d'analyse ; un indicateur absent du rapport est omis | Branché pour les actions américaines |
+| Cotes ESG et controverses, nouvelles, composition des FNB | —                                                                                                                                                                                                                                                                                                        | Aucune source : lacune nommée        |
 
 **Fondamentaux de contexte.** Toute demande sur une action américaine affiche ses fondamentaux, sans mot-clé. Ils n'ont aucun effet sur le verdict : aucune règle de la gouvernance ne les utilise et aucun seuil n'est inventé, et l'explication le dit. Les alternatives proposées par la gouvernance n'en reçoivent pas, pour garder l'explication lisible. Un profil débutant en voit trois montants dans l'explication (chiffre d'affaires, bénéfice net, dette à long terme), les autres les sept ; le tableau complet est toujours affiché. Si la source ne répond pas, rien n'est inventé et le verdict ne bouge pas : l'indisponibilité est notée dans la trace des agents. Pour une autre classe d'actifs, les fondamentaux ne sont recherchés que si la demande les évoque (et deviennent alors une lacune explicite).
 
@@ -141,26 +155,26 @@ Il s'active quand un **besoin de donnée** dépasse le jeu de départ : un thèm
 
 Mateo tient à l'ESG et veut éviter les controverses. Le jeu de départ ne contient aucune cote ESG, et aucune source publique gratuite et documentée n'a été branchée. L'outil traite ce cas en disant ce qu'il ne sait pas, plutôt qu'en devinant :
 
-| Critère | Ce que fait l'outil | Effet |
-|---|---|---|
-| Exclusion d'un secteur, d'une classe d'actifs ou d'un titre | Comparée à la colonne `sector` ou `asset_class` du jeu de départ, ou au symbole | **Bloqué** (`EXCLUDED_SECTOR`, `EXCLUDED_ASSET_CLASS`, `EXCLUDED_TICKER`) : calculable, donc bloquant légitime |
-| Préférence ESG | Aucune donnée : « l'alignement n'est pas vérifié » (`THEME_DATA_MISSING`) ; le FNB ESGV est le substitut déclaré, avec sa limite : c'est un fonds filtré par son émetteur, pas une cote | Avertissement, jamais une conclusion |
-| Éviter les controverses | Aucune source : lacune nommée dans l'enrichissement et dans les limites | Avertissement ; le blocage n'existe que pour une controverse de niveau A ou B |
+| Critère                                                     | Ce que fait l'outil                                                                                                                                                                     | Effet                                                                                                          |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Exclusion d'un secteur, d'une classe d'actifs ou d'un titre | Comparée à la colonne `sector` ou `asset_class` du jeu de départ, ou au symbole                                                                                                         | **Bloqué** (`EXCLUDED_SECTOR`, `EXCLUDED_ASSET_CLASS`, `EXCLUDED_TICKER`) : calculable, donc bloquant légitime |
+| Préférence ESG                                              | Aucune donnée : « l'alignement n'est pas vérifié » (`THEME_DATA_MISSING`) ; le FNB ESGV est le substitut déclaré, avec sa limite : c'est un fonds filtré par son émetteur, pas une cote | Avertissement, jamais une conclusion                                                                           |
+| Éviter les controverses                                     | Aucune source : lacune nommée dans l'enrichissement et dans les limites                                                                                                                 | Avertissement ; le blocage n'existe que pour une controverse de niveau A ou B                                  |
 
 Exemple vérifié : Mateo tel que livré n'exclut aucun secteur, donc XOM sort en avertissement (volatilité au-dessus de sa limite, données ESG absentes). Un profil créé par copie de Mateo avec l'exclusion du secteur « Energy » bloque XOM et CNQ.TO (`EXCLUDED_SECTOR`). Le profil livré n'est pas modifié : le cas ne lui attribue pas cette exclusion.
 
 ## Décisions de calcul
 
-| Sujet | Règle |
-|---|---|
-| Rendements | Sur `adj_close` (dividendes et fractionnements inclus), rendements simples. |
-| Annualisation | 252 pour actions, FNB et or ; 365 pour la crypto ; 52 pour tout ce qui mélange crypto et actions. La base est nommée dans chaque résultat. Rendement annualisé seulement si la période couvre au moins 350 jours. |
-| Devises | Prix convertis chaque jour avec le taux USD/CAD de la Banque du Canada du même jour, **avant** les rendements. Report vers l'avant seulement, borné à 5 jours civils, chaque report compté. CAD par défaut, champ du profil. |
-| Calendriers | Actif seul : ses propres jours. Corrélations : dates communes, jamais de report (il fabriquerait des rendements nuls). Crypto et actions mélangées : hebdomadaire de référence. |
-| Fenêtre « hors 2022 » | On retire les **rendements** datés de 2022, pas les prix : aucun faux rendement n'enjambe le trou. |
-| Sensibilité | « Sensible » si l'écart relatif entre fenêtres dépasse 25 %, sauf si l'écart absolu reste sous 2 points (une mesure presque nulle n'est pas sensible). |
-| Portefeuille | Poids strictement positifs de somme 1, aucune vente à découvert, hypothèse de rééquilibrage obligatoire, aucun frais. Sans poids demandés, pondération égale **déclarée comme hypothèse**. |
-| Fondamentaux | Repris tels quels du rapport annuel, en dollars US, affichés en milliards (ou millions) avec une décimale ; une perte se dit par le libellé (« perte nette »), jamais par un signe. |
+| Sujet                 | Règle                                                                                                                                                                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rendements            | Sur `adj_close` (dividendes et fractionnements inclus), rendements simples.                                                                                                                                                  |
+| Annualisation         | 252 pour actions, FNB et or ; 365 pour la crypto ; 52 pour tout ce qui mélange crypto et actions. La base est nommée dans chaque résultat. Rendement annualisé seulement si la période couvre au moins 350 jours.            |
+| Devises               | Prix convertis chaque jour avec le taux USD/CAD de la Banque du Canada du même jour, **avant** les rendements. Report vers l'avant seulement, borné à 5 jours civils, chaque report compté. CAD par défaut, champ du profil. |
+| Calendriers           | Actif seul : ses propres jours. Corrélations : dates communes, jamais de report (il fabriquerait des rendements nuls). Crypto et actions mélangées : hebdomadaire de référence.                                              |
+| Fenêtre « hors 2022 » | On retire les **rendements** datés de 2022, pas les prix : aucun faux rendement n'enjambe le trou.                                                                                                                           |
+| Sensibilité           | « Sensible » si l'écart relatif entre fenêtres dépasse 25 %, sauf si l'écart absolu reste sous 2 points (une mesure presque nulle n'est pas sensible).                                                                       |
+| Portefeuille          | Poids strictement positifs de somme 1, aucune vente à découvert, hypothèse de rééquilibrage obligatoire, aucun frais. Sans poids demandés, pondération égale **déclarée comme hypothèse**.                                   |
+| Fondamentaux          | Repris tels quels du rapport annuel, en dollars US, affichés en milliards (ou millions) avec une décimale ; une perte se dit par le libellé (« perte nette »), jamais par un signe.                                          |
 
 Les limites par niveau de risque (de « faible » à « élevé ») sont dans `alphaforge/governance/config.py`. Ce sont des choix de politique, pas des faits de marché, et l'explication le dit.
 
@@ -204,11 +218,11 @@ La CI (`.github/workflows/tests.yml`, GitHub Actions) rejoue toute la suite à c
 
 AWS intervient à trois endroits du flux, chacun avec un rôle précis :
 
-| Service | Rôle dans la solution | Si le service est indisponible |
-|---|---|---|
-| **Amazon Bedrock** (Claude Haiku 4.5, profil d'inférence global) | L'orchestrateur lui fait interpréter la demande en langage naturel : intention, actifs désignés (« l'or » → GLD), signaux de périmètre (prédiction, transaction, conseil). Le modèle propose, le code dispose : actifs revérifiés contre l'univers, poids lus dans le texte d'origine, signaux de périmètre jamais retirés. Le modèle ne calcule rien et ne recommande rien. | Repli sur l'interprétation par règles, affiché sous le verdict. |
-| **Amazon S3** | Chaque analyse archive son registre complet (`ledger.jsonl`) et un résumé (`summary.json`) sous `runs/AAAA-MM-JJ/<heure>-<empreinte>/`. L'empreinte SHA-256 du registre figure dans le chemin : une analyse rejouée doit donner la même. Bucket privé, chiffré, HTTPS seulement, expiration à 60 jours. | Note « archive indisponible » ; l'analyse est quand même affichée. |
-| **Amazon ECS Fargate, ALB, CloudFront, ECR, CodeBuild** | Hébergement de l'interface : CloudFront (HTTPS) → équilibreur de charge joignable seulement depuis CloudFront, avec un en-tête d'origine → une tâche Fargate. L'image est construite par CodeBuild (pas de Docker requis sur le poste) et scannée à l'envoi dans ECR. | — |
+| Service                                                          | Rôle dans la solution                                                                                                                                                                                                                                                                                                                                                        | Si le service est indisponible                                     |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| **Amazon Bedrock** (Claude Haiku 4.5, profil d'inférence global) | L'orchestrateur lui fait interpréter la demande en langage naturel : intention, actifs désignés (« l'or » → GLD), signaux de périmètre (prédiction, transaction, conseil). Le modèle propose, le code dispose : actifs revérifiés contre l'univers, poids lus dans le texte d'origine, signaux de périmètre jamais retirés. Le modèle ne calcule rien et ne recommande rien. | Repli sur l'interprétation par règles, affiché sous le verdict.    |
+| **Amazon S3**                                                    | Chaque analyse archive son registre complet (`ledger.jsonl`) et un résumé (`summary.json`) sous `runs/AAAA-MM-JJ/<heure>-<empreinte>/`. L'empreinte SHA-256 du registre figure dans le chemin : une analyse rejouée doit donner la même. Bucket privé, chiffré, HTTPS seulement, expiration à 60 jours.                                                                      | Note « archive indisponible » ; l'analyse est quand même affichée. |
+| **Amazon ECS Fargate, ALB, CloudFront, ECR, CodeBuild**          | Hébergement de l'interface : CloudFront (HTTPS) → équilibreur de charge joignable seulement depuis CloudFront, avec un en-tête d'origine → une tâche Fargate. L'image est construite par CodeBuild (pas de Docker requis sur le poste) et scannée à l'envoi dans ECR.                                                                                                        | —                                                                  |
 
 **Choix du modèle.** Banc d'essai `deploy/bench_llm.py` : 12 demandes réalistes (FR et EN, noms d'entreprises, descriptions comme « l'or », demandes de prédiction, d'achat et de conseil), 3 points par demande (intention, actifs, signaux de périmètre), 3 passages par modèle. Résultats dans `deploy/bench_results.json` (relevé du 15 novembre 2026) : Claude Haiku 4.5 obtient 108/108 en environ 0,9 s par demande ; Amazon Nova 2 Lite obtient 105/108 en 0,5 s, car il manque à chaque passage le signal « transaction » de « Tout le monde parle de Tesla, je devrais en acheter ? ». Un signal de périmètre manqué est l'erreur la plus coûteuse ici, d'où Haiku 4.5. L'interprétation par règles seule obtient 30/36 (un passage : elle est déterministe).
 
@@ -232,21 +246,15 @@ Sans `ALPHAFORGE_SEC_USER_AGENT`, une mise à jour conserve l'identification dé
 
 Le compte AWS de l'événement ferme le 16 novembre 2026 à 13 h 59, avec la démo hébergée, Bedrock et l'archive S3. Le projet reste utilisable :
 
-| Élément | Sans compte AWS |
-|---|---|
-| Démo hébergée (https://d3rh9mi9cqh6mn.cloudfront.net/) | **Ne répond plus** : ECS, l'équilibreur, CloudFront et ECR disparaissent. Il faut lancer l'application en local ou l'héberger ailleurs (ci-dessous). |
-| Prototype local (`streamlit run alphaforge/app/streamlit_app.py`) | Fonctionne hors ligne : données des 31 actifs dans `alphaforge_starter/`. Les cinq agents, les calculs, la gouvernance, les explications vérifiées, la conclusion « En résumé », les profils (ajout, modification, suppression, comparaison) et les deux langues sont inchangés. |
-| Interprétation des demandes | Par règles, détecté automatiquement (aucun identifiant AWS : Bedrock n'est pas tenté) et affiché sous le verdict. Les règles comprennent moins de formulations : 30/36 au banc d'essai, contre 108/108 pour Claude Haiku 4.5 (`deploy/bench_results.json`). Par exemple, « l'or » n'est pas relié à GLD. |
-| Archive des registres | Absente ; aucune analyse n'est archivée et les archives déjà écrites disparaissent avec le bucket. L'export Markdown de l'interface reste disponible. |
-| Preuves de l'intégration AWS | Plus de console : seules les captures faites avant la fermeture en témoignent. |
-| SEC EDGAR (dépôts, fondamentaux) | Gratuit et indépendant d'AWS : en direct avec une identification SEC, sinon l'instantané versionné. |
-| Tests et CI | Inchangés : ils n'utilisent jamais AWS. |
-
-**Héberger sans AWS (Streamlit Community Cloud, gratuit)** : l'application tourne telle quelle, avec l'interprétation par règles et l'instantané SEC.
-1. Sur https://share.streamlit.io, se connecter avec le compte GitHub qui a accès au dépôt, puis « Create app ».
-2. Dépôt `akuno-tensei/datathon2026`, branche `main`, fichier `alphaforge/app/streamlit_app.py`.
-3. « Advanced settings » : Python 3.12 (suite complète vérifiée sous 3.12). Les dépendances viennent de `requirements.txt` à la racine.
-4. Facultatif, pour la SEC en direct : dans « Secrets », ajouter `ALPHAFORGE_SEC_USER_AGENT = "Nom de l'équipe contact@exemple.org"`.
+| Élément                                                           | Sans compte AWS                                                                                                                                                                                                                                                                                          |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Démo hébergée (https://d3rh9mi9cqh6mn.cloudfront.net/)            | **Ne répond plus** : ECS, l'équilibreur, CloudFront et ECR disparaissent. Il faut lancer l'application en local ou l'héberger ailleurs (ci-dessous).                                                                                                                                                     |
+| Prototype local (`streamlit run alphaforge/app/streamlit_app.py`) | Fonctionne hors ligne : données des 31 actifs dans `alphaforge_starter/`. Les cinq agents, les calculs, la gouvernance, les explications vérifiées, la conclusion « En résumé », les profils (ajout, modification, suppression, comparaison) et les deux langues sont inchangés.                         |
+| Interprétation des demandes                                       | Par règles, détecté automatiquement (aucun identifiant AWS : Bedrock n'est pas tenté) et affiché sous le verdict. Les règles comprennent moins de formulations : 30/36 au banc d'essai, contre 108/108 pour Claude Haiku 4.5 (`deploy/bench_results.json`). Par exemple, « l'or » n'est pas relié à GLD. |
+| Archive des registres                                             | Absente ; aucune analyse n'est archivée et les archives déjà écrites disparaissent avec le bucket. L'export Markdown de l'interface reste disponible.                                                                                                                                                    |
+| Preuves de l'intégration AWS                                      | Plus de console : seules les captures faites avant la fermeture en témoignent.                                                                                                                                                                                                                           |
+| SEC EDGAR (dépôts, fondamentaux)                                  | Gratuit et indépendant d'AWS : en direct avec une identification SEC, sinon l'instantané versionné.                                                                                                                                                                                                      |
+| Tests et CI                                                       | Inchangés : ils n'utilisent jamais AWS.                                                                                                                                                                                                                                                                  |
 
 Différence connue sans Bedrock : une question comme « je devrais en acheter ? » est refusée comme demande de conseil personnalisé (avertissement), et non comme demande de transaction (bloqué) ; les deux refusent de conseiller. Un ordre explicite (« Achète 10 actions AAPL ») reste bloqué, et une demande de prédiction reste hors périmètre.
 
