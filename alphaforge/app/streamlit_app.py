@@ -141,8 +141,7 @@ if S.get("pf_flash"):
     st.success("✓ " + S.pop("pf_flash"))
 if S.get("pf_flash_error"):
     st.error("⛔ " + S.pop("pf_flash_error"))
-# Panneau de gestion des profils, sous le bandeau, ouvert par « Ajouter » ou « Supprimer » (contenu rempli plus bas).
-profile_box = st.container(border=True) if S.pf_mode else None
+# Gestion des profils (Ajouter, Modifier, Supprimer) : fenêtre ouverte par-dessus la page, définie plus bas.
 
 
 # ---- rendu des éléments partagés ----------------------------------------
@@ -667,6 +666,18 @@ def _remove_row(rows_key: str, index: int) -> None:
     S.pf_error = None  # l'ancien message (doublon, valeur vide) ne concerne plus la liste
 
 
+def _save_profile(data: Dict[str, Any], editing: bool) -> None:
+    """Rappel du bouton « Enregistrer » : exécuté avant le nouveau rendu, donc la fenêtre est déjà fermée quand la page se recharge."""
+    try:
+        saved = F.save_profile(data, overwrite=editing or bool(S.get("pf_overwrite")))
+    except ProfileError as e:
+        S.pf_error = e.message
+        return
+    S.pending_profile = saved.profile_id  # il devient le profil actif
+    S.pf_mode = None  # la fenêtre se ferme : le profil est créé (ou modifié) et actif
+    S.pf_flash = t("edited" if editing else "saved", lang, id=saved.profile_id)
+
+
 def _delete_profile(profile_id: str) -> None:
     """Rappel du bouton de suppression : supprime, puis remet la confirmation à zéro. Le profil actif retombe sur un exemple si besoin."""
     try:
@@ -675,6 +686,7 @@ def _delete_profile(profile_id: str) -> None:
     except ProfileError as e:
         S.pf_flash_error = e.message
     S.pf_del_ok = False
+    S.pf_mode = None  # la fenêtre se ferme ; la page se recharge avec la liste à jour
 
 
 if "pf_name" not in S:
@@ -765,12 +777,7 @@ def render_add_panel(editing: bool = False) -> None:
         st.caption(t("np_id_used", lang, id=new_id))
     if problem:
         st.warning("⚠ " + problem)
-    if st.button(t("save", lang), type="primary", key="pf_save_btn", disabled=not can_save):
-        saved = F.save_profile(data, overwrite=editing or bool(S.get("pf_overwrite")))
-        S.pending_profile = saved.profile_id  # il devient le profil actif
-        S.pf_mode = None  # le panneau se ferme : le profil est créé (ou modifié) et actif
-        S.pf_flash = t("edited" if editing else "saved", lang, id=saved.profile_id)
-        st.rerun()
+    st.button(t("save", lang), type="primary", key="pf_save_btn", disabled=not can_save, on_click=_save_profile, args=(data, editing))
     if p_new is not None:
         st.markdown(f"#### {t('np_preview', lang)}")  # aperçu en direct : fiche, incohérences et limites dérivées
         render_profile_panel(p_new)
@@ -786,15 +793,22 @@ def render_delete_panel() -> None:
               on_click=_delete_profile, args=(victim,))
 
 
-if profile_box is not None:
-    with profile_box:
-        head, close = st.columns([8, 1.2], vertical_alignment="center")
-        head.markdown(f"**👤 {t('np_manage', lang)}**")
-        close.button(t("np_close", lang), key="pf_close_btn", on_click=_close_panel, width="stretch")
-        if S.pf_mode == "delete":
-            render_delete_panel()
-        else:
-            render_add_panel(editing=S.pf_mode == "edit")
+def _profile_dialog_body() -> None:
+    """Contenu de la fenêtre de gestion des profils. Une action qui la ferme (Fermer, Supprimer) relance toute la page,
+    pour que la liste des profils et le profil actif soient à jour."""
+    if not S.get("pf_mode"):
+        st.rerun()
+    _, close = st.columns([8, 1.2], vertical_alignment="center")
+    close.button(t("np_close", lang), key="pf_close_btn", on_click=_close_panel, width="stretch")
+    if S.pf_mode == "delete":
+        render_delete_panel()
+    else:
+        render_add_panel(editing=S.pf_mode == "edit")
+
+
+if S.get("pf_mode"):  # ajout, modification ou suppression : toujours dans une fenêtre par-dessus la page
+    _title = {"add": t("profile_editor", lang), "edit": t("np_edit_btn", lang), "delete": t("np_delete_title", lang)}.get(S.pf_mode, "")
+    st.dialog(f"👤 {_title}", width="large", on_dismiss=_close_panel)(_profile_dialog_body)()
 
 with tab_src:
     a = S.analysis

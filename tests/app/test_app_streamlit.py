@@ -390,7 +390,9 @@ def test_only_the_chosen_profile_is_deleted_and_an_analysis_survives_its_profile
     assert not app.exception, app.exception
     assert (app.user_dir / "premier.json").is_file() and not (app.user_dir / "second.json").exists()
     assert app.session_state["analysis"] is analysis and analysis.profile.profile_id == "second"  # le résultat déjà affiché reste lisible
-    assert app.selectbox(key="pf_del_pick").options == ["Premier"]  # il en reste un : le panneau reste ouvert
+    assert "pf_del_pick" not in _keys(app)  # la fenêtre se ferme après la suppression, la page se recharge à jour
+    _open_del(app)
+    assert app.selectbox(key="pf_del_pick").options == ["Premier"]  # en la rouvrant, il ne reste que l'autre profil
 
 
 # ---- deux boutons sous le sélecteur : « Ajouter » et « Supprimer » ------------
