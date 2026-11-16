@@ -151,6 +151,7 @@ def evidence_button(eid: str, key: str) -> None:
     if st.button(t("ev_btn", lang), key=key, icon=":material/receipt_long:", type="tertiary",
                  help=f"{t('drawer_title', lang)} · {eid}"):
         S.evidence_open = eid
+        open_evidence(eid)
 
 
 def render_profile_panel(p) -> None:
@@ -442,20 +443,51 @@ def render_trace(a: Analysis, key: str) -> None:
                 evidence_button(s.evidence_id, f"{key}-tr-{i}")
 
 
-def render_drawer(a: Analysis) -> None:
-    eid = S.evidence_open
+def _analysis_for(eid: str) -> Optional[Analysis]:
+    """Analyse qui contient la preuve : analyse simple, puis les deux côtés de la comparaison de profils."""
+    cmp = S.get("comparison")
+    for a in [S.get("analysis")] + ([cmp.left, cmp.right] if cmp is not None else []):
+        if a is not None and views.resolve_evidence(eid, a, F.store) is not None:
+            return a
+    return None
+
+
+def open_evidence(eid: str) -> None:
+    """Fenêtre de preuve, ouverte par-dessus la page à l'endroit où l'on se trouve : la page ne défile pas."""
+    a = _analysis_for(eid)
+    if a is None:
+        return
+
+    def body() -> None:
+        render_drawer(a, eid)
+
+    st.dialog(f"🔎 {t('drawer_title', lang)}", width="large")(body)()
+
+
+def render_drawer(a: Analysis, eid: Optional[str] = None) -> None:
+    eid = eid or S.evidence_open
     if not eid:
         st.caption(t("drawer_hint", lang))
         return
     card = views.evidence_card(eid, a, lang, store=F.store)
     if card is None:
         return
-    st.markdown(f"### 🔎 {t('drawer_title', lang)} · `{card.evidence_id}`")
+    summ = views.evidence_summary(eid, a, lang, store=F.store)
+    if summ is not None:  # lecture humaine d'abord : ce que mesure le calcul, ses résultats, leur position face aux limites
+        if summ.meaning:
+            st.markdown(f"**{t('ev_meaning', lang)}**  \n{summ.meaning}")
+        if summ.results:
+            st.markdown(f"**{t('ev_results', lang)}**")
+            st.table(pd.DataFrame([{"": humanize_text(k, lang), " ": humanize_text(v, lang)} for k, v in summ.results]).set_index(""))
+        if summ.reading:
+            st.markdown(f"**{t('ev_reading', lang)}**")
+            for line in summ.reading:
+                st.markdown(f"- {humanize_text(line, lang)}")
+        if card.chart:
+            render_series_chart(a, eid, card.chart)
+    st.markdown(f"**{t('ev_details', lang)}** · `{card.evidence_id}`")
     if card.recomputed:
         st.caption("ℹ " + t("recomputed", lang))
-    if st.button(t("close", lang), key="drawer-close"):
-        S.evidence_open = None
-        st.rerun()
     st.markdown(f"**{t('tool', lang)}** : {human(card.tool, lang)} (`{card.tool}` v{card.version}) · {t('row_status_' + card.status, lang) if card.status in ('ok', 'warning', 'refused') else card.status}  \n**{t('n_obs', lang)}** : {card.n_obs}")
     if card.window:
         st.markdown(f"**{t('col_window', lang)}** : {human_date(str(card.window.get('start')), lang)} → {human_date(str(card.window.get('end')), lang)}"
@@ -469,7 +501,7 @@ def render_drawer(a: Analysis) -> None:
         st.markdown(f"- {s}")
     st.markdown(f"**{t('warnings', lang)}** : " + ("; ".join(card.warnings) or t("no_warnings", lang)))
     st.caption(f"{t('fingerprint', lang)} : {card.fingerprint}")
-    if card.chart:
+    if card.chart and summ is None:
         render_series_chart(a, eid, card.chart)
     if card.reproduce:
         st.markdown(f"**{t('reproduce', lang)}**")
@@ -574,9 +606,7 @@ with tab_an:
             render_conclusion(a, "an")
     with right:
         if S.analysis is not None:
-            if S.evidence_open:
-                render_drawer(S.analysis)
-            render_trace(S.analysis, "an")
+            render_trace(S.analysis, "an")  # la preuve s'ouvre dans une fenêtre, là où l'on a cliqué (evidence_button)
 
 with tab_cmp:
     st.markdown(f"### {t('compare_title', lang)}")

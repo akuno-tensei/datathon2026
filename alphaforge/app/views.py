@@ -567,6 +567,87 @@ def resolve_evidence(evidence_id: str, analysis: Analysis, store: Any = None) ->
     return d
 
 
+@dataclass
+class EvidenceSummary:
+    """Lecture d'une preuve pour un humain : ce que mesure le calcul, ses résultats, et leur position par rapport aux limites.
+    Valeurs lues telles quelles dans la preuve et dans le verdict ; aucun nouveau calcul de marché, aucun conseil."""
+    meaning: str
+    results: List[Tuple[str, str]]
+    reading: List[str]
+
+
+def _p(x: Optional[float], lang: str) -> str:
+    if x is None:
+        return "—"
+    s = f"{x * 100:.1f} %"
+    return s.replace(".", ",") if lang == "fr" else s.replace(" %", "%")
+
+
+def _vs_limit(label: str, value: float, limit: Optional[float], lang: str) -> Optional[str]:
+    if not limit:
+        return None
+    key = "evs_within" if value <= limit else "evs_above"
+    return t(key, lang, m=label, v=_p(value, lang), l=_p(limit, lang), d=f"{abs(limit - value) * 100:.1f}".replace(".", "," if lang == "fr" else "."))
+
+
+def evidence_summary(evidence_id: str, analysis: Analysis, lang: str, store: Any = None) -> Optional[EvidenceSummary]:
+    ev = resolve_evidence(evidence_id, analysis, store)
+    if ev is None:
+        return None
+    tool, v = ev["tool"], ev.get("value") or {}
+    meaning = t("evm_" + tool, lang)
+    meaning = "" if meaning == "evm_" + tool else meaning
+    c = (analysis.verdict or {}).get("constraints") or {}
+    res: List[Tuple[str, str]] = []
+    reading: List[str] = []
+    if ev.get("status") == "refused":
+        reading.append(t("evs_refused", lang, r=ev.get("refusal_reason") or ev.get("error_code") or "—"))
+    elif tool in ("compute_metrics", "portfolio_metrics"):
+        m = v.get("base") if tool == "compute_metrics" else v.get("metrics")
+        if m:
+            dd = m.get("max_drawdown") or {}
+            res += [(t("evr_vol", lang), _p(m.get("annualized_volatility"), lang)),
+                    (t("evr_dd", lang), _p(-dd["depth"] if dd.get("depth") is not None else None, lang)
+                     + (f" ({dd.get('peak_date')} → {dd.get('trough_date')})" if dd.get("peak_date") else "")),
+                    (t("evr_total", lang), _p(m.get("total_return"), lang))]
+            if m.get("annualized_return") is not None:
+                res.append((t("evr_ann", lang), _p(m.get("annualized_return"), lang)))
+            wd = m.get("worst_day") or {}
+            if wd.get("return_") is not None:
+                res.append((t("evr_worst_day", lang), f"{_p(wd['return_'], lang)} ({wd.get('date')})"))
+            res.append((t("evr_period", lang), f"{v.get('first_date')} → {v.get('last_date')}"))
+            for line in (_vs_limit(t("evr_vol", lang), m.get("annualized_volatility") or 0.0, c.get("max_volatility"), lang),
+                         _vs_limit(t("evr_dd", lang), -(dd.get("depth") or 0.0), c.get("max_drawdown"), lang)):
+                if line:
+                    reading.append(line)
+            if reading:
+                reading.append(t("evs_window_note", lang))
+    elif tool == "stress_window":
+        from .labels import window_name
+
+        for r in v.get("rows", []):
+            res.append((window_name(str(r.get("window")), lang), f"{_p(r.get('value'), lang)} ({r.get('start')} → {r.get('end')})"))
+        if v.get("verdict") in ("sensible", "stable") and v.get("relative_spread") is not None:
+            reading.append(t("evs_" + v["verdict"], lang, s=_p(v["relative_spread"], lang), th=_p(v.get("threshold"), lang)))
+    elif tool == "correlation_matrix":
+        shown = set()
+        for k in ("max_pair", "min_pair"):
+            pr = v.get(k) or {}
+            pair = (pr.get("a"), pr.get("b"))
+            if pr and pair not in shown:  # deux actifs : une seule paire, affichée une fois
+                shown.add(pair)
+                res.append((t("evr_" + k, lang) if len(v.get("tickers", [])) > 2 else t("evr_pair", lang),
+                            f"{pr.get('a')} / {pr.get('b')} : {pr.get('corr', 0):.2f}".replace(".", "," if lang == "fr" else ".")))
+        res.append((t("evr_n_obs", lang), str(v.get("n_obs"))))
+        reading.append(t("evs_corr", lang))
+    elif tool == "asset_lookup" and v.get("in_universe"):
+        res += [(t("evr_name", lang), f"{v.get('ticker')} · {v.get('name')}"),
+                (t("evr_class", lang), f"{v.get('asset_class')} · {v.get('sector')} · {v.get('currency')}"),
+                (t("evr_period", lang), f"{v.get('first_date')} → {v.get('last_date')} ({v.get('n_obs_available')})")]
+    reading.append(t("evs_past", lang))
+    return EvidenceSummary(meaning=meaning, results=res, reading=reading)
+
+
 def evidence_card(evidence_id: str, analysis: Analysis, lang: str, store: Any = None) -> Optional[EvidenceCard]:
     ev = resolve_evidence(evidence_id, analysis, store)
     if ev is None:
