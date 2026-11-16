@@ -273,6 +273,28 @@ Différence connue sans Bedrock : une question comme « je devrais en acheter ? 
 - **Actifs hors univers** : signalés comme tels, sans collecte de leurs prix.
 - **Pas de projection** : tout est descriptif ou rétrospectif.
 
+### Limites connues des demandes
+
+Relevé du 15 novembre 2026 : 18 demandes passées avec les règles seules et avec Amazon Bedrock (Claude Haiku 4.5). Sauf mention contraire, les deux interpréteurs donnent le même résultat. Aucune de ces demandes ne provoque d'erreur, et aucune n'aboutit à un conseil ; le point commun est qu'une précision donnée dans le texte est ignorée sans que l'écran le dise.
+
+**Règle générale : le profil se règle dans le profil, pas dans la demande.** Les caractéristiques décrites dans le texte (« je suis prudent », « 59 ans, retraite dans 4 ans ») ne sont pas lues : l'outil applique le profil sélectionné. Par exemple, « Je suis prudent et proche de la retraite. Évalue NVDA » avec Amira sélectionnée sort conforme avec les règles, au niveau de risque d'Amira. Pour changer la réponse, sélectionner, créer ou modifier un profil : ses limites sont recalculées à l'analyse suivante.
+
+| Type | Demande | Ce que fait l'outil | Pour obtenir l'analyse voulue |
+|---|---|---|---|
+| Évaluer | « Évalue une position de 25 % dans TSLA » | Évalue TSLA ; le poids de 25 % est lu mais pas comparé au plafond par actif du profil (15 % pour Robert) | Formuler un scénario complet : « 25 % TSLA et 75 % XBB.TO » (le dépassement du plafond est alors signalé) |
+| Évaluer | « Évalue un placement de 10 000 $ dans NVDA » | Évalue NVDA ; le montant est ignoré (tout est exprimé en pourcentages). Bedrock y ajoute le signal « conseil personnalisé », que les règles ne relèvent pas | — |
+| Évaluer | « Évalue NVDA sur 2023 seulement » | La période demandée est ignorée : l'outil utilise ses périodes fixes (tout l'historique, 2022, hors 2022, dernière année, 3 dernières années) | Changer la date d'analyse (elle fixe la fin des périodes) |
+| Évaluer | « Quel est le ratio de Sharpe de SPY ? » | Évalue SPY sans calculer le ratio de Sharpe (désactivé par défaut) | Le calcul existe dans l'outil (`include_sharpe`), mais n'est pas proposé dans l'interface |
+| Évaluer | « Évalue les banques canadiennes » | Règles : demande de préciser l'actif. Bedrock : retient RY.TO, TD.TO et MFC.TO (Manulife, un assureur, classé « Financials » comme les banques) | Nommer les actifs |
+| Scénario | « 60 % SPY et 30 % AGG » (somme de 90 %) | Le scénario n'est pas calculé (`INVALID_WEIGHTS` : les poids doivent faire 100 %, rien n'est normalisé à la place de l'utilisateur) ; les actifs sont évalués séparément. Le refus n'apparaît que dans la trace des agents, pas dans l'explication | Donner des poids qui font 100 % |
+| Scénario | « J'ai déjà 50 % en SPY, ajoute 25 % de TSLA » | Même cas : somme de 75 %, scénario non calculé | Décrire le portefeuille complet : « 50 % SPY, 25 % TSLA et 25 % XBB.TO » |
+| Scénario | « Scénario avec 6000 $ en SPY et 4000 $ en AGG » | Les montants sont ignorés : pondération égale 50/50, déclarée comme hypothèse | Donner des pourcentages : « 60 % SPY et 40 % AGG » |
+| Scénario | « 60 % SPY et 40 % AGG, rééquilibré chaque année » | Rééquilibrage quotidien : seuls « rééquilibré » (chaque jour) et « sans rééquilibrage » existent ; la fréquence est ignorée | Choisir entre ces deux hypothèses |
+| Comparer | « Lequel est le meilleur entre NVDA et MSFT ? » | Comparaison factuelle des deux actifs face aux limites du profil ; aucun classement, aucun « meilleur » | — (comportement voulu) |
+| Comparer | « Compare BTC-USD et SPY » | Calendriers différents (crypto tous les jours, actions en semaine) : corrélations sur base hebdomadaire, annualisation propre à chaque actif | — (comportement voulu, détaillé dans « Décisions de calcul ») |
+
+Ce qui fonctionne et n'est pas une limite : la comparaison de trois actifs ou plus (testée jusqu'à sept, avec les paires très corrélées signalées), un actif absent de l'univers (signalé avec les plus proches), une demande sans actif (l'outil demande de préciser), le rééquilibrage « sans rééquilibrage » et les scénarios à trois actifs.
+
 ## Structure du dépôt
 
 ```
